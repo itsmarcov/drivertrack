@@ -33,13 +33,13 @@ function QRDisplay({ data }) {
   return (
     <div className="driver-qr-section">
       <div className="driver-greeting">
+        <p>{data.date}</p>
         <h2>{data.fullName}</h2>
-        <p>رمـز QR اليـومـي</p>
       </div>
       <div className="driver-qr-card">
         <div className="driver-qr-header">
-          <span className="driver-date">{data.date}</span>
-          <span className="driver-validity">صالح حتى: <strong className="countdown">{countdown}</strong></span>
+          <span className="driver-date">رمز QR اليومي</span>
+          <span className="driver-validity">ينتهي بعد: <strong className="countdown">{countdown}</strong></span>
         </div>
         <div className="driver-qr-code">
           <QRCodeSVG value={qrValue} size={200} level="H" includeMargin />
@@ -47,7 +47,7 @@ function QRDisplay({ data }) {
         <button onClick={refreshPage} className="btn btn-sm btn-outline driver-refresh">تحديث</button>
       </div>
       <div className="driver-instructions">
-        <span>🛡️ اعرض هذا الرمز لموظف التشغيل عند المحطة</span>
+        اعرض هذا الرمز لموظف التشغيل عند المحطة لتسجيل الحضور
       </div>
     </div>
   );
@@ -77,33 +77,39 @@ export default function DriverDashboard() {
   return (
     <div className="driver-app">
       <div className="driver-top-bar">
-        <div className="driver-top-info">
-          <span className="driver-role-badge">سائق</span>
-          <span className="driver-username">{user.username}</span>
+        <div className="driver-top-row">
+          <div className="driver-top-info">
+            <img src="/NAVEXlogo.png" alt="NAVEX" className="nav-brand-logo" />
+            <span className="driver-role-badge">سائق</span>
+            <span className="driver-username">{user.username}</span>
+          </div>
+          <button onClick={handleLogout} className="driver-logout-btn">تسجيل خروج</button>
         </div>
-        <button onClick={handleLogout} className="btn btn-sm btn-danger" style={{ marginTop: '0.5rem', width: '100%', background: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}>تسجيل خروج</button>
+        <div className="driver-top-greeting">
+          مرحباً، <strong>{user.full_name}</strong>
+        </div>
       </div>
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
 
       <div className="driver-tabs">
         <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
-        <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف</button>
-        <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>الحضور</button>
+        <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف الشخصي</button>
+        <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
       </div>
 
       {activeTab === 'qr' && (
         <>
           {qrData && <QRDisplay data={qrData} />}
           {todayRecord && (
-            <div className="driver-today-banner">
-              <span>✅ تم تسجيل حضورك اليوم</span>
-              <small>{todayRecord.scan_time}</small>
+            <div className="driver-today-banner success">
+              <span>تم تسجيل حضورك اليوم</span>
+              <small>الساعة {todayRecord.scan_time}</small>
             </div>
           )}
           {!todayRecord && qrData && (
             <div className="driver-today-banner warning">
-              <span>⏳ لم يتم تسجيل الحضور بعد</span>
+              <span>لم يتم تسجيل الحضور بعد</span>
               <small>اعرض رمز QR لموظف التشغيل</small>
             </div>
           )}
@@ -112,8 +118,10 @@ export default function DriverDashboard() {
 
       {activeTab === 'profile' && (
         <div className="driver-profile-section">
-          <div className="driver-profile-avatar">{user.full_name.charAt(0)}</div>
-          <h3>{user.full_name}</h3>
+          <div className="driver-profile-header">
+            <div className="driver-profile-avatar">{user.full_name.charAt(0)}</div>
+            <h3>{user.full_name}</h3>
+          </div>
           <div className="driver-profile-details">
             <div className="driver-profile-item">
               <span className="dpi-label">اسم المستخدم</span>
@@ -143,7 +151,11 @@ export default function DriverDashboard() {
         <div className="driver-history-section">
           <h3>آخر تسجيلات الحضور</h3>
           {recentRecords.length === 0 ? (
-            <p className="driver-empty">لا توجد سجلات بعد</p>
+            <div className="nx-empty">
+              <div className="nx-empty-icon">📋</div>
+              <h3>لا توجد سجلات بعد</h3>
+              <p>سيتم عرض سجل حضورك هنا بعد أول تسجيل</p>
+            </div>
           ) : (
             recentRecords.map((r) => (
               <div key={r.id} className="driver-history-item">

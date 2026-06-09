@@ -23,7 +23,10 @@ function DriverForm({ driver, onSave, onCancel }) {
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>{driver ? 'تعديل السائق' : 'إضافة سائق جديد'}</h3>
+        <div className="modal-header">
+          <h3>{driver ? 'تعديل السائق' : 'إضافة سائق جديد'}</h3>
+          <button className="modal-close" onClick={onCancel}>✕</button>
+        </div>
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
@@ -31,7 +34,7 @@ function DriverForm({ driver, onSave, onCancel }) {
               <input name="username" value={form.username} onChange={handleChange} required disabled={!!driver} />
             </div>
             <div className="form-group">
-              <label>{driver ? 'كلمة مرور جديدة (اتركها فارغة إن لم ترد تغييرها)' : 'كلمة المرور'}</label>
+              <label>{driver ? 'كلمة مرور جديدة (اختياري)' : 'كلمة المرور'}</label>
               <input name="password" type="password" value={form.password} onChange={handleChange} required={!driver} />
             </div>
           </div>
@@ -78,6 +81,7 @@ export default function DriversManagement() {
   const [editingDriver, setEditingDriver] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
 
   const loadDrivers = async () => {
     try {
@@ -138,36 +142,67 @@ export default function DriversManagement() {
     }
   };
 
-  if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
+  const filtered = driverList.filter((d) =>
+    !search || d.full_name.includes(search) || d.username.includes(search) || (d.phone && d.phone.includes(search))
+  );
+
+  if (loading) return (
+    <div className="loading-screen">
+      <div className="nx-loader">
+        <div className="nx-spinner"></div>
+        <span className="nx-loader-label">جاري تحميل السائقين...</span>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="page admin-page">
+    <div className="page">
       <div className="page-header">
-        <h2>{isAdmin ? 'إدارة السائقين' : 'إدارة السائقين'}</h2>
-        {canAdd && (
-          <button className="btn btn-primary" onClick={() => { setEditingDriver(null); setShowForm(true); }}>+ إضافة سائق</button>
-        )}
+        <div className="page-header-content">
+          <h2>إدارة السائقين</h2>
+          <p>{driverList.length} سائق مسجل</p>
+        </div>
+        <div className="page-header-actions">
+          {canAdd && (
+            <button className="btn btn-primary" onClick={() => { setEditingDriver(null); setShowForm(true); }}>
+              + إضافة سائق
+            </button>
+          )}
+        </div>
       </div>
+
       {error && <div className="alert alert-error" onClick={() => setError('')}>{error}</div>}
       {showForm && canAdd && <DriverForm driver={editingDriver} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingDriver(null); }} />}
-      {driverList.length === 0 ? (
-        <p className="empty-state">لا يوجد سائقون بعد. قم بإضافة أول سائق!</p>
-      ) : (
-        <div className="table-container">
+
+      <div className="table-container">
+        <div className="table-toolbar">
+          <div className="nx-search">
+            <span className="nx-search-icon">🔍</span>
+            <input type="text" placeholder="بحث عن سائق..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <span className="text-sm text-muted">{filtered.length} من {driverList.length}</span>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="nx-empty">
+            <div className="nx-empty-icon">👤</div>
+            <h3>{search ? 'لا توجد نتائج' : 'لا يوجد سائقون بعد'}</h3>
+            <p>{search ? 'حاول تغيير معايير البحث' : 'قم بإضافة أول سائق!'}</p>
+          </div>
+        ) : (
           <table className="table">
             <thead>
               <tr>
                 <th>الاسم</th>
                 <th>اسم المستخدم</th>
                 <th>الهاتف</th>
-                <th>نوع المركبة</th>
-                <th>رقم اللوحة</th>
+                <th>المركبة</th>
+                <th>اللوحة</th>
                 <th>الحالة</th>
                 {isAdmin && <th>الإجراءات</th>}
               </tr>
             </thead>
             <tbody>
-              {driverList.map((d) => (
+              {filtered.map((d) => (
                 <tr key={d.id}>
                   <td><strong>{d.full_name}</strong></td>
                   <td>{d.username}</td>
@@ -176,21 +211,24 @@ export default function DriversManagement() {
                   <td>{d.license_plate || '—'}</td>
                   <td>{d.is_active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">غير نشط</span>}</td>
                   {isAdmin && (
-                    <td className="actions-cell">
-                      <button className="btn btn-sm btn-outline" onClick={() => handleEdit(d)}>تعديل</button>
-                      <button className="btn btn-sm btn-warning" onClick={() => handleToggleActive(d)}>{d.is_active ? 'تعطيل' : 'تفعيل'}</button>
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(d.id, d.full_name)}>حذف</button>
+                    <td>
+                      <div className="flex gap-2">
+                        <button className="btn btn-sm btn-outline" onClick={() => handleEdit(d)}>تعديل</button>
+                        <button className="btn btn-sm btn-outline" onClick={() => handleToggleActive(d)}>{d.is_active ? 'تعطيل' : 'تفعيل'}</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(d.id, d.full_name)}>حذف</button>
+                      </div>
                     </td>
                   )}
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
+
       {user.role === 'ops' && (
-        <div className="info-card">
-          <p>🔧 يمكنك إضافة سائقين جدد عبر زر "إضافة سائق" أعلاه. للإدارة الكاملة، تواصل مع مدير النظام.</p>
+        <div className="alert alert-info" style={{ marginTop: '1rem' }}>
+          يمكنك إضافة سائقين جدد عبر زر "إضافة سائق" أعلاه. للإدارة الكاملة، تواصل مع مدير النظام.
         </div>
       )}
     </div>

@@ -80,12 +80,12 @@ export default function ScanQR() {
   };
 
   return (
-    <div className="page scan-page">
+    <div className="scan-page">
       <div className="scan-hero">
         <div className="scan-hero-icon">📋</div>
         <h2>مسح رمز QR</h2>
         <p>قم بتوجيه الدوشيت (ماسح QR) نحو رمز السائق</p>
-        <p className="scan-agent-name">{user.full_name}</p>
+        <span className="scan-agent-name">{user.full_name}</span>
       </div>
 
       <form onSubmit={handleSubmit} className="douchette-form" autoComplete="off">
@@ -104,7 +104,7 @@ export default function ScanQR() {
           <div className="douchette-status">
             <span className={`status-dot ${processing ? 'processing' : result ? 'success' : error ? 'error' : 'idle'}`}></span>
             <span className="status-text">
-              {processing ? 'جارٍ التحقق...' : result ? 'تم!' : error ? 'خطأ' : 'في انتظار المسح...'}
+              {processing ? 'جارٍ التحقق...' : result ? 'تم التسجيل!' : error ? 'خطأ في المسح' : 'في انتظار المسح...'}
             </span>
           </div>
         </div>
@@ -115,14 +115,20 @@ export default function ScanQR() {
 
       {error && (
         <div className="alert alert-error scan-alert">
-          <strong>❌ فشل التسجيل</strong>
-          <p>{error}</p>
+          <strong>✕ فشل التسجيل</strong>
+          <p style={{ marginTop: '0.25rem' }}>{error}</p>
         </div>
       )}
 
       {result && (
-        <div className="alert alert-success scan-alert">
-          <strong>✅ تم تسجيل الحضور بنجاح</strong>
+        <div className="scan-result-card">
+          <div className="scan-result-header">
+            <div className="scan-result-header-icon success">✓</div>
+            <div>
+              <h4>تم تسجيل الحضور بنجاح</h4>
+              <p>{result.record.driver_name}</p>
+            </div>
+          </div>
           <div className="result-details">
             <div className="result-row">
               <span className="result-label">السائق</span>
@@ -141,7 +147,7 @@ export default function ScanQR() {
               <span className="badge badge-success">موثق ✓</span>
             </div>
           </div>
-          <button className="btn btn-outline btn-sm scan-another" onClick={() => { setResult(null); setError(''); inputRef.current?.focus(); }}>
+          <button className="btn btn-outline scan-another" onClick={() => { setResult(null); setError(''); inputRef.current?.focus(); }}>
             مسح آخر +
           </button>
         </div>

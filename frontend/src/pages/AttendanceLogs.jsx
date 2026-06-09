@@ -42,12 +42,15 @@ export default function AttendanceLogs() {
   }
 
   return (
-    <div className="page admin-page">
+    <div className="page">
       <div className="page-header">
-        <h2>سجلات الحضور</h2>
+        <div className="page-header-content">
+          <h2>سجلات الحضور</h2>
+          <p>{records.length} تسجيل</p>
+        </div>
       </div>
 
-      <form className="filter-bar" onSubmit={handleFilter}>
+      <form className="nx-filter" onSubmit={handleFilter}>
         <div className="form-group">
           <label>التاريخ</label>
           <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
@@ -61,14 +64,22 @@ export default function AttendanceLogs() {
             ))}
           </select>
         </div>
-        <button type="submit" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>تصفية</button>
-        <button type="button" className="btn btn-outline" style={{ marginTop: '1.5rem' }} onClick={() => { setFilterDate(''); setFilterDriver(''); loadData(); }}>إعادة تعيين</button>
+        <button type="submit" className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>تصفية</button>
+        <button type="button" className="btn btn-outline" style={{ whiteSpace: 'nowrap' }} onClick={() => { setFilterDate(''); setFilterDriver(''); loadData(); }}>إعادة تعيين</button>
       </form>
 
       {loading ? (
-        <div className="loading-screen"><div className="spinner"></div></div>
+        <div className="loading-screen" style={{ minHeight: 200 }}>
+          <div className="nx-loader">
+            <div className="nx-spinner"></div>
+          </div>
+        </div>
       ) : records.length === 0 ? (
-        <p className="empty-state">لا توجد سجلات حضور تطابق معايير البحث</p>
+        <div className="nx-empty">
+          <div className="nx-empty-icon">📋</div>
+          <h3>لا توجد سجلات حضور</h3>
+          <p>لا توجد سجلات تطابق معايير البحث المحددة</p>
+        </div>
       ) : (
         <div className="table-container">
           <table className="table">
@@ -87,13 +98,13 @@ export default function AttendanceLogs() {
             <tbody>
               {records.map((r, i) => (
                 <tr key={r.id}>
-                  <td>{i + 1}</td>
+                  <td className="text-sm text-muted">{i + 1}</td>
                   <td><strong>{r.driver_name}</strong></td>
                   <td>{r.scan_date}</td>
                   <td>{r.scan_time}</td>
                   <td>{r.scanned_by_name}</td>
-                  <td>{r.driver_phone || '—'}</td>
-                  <td>{r.license_plate || '—'}</td>
+                  <td className="text-sm">{r.driver_phone || '—'}</td>
+                  <td className="text-sm">{r.license_plate || '—'}</td>
                   <td>{r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                 </tr>
               ))}
@@ -114,15 +125,28 @@ function DriverAttendanceView() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
   return (
-    <div className="page driver-page">
+    <div className="page">
       <div className="page-header">
-        <h2>سجل حضورك</h2>
+        <div className="page-header-content">
+          <h2>سجل حضورك</h2>
+          <p>{records.length} تسجيل</p>
+        </div>
       </div>
+
       {loading ? (
-        <div className="loading-screen"><div className="spinner"></div></div>
+        <div className="loading-screen" style={{ minHeight: 200 }}>
+          <div className="nx-loader">
+            <div className="nx-spinner"></div>
+          </div>
+        </div>
       ) : records.length === 0 ? (
-        <p className="empty-state">لا توجد سجلات حضور بعد</p>
+        <div className="nx-empty">
+          <div className="nx-empty-icon">📋</div>
+          <h3>لا توجد سجلات حضور بعد</h3>
+          <p>سيتم عرض سجل حضورك هنا بعد أول تسجيل</p>
+        </div>
       ) : (
         <div className="table-container">
           <table className="table">
@@ -137,7 +161,7 @@ function DriverAttendanceView() {
             <tbody>
               {records.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.scan_date}</td>
+                  <td><strong>{r.scan_date}</strong></td>
                   <td>{r.scan_time}</td>
                   <td>{r.scanned_by_name}</td>
                   <td>{r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>

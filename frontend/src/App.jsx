@@ -19,7 +19,14 @@ function HomeRedirect() {
 
 export default function App() {
   const { loading } = useAuth();
-  if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
+  if (loading) return (
+    <div className="loading-screen">
+      <div className="nx-loader">
+        <div className="nx-spinner"></div>
+        <span className="nx-loader-label">جاري التحميل...</span>
+      </div>
+    </div>
+  );
   return (
     <div className="app">
       <Navbar />

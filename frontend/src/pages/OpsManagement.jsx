@@ -35,13 +35,25 @@ export default function OpsManagement() {
     }
   };
 
-  if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
+  if (loading) return (
+    <div className="loading-screen">
+      <div className="nx-loader">
+        <div className="nx-spinner"></div>
+        <span className="nx-loader-label">جاري التحميل...</span>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="page admin-page">
+    <div className="page">
       <div className="page-header">
-        <h2>إدارة المشغلين (OPS)</h2>
-        <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ إضافة مشغل</button>
+        <div className="page-header-content">
+          <h2>إدارة المشغلين (OPS)</h2>
+          <p>{opsList.length} مشغل</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>+ إضافة مشغل</button>
+        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -50,7 +62,10 @@ export default function OpsManagement() {
       {showForm && (
         <div className="modal-overlay" onClick={() => setShowForm(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>إضافة مشغل جديد (OPS)</h3>
+            <div className="modal-header">
+              <h3>إضافة مشغل جديد (OPS)</h3>
+              <button className="modal-close" onClick={() => setShowForm(false)}>✕</button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-row">
                 <div className="form-group">
@@ -85,10 +100,14 @@ export default function OpsManagement() {
         </div>
       )}
 
-      {opsList.length === 0 ? (
-        <p className="empty-state">لا يوجد مشغلون بعد</p>
-      ) : (
-        <div className="table-container">
+      <div className="table-container">
+        {opsList.length === 0 ? (
+          <div className="nx-empty">
+            <div className="nx-empty-icon">🔧</div>
+            <h3>لا يوجد مشغلون بعد</h3>
+            <p>قم بإضافة أول مشغل OPS</p>
+          </div>
+        ) : (
           <table className="table">
             <thead>
               <tr>
@@ -108,13 +127,13 @@ export default function OpsManagement() {
                   <td>{o.email || '—'}</td>
                   <td>{o.phone || '—'}</td>
                   <td>{o.is_active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">غير نشط</span>}</td>
-                  <td>{o.created_at}</td>
+                  <td className="text-sm text-muted">{o.created_at}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
