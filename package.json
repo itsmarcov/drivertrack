@@ -1,0 +1,11 @@
+{
+  "name": "drivertrack",
+  "version": "1.0.0",
+  "description": "DriverTRACK - Centralized Driver Attendance Tracking System",
+  "scripts": {
+    "build:frontend": "cd frontend && npm run build",
+    "start:backend": "cd backend && npm run start:server",
+    "start": "npm run build:frontend && npm run start:backend",
+    "setup": "cd backend && npm install && cd ../frontend && npm install"
+  }
+}

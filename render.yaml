@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: drivertrack
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: QR_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: drivertrack-db
+          property: connectionString
+
+databases:
+  - name: drivertrack-db
+    databaseName: drivertrack
+    plan: free

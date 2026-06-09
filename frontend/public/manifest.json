@@ -1,0 +1,17 @@
+{
+  "name": "DriverTRACK - السائق",
+  "short_name": "DriverTRACK",
+  "description": "تطبيق تتبع حضور السائقين",
+  "start_url": "/driver",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a73e8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='32' fill='%231a73e8'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3EDT%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

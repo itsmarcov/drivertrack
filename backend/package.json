@@ -1,0 +1,20 @@
+{
+  "name": "drivertrack-backend",
+  "version": "1.0.0",
+  "description": "DriverTRACK - Driver Attendance Tracking API",
+  "main": "src/server.js",
+  "scripts": {
+    "build:frontend": "cd ../frontend && npm run build",
+    "start": "cd ../frontend && npm run build && cd ../backend && node src/server.js",
+    "start:server": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.21.0"
+  }
+}
