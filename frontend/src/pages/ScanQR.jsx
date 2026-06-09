@@ -122,10 +122,10 @@ export default function ScanQR() {
 
       {result && (
         <div className="scan-result-card">
-          <div className="scan-result-header">
-            <div className="scan-result-header-icon success">✓</div>
+          <div className={`scan-result-header ${result.record.is_late ? 'late' : ''}`}>
+            <div className={`scan-result-header-icon ${result.record.is_late ? 'warning' : 'success'}`}>{result.record.is_late ? '⚠' : '✓'}</div>
             <div>
-              <h4>تم تسجيل الحضور بنجاح</h4>
+              <h4>{result.record.is_late ? '⚠️ تم التسجيل متأخراً' : 'تم تسجيل الحضور بنجاح'}</h4>
               <p>{result.record.driver_name}</p>
             </div>
           </div>
@@ -144,7 +144,7 @@ export default function ScanQR() {
             </div>
             <div className="result-row">
               <span className="result-label">الحالة</span>
-              <span className="badge badge-success">موثق ✓</span>
+              {result.record.is_late ? <span className="badge badge-late">متأخر ⚠</span> : <span className="badge badge-success">موثق ✓</span>}
             </div>
           </div>
           <button className="btn btn-outline scan-another" onClick={() => { setResult(null); setError(''); inputRef.current?.focus(); }}>

@@ -1008,6 +1008,9 @@ body {
 }
 .scan-result-header-icon.success { background: var(--nx-success-bg); }
 .scan-result-header-icon.error { background: var(--nx-error-bg); }
+.scan-result-header-icon.warning { background: var(--nx-warning-bg); }
+.scan-result-header.late { border-color: #FECACA; }
+.scan-result-header.late h4 { color: #991B1B; }
 .scan-result-header h4 { font-size: 1rem; font-weight: 600; }
 .scan-result-header p { font-size: 0.8rem; color: var(--nx-text-secondary); }
 .result-details { }
