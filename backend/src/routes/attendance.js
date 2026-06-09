@@ -1,4 +1,5 @@
 const express = require('express');
+const ExcelJS = require('exceljs');
 const { queryAll, queryOne } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
 
@@ -81,6 +82,72 @@ router.get('/late', authenticate, authorize('admin', 'ops'), async (req, res) =>
   );
 
   res.json(lateDrivers);
+});
+
+router.get('/late/export', authenticate, authorize('admin', 'ops'), async (req, res) => {
+  const today = new Date();
+  const dateStr = req.query.date || (today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0'));
+
+  const lateDrivers = await queryAll(
+    `SELECT a.id, a.driver_id, a.scan_time, a.created_at,
+            u.full_name as driver_name, u.phone, u.vehicle_type, u.license_plate, u.username,
+            s.full_name as scanned_by_name
+     FROM attendance a
+     JOIN users u ON a.driver_id = u.id
+     JOIN users s ON a.scanned_by = s.id
+     WHERE a.scan_date = $1 AND a.is_late = 1
+     ORDER BY a.scan_time ASC`,
+    [dateStr]
+  );
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Retarded Drivers');
+  ws.columns = [
+    { header: '#', key: 'num', width: 5 },
+    { header: 'Full Name', key: 'driver_name', width: 22 },
+    { header: 'Username', key: 'username', width: 16 },
+    { header: 'Phone', key: 'phone', width: 16 },
+    { header: 'Vehicle Type', key: 'vehicle_type', width: 16 },
+    { header: 'License Plate', key: 'license_plate', width: 16 },
+    { header: 'Scan Time', key: 'scan_time', width: 12 },
+    { header: 'Scanned By', key: 'scanned_by_name', width: 20 },
+  ];
+
+  const headerRow = ws.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE53935' } };
+  headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+  headerRow.height = 24;
+
+  lateDrivers.forEach((d, i) => {
+    ws.addRow({
+      num: i + 1,
+      driver_name: d.driver_name,
+      username: d.username,
+      phone: d.phone || '—',
+      vehicle_type: d.vehicle_type || '—',
+      license_plate: d.license_plate || '—',
+      scan_time: d.scan_time,
+      scanned_by_name: d.scanned_by_name,
+    });
+  });
+
+  ws.eachRow((row, rowNum) => {
+    if (rowNum > 1) {
+      row.alignment = { vertical: 'middle' };
+      row.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      };
+    }
+  });
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="retarded-drivers-${dateStr}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
 });
 
 module.exports = router;

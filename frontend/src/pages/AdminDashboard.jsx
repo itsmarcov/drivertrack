@@ -90,6 +90,19 @@ export default function AdminDashboard() {
               ))}
               {lateDrivers.length > 5 && <li className="nx-late-more">+{lateDrivers.length - 5} آخرون</li>}
             </ul>
+            <button className="btn btn-sm btn-outline" style={{ marginTop: '0.5rem', color: '#991B1B', borderColor: '#FECACA' }} onClick={() => {
+              const token = localStorage.getItem('token');
+              fetch('/api/attendance/late/export', { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.blob())
+                .then(blob => {
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `retarded-drivers-${stats?.date || 'today'}.xlsx`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                });
+            }}>📥 تصدير Excel</button>
           </div>
         </div>
       )}
