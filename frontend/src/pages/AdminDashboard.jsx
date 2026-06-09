@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { attendance, drivers } from '../api';
@@ -8,11 +8,36 @@ export default function AdminDashboard() {
   const isAdmin = user.role === 'admin';
   const [stats, setStats] = useState(null);
   const [recentAttendance, setRecentAttendance] = useState([]);
+  const [lateDrivers, setLateDrivers] = useState([]);
+
+  const fetchAll = useCallback(async () => {
+    try {
+      const [s, att, late] = await Promise.all([
+        attendance.stats(),
+        attendance.list({}),
+        attendance.late(),
+      ]);
+      setStats(s);
+      setRecentAttendance(att.slice(0, 8));
+      setLateDrivers(late);
+    } catch {}
+  }, []);
 
   useEffect(() => {
-    attendance.stats().then(setStats).catch(() => {});
-    attendance.list({}).then((data) => setRecentAttendance(data.slice(0, 8))).catch(() => {});
-  }, []);
+    fetchAll();
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, [fetchAll]);
+
+  useEffect(() => {
+    if (lateDrivers.length > 0 && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification('DriverTRACK — تسجيل متأخر', {
+        body: `${lateDrivers.length} سائق متأخر اليوم`,
+        icon: '/NAVEXlogo.png',
+      });
+    }
+  }, [lateDrivers]);
 
   return (
     <div className="page">
@@ -37,19 +62,34 @@ export default function AdminDashboard() {
             <div className="nx-stat-label">من أصل {stats.total_drivers} سائق</div>
             <div className="nx-stat-icon">✅</div>
           </div>
-          <div className="nx-stat">
-            <div className="nx-stat-type">نسبة الحضور</div>
-            <div className="nx-stat-value">
-              {stats.total_drivers > 0 ? Math.round((stats.present_today / stats.total_drivers) * 100) : 0}%
-            </div>
-            <div className="nx-stat-label">ليوم {stats.date}</div>
-            <div className="nx-stat-icon">📊</div>
+          <div className="nx-stat warning">
+            <div className="nx-stat-type">متأخر اليوم</div>
+            <div className="nx-stat-value">{stats.late_today}</div>
+            <div className="nx-stat-label">تم التسجيل بعد 10:00 صباحاً</div>
+            <div className="nx-stat-icon">⚠️</div>
           </div>
           <div className="nx-stat">
             <div className="nx-stat-type">التاريخ</div>
             <div className="nx-stat-value" style={{ fontSize: '1.25rem' }}>{stats.date}</div>
             <div className="nx-stat-label">اليوم الحالي</div>
             <div className="nx-stat-icon">📅</div>
+          </div>
+        </div>
+      )}
+
+      {lateDrivers.length > 0 && (
+        <div className="nx-late-banner">
+          <div className="nx-late-banner-icon">⚠️</div>
+          <div className="nx-late-banner-content">
+            <h4>{lateDrivers.length} سائق متأخر اليوم</h4>
+            <ul className="nx-late-list">
+              {lateDrivers.slice(0, 5).map((d) => (
+                <li key={d.id}>
+                  <strong>{d.driver_name}</strong> — {d.scan_time}{d.vehicle_type ? ` (${d.vehicle_type})` : ''}
+                </li>
+              ))}
+              {lateDrivers.length > 5 && <li className="nx-late-more">+{lateDrivers.length - 5} آخرون</li>}
+            </ul>
           </div>
         </div>
       )}
@@ -110,7 +150,7 @@ export default function AdminDashboard() {
                       <td>{r.scan_date}</td>
                       <td>{r.scan_time}</td>
                       <td>{r.scanned_by_name}</td>
-                      <td>{r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}</td>
+                      <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                     </tr>
                   ))}
                 </tbody>

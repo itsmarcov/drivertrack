@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 const QR_SECRET = process.env.QR_SECRET;
+const LATE_CUTOFF = process.env.LATE_CUTOFF || '10:00:00';
 
 function generateDateStr() {
   const d = new Date();
@@ -18,6 +19,10 @@ function generateSignature(driverId, dateStr) {
   return crypto.createHmac('sha256', QR_SECRET)
     .update(`${driverId}:${dateStr}`)
     .digest('hex');
+}
+
+function isLate(timeStr) {
+  return timeStr > LATE_CUTOFF;
 }
 
 router.get('/my-qr', authenticate, authorize('driver'), async (req, res) => {
@@ -76,13 +81,15 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
                String(now.getMinutes()).padStart(2, '0') + ':' +
                String(now.getSeconds()).padStart(2, '0');
 
+  const late = isLate(time) ? 1 : 0;
+
   const result = await run(
-    'INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature) VALUES ($1, $2, $3, $4, $5)',
-    [driverId, req.user.id, today, time, signature]
+    'INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late) VALUES ($1, $2, $3, $4, $5, $6)',
+    [driverId, req.user.id, today, time, signature, late]
   );
 
   const record = await queryOne(
-    `SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.created_at,
+    `SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.created_at,
             u.full_name as driver_name
      FROM attendance a
      JOIN users u ON a.driver_id = u.id

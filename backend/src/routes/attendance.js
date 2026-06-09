@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id } = req.query;
   let sql = `
-    SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.created_at,
+    SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.created_at,
            u.full_name as driver_name, u.phone as driver_phone, u.license_plate,
            s.full_name as scanned_by_name
     FROM attendance a
@@ -26,7 +26,7 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
 
 router.get('/my', authenticate, authorize('driver'), async (req, res) => {
   const records = await queryAll(
-    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.created_at,
+    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.created_at,
             s.full_name as scanned_by_name
      FROM attendance a
      JOIN users s ON a.scanned_by = s.id
@@ -49,12 +49,38 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
     'SELECT COUNT(DISTINCT driver_id) as count FROM attendance WHERE scan_date = $1',
     [dateStr]
   );
+  const late = await queryOne(
+    "SELECT COUNT(DISTINCT driver_id) as count FROM attendance WHERE scan_date = $1 AND is_late = 1",
+    [dateStr]
+  );
 
   res.json({
     total_drivers: parseInt(total.count),
     present_today: parseInt(present.count),
+    late_today: parseInt(late.count),
     date: dateStr,
   });
+});
+
+router.get('/late', authenticate, authorize('admin', 'ops'), async (req, res) => {
+  const today = new Date();
+  const dateStr = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+
+  const lateDrivers = await queryAll(
+    `SELECT a.id, a.driver_id, a.scan_time, a.created_at,
+            u.full_name as driver_name, u.phone, u.vehicle_type, u.license_plate,
+            s.full_name as scanned_by_name
+     FROM attendance a
+     JOIN users u ON a.driver_id = u.id
+     JOIN users s ON a.scanned_by = s.id
+     WHERE a.scan_date = $1 AND a.is_late = 1
+     ORDER BY a.scan_time ASC`,
+    [dateStr]
+  );
+
+  res.json(lateDrivers);
 });
 
 module.exports = router;

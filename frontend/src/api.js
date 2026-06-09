@@ -39,4 +39,5 @@ export const attendance = {
   },
   my: () => request('/attendance/my'),
   stats: () => request('/attendance/stats'),
+  late: () => request('/attendance/late'),
 };

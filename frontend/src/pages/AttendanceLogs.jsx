@@ -105,7 +105,7 @@ export default function AttendanceLogs() {
                   <td>{r.scanned_by_name}</td>
                   <td className="text-sm">{r.driver_phone || '—'}</td>
                   <td className="text-sm">{r.license_plate || '—'}</td>
-                  <td>{r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>
+                  <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -164,7 +164,7 @@ function DriverAttendanceView() {
                   <td><strong>{r.scan_date}</strong></td>
                   <td>{r.scan_time}</td>
                   <td>{r.scanned_by_name}</td>
-                  <td>{r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>
+                  <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                 </tr>
               ))}
             </tbody>

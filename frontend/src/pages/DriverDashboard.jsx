@@ -102,9 +102,9 @@ export default function DriverDashboard() {
         <>
           {qrData && <QRDisplay data={qrData} />}
           {todayRecord && (
-            <div className="driver-today-banner success">
-              <span>تم تسجيل حضورك اليوم</span>
-              <small>الساعة {todayRecord.scan_time}</small>
+            <div className={`driver-today-banner ${todayRecord.is_late ? 'late' : 'success'}`}>
+              <span>{todayRecord.is_late ? '⚠️ تم التسجيل متأخراً' : 'تم تسجيل حضورك اليوم'}</span>
+              <small>الساعة {todayRecord.scan_time}{todayRecord.is_late ? ' (بعد 10:00 صباحاً)' : ''}</small>
             </div>
           )}
           {!todayRecord && qrData && (
@@ -165,7 +165,7 @@ export default function DriverDashboard() {
                 </div>
                 <div className="dhi-sub">
                   <span>{r.scanned_by_name}</span>
-                  {r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}
+                  {r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}
                 </div>
               </div>
             ))

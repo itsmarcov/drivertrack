@@ -20,6 +20,9 @@ async function initDatabase() {
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf8');
   await pool.query(schema);
+  try {
+    await pool.query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS is_late INTEGER DEFAULT 0');
+  } catch {}
   return pool;
 }
 

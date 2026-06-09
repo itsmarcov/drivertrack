@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS attendance (
   scan_time VARCHAR(20) NOT NULL,
   qr_signature TEXT NOT NULL,
   verified INTEGER DEFAULT 1,
+  is_late INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
