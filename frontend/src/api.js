@@ -61,5 +61,4 @@ export const penalties = {
   },
   my: () => request('/penalties/my'),
   stats: () => request('/penalties/stats'),
-  togglePaid: (id) => request(`/penalties/${id}/pay`, { method: 'PUT' }),
 };

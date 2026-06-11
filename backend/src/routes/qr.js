@@ -6,7 +6,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const router = express.Router();
 const QR_SECRET = process.env.QR_SECRET;
 const LATE_CUTOFF = process.env.LATE_CUTOFF || '10:00:00';
-const PENALTY_AMOUNT = process.env.PENALTY_AMOUNT || 10;
+const PENALTY_AMOUNT = process.env.PENALTY_AMOUNT || 100;
 
 function generateDateStr() {
   const d = new Date();

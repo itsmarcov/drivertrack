@@ -8,7 +8,10 @@ export default function Navbar() {
   if (!user) return null;
   if (user.role === 'driver') return null;
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/') ? 'active' : '';
+  const isActive = (path) => {
+    if (path === '/admin') return location.pathname === '/admin' ? 'active' : '';
+    return location.pathname === path || location.pathname.startsWith(path + '/') ? 'active' : '';
+  };
 
   const handleLogout = () => {
     logout();
@@ -22,7 +25,7 @@ export default function Navbar() {
           <span className="nav-brand-text">Driver<span className="nav-brand-dot">TRACK</span></span>
         </Link>
         <div className="nav-links">
-          <Link to="/admin" className={`nav-link ${isActive('/admin') && location.pathname === '/admin' ? 'active' : ''}`}>لوحة التحكم</Link>
+          <Link to="/admin" className={`nav-link ${isActive('/admin')}`}>لوحة التحكم</Link>
           <Link to="/admin/drivers" className={`nav-link ${isActive('/admin/drivers')}`}>السائقين</Link>
           <Link to="/admin/attendance" className={`nav-link ${isActive('/admin/attendance')}`}>سجلات الحضور</Link>
           <Link to="/admin/scan" className={`nav-link ${isActive('/admin/scan')}`}>

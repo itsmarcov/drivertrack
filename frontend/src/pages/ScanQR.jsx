@@ -158,7 +158,7 @@ export default function ScanQR() {
             {result.penalty && (
               <div className="result-row">
                 <span className="result-label">غرامة تأخير</span>
-                <span className="result-value" style={{ color: '#B91C1C', fontWeight: 700 }}>{result.penalty.amount} درهم</span>
+                <span className="result-value" style={{ color: '#B91C1C', fontWeight: 700 }}>{result.penalty.amount} د.ج</span>
               </div>
             )}
             {result.record.lat && result.record.lng && (

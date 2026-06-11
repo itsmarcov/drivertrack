@@ -99,7 +99,7 @@ export default function DriverDashboard() {
           <span className="driver-penalty-icon">💰</span>
           <div className="driver-penalty-content">
             <strong>غرامة تأخير</strong>
-            <p>{penaltyList[0].reason} — {penaltyList[0].amount} درهم{penaltyList[0].paid ? ' (مدفوعة)' : ' (غير مدفوعة)'}</p>
+            <p>{penaltyList[0].reason} — {penaltyList[0].amount} د.ج</p>
           </div>
         </div>
       )}

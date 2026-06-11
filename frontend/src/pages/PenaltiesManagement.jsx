@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { penalties } from '../api';
 
 export default function PenaltiesManagement() {
@@ -22,10 +21,6 @@ export default function PenaltiesManagement() {
   useEffect(() => { load(); }, []);
 
   const handleFilter = (e) => { e.preventDefault(); load(); };
-
-  const handleTogglePaid = async (id) => {
-    try { await penalties.togglePaid(id); load(); } catch (err) { setError(err.message); }
-  };
 
   return (
     <div className="page">
@@ -67,8 +62,6 @@ export default function PenaltiesManagement() {
                 <th>التاريخ</th>
                 <th>السبب</th>
                 <th>المبلغ</th>
-                <th>الحالة</th>
-                <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -78,13 +71,7 @@ export default function PenaltiesManagement() {
                   <td><strong>{p.driver_name}</strong></td>
                   <td>{p.penalty_date}</td>
                   <td className="text-sm">{p.reason}</td>
-                  <td><strong style={{ color: '#B91C1C' }}>{p.amount} درهم</strong></td>
-                  <td>{p.paid ? <span className="badge badge-success">مدفوعة</span> : <span className="badge badge-late">غير مدفوعة</span>}</td>
-                  <td>
-                    <button className={`btn btn-sm ${p.paid ? 'btn-outline' : 'btn-primary'}`} onClick={() => handleTogglePaid(p.id)}>
-                      {p.paid ? 'إلغاء الدفع' : 'تأكيد الدفع'}
-                    </button>
-                  </td>
+                  <td><strong style={{ color: '#B91C1C' }}>{p.amount} د.ج</strong></td>
                 </tr>
               ))}
             </tbody>

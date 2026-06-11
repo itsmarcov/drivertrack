@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id } = req.query;
   let sql = `
-    SELECT p.id, p.driver_id, p.attendance_id, p.penalty_date, p.reason, p.amount, p.paid, p.created_at,
+    SELECT p.id, p.driver_id, p.attendance_id, p.penalty_date, p.reason, p.amount, p.created_at,
            u.full_name as driver_name, u.phone as driver_phone
     FROM penalties p
     JOIN users u ON p.driver_id = u.id
@@ -48,7 +48,7 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
 
 router.get('/my', authenticate, authorize('driver'), async (req, res) => {
   const penalties = await queryAll(
-    `SELECT p.id, p.attendance_id, p.penalty_date, p.reason, p.amount, p.paid, p.created_at
+    `SELECT p.id, p.attendance_id, p.penalty_date, p.reason, p.amount, p.created_at
      FROM penalties p
      WHERE p.driver_id = $1
      ORDER BY p.created_at DESC
@@ -56,15 +56,6 @@ router.get('/my', authenticate, authorize('driver'), async (req, res) => {
     [req.user.id]
   );
   res.json(penalties);
-});
-
-router.put('/:id/pay', authenticate, authorize('admin'), async (req, res) => {
-  const { id } = req.params;
-  const penalty = await queryOne('SELECT * FROM penalties WHERE id = $1', [id]);
-  if (!penalty) return res.status(404).json({ error: 'Penalty not found.' });
-  await run('UPDATE penalties SET paid = $1 WHERE id = $2', [penalty.paid ? 0 : 1, id]);
-  const updated = await queryOne('SELECT * FROM penalties WHERE id = $1', [id]);
-  res.json(updated);
 });
 
 module.exports = router;
