@@ -218,11 +218,10 @@ router.get('/:id/report', authenticate, async (req, res) => {
     };
 
     const outputDoc = pdfmake.createPdf(docDef);
-    const stream = await outputDoc.getStream();
+    const buffer = await outputDoc.getBuffer();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
-    stream.pipe(res);
-    stream.end();
+    res.send(buffer);
   } catch (err) {
     console.error('PDF generation error:', err);
     if (!res.headersSent) {
