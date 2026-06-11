@@ -85,13 +85,20 @@ router.get('/:id/report', authenticate, async (req, res) => {
         bold: path.join(fontsDir, 'NotoSansArabic-Bold.ttf'),
       },
     });
+    pdfmake.setLocalAccessPolicy(() => true);
 
     const scanTime = penalty.scan_time ? new Date(penalty.scan_time).toLocaleString('ar-DZ') : '---';
-    const logoPath = path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png');
 
     const docDef = {
       pageSize: 'A4',
       pageMargins: [50, 40, 50, 40],
+      images: {
+        logo: (() => {
+          const distPath = path.join(__dirname, '..', '..', '..', 'frontend', 'dist', 'NAVEXlogo.png');
+          if (require('fs').existsSync(distPath)) return distPath;
+          return path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png');
+        })(),
+      },
       defaultStyle: {
         font: 'Arabic',
         alignment: 'right',
@@ -99,7 +106,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
       },
       content: [
         {
-          image: logoPath,
+          image: 'logo',
           width: 120,
           alignment: 'center',
           margin: [0, 0, 0, 20],
