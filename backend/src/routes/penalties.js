@@ -5,26 +5,6 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-function rtl(text) {
-  const tokens = [];
-  let buf = '';
-  for (const ch of text) {
-    if (ch === ' ' || ch === '\n') {
-      if (buf) tokens.push(buf);
-      tokens.push(ch);
-      buf = '';
-    } else {
-      buf += ch;
-    }
-  }
-  if (buf) tokens.push(buf);
-  const rev = tokens.map(t => {
-    if (/^\s+$/.test(t) || /^[\d.,:;\-\/]+$/.test(t)) return t;
-    return t.split('').reverse().join('');
-  });
-  return rev.reverse().join('');
-}
-
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id } = req.query;
   let sql = `
@@ -115,79 +95,82 @@ router.get('/:id/report', authenticate, async (req, res) => {
       if (fs.existsSync(altPath)) logoPath = altPath;
     }
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
-    doc.pipe(res);
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
+      res.send(Buffer.concat(chunks));
+    });
+    doc.on('error', (e) => { throw e; });
 
-    const pgW = 545;
     let y = 40;
-    const colL = 50;
-    const colW = 495;
+    const L = 50, W = 495;
 
-    // logo
     if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, colL + colW / 2 - 60, y, { height: 40 });
+      doc.image(logoPath, L + W / 2 - 60, y, { height: 40 });
       y += 55;
     }
 
-    // header
     doc.font('ArB').fontSize(22).fillColor('#E53935')
-      .text(rtl('إشعار غرامة'), colL, y, { width: colW, align: 'center' });
-    y += 32;
-    doc.font('ArR').fontSize(11).fillColor('#6B7280')
-      .text('Penalty Notification', colL, y, { width: colW, align: 'center' });
+      .text('PENALTY NOTIFICATION', L, y, { width: W, align: 'center' });
+    y += 30;
+
+    doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
+    y += 18;
+
+    const section = (title, cb) => {
+      doc.font('ArB').fontSize(12).fillColor('#1A1A1A')
+        .text(title, L, y, { width: W, align: 'left' });
+      y += 18;
+      cb();
+      y += 6;
+    };
+
+    const row = (label, value) => {
+      doc.font('ArB').fontSize(10).fillColor('#374151')
+        .text(label, L, y, { width: 140 });
+      doc.font('ArR').fillColor('#1A1A1A')
+        .text(String(value), L + 145, y, { width: W - 145 });
+      y += 18;
+    };
+
+    section('DRIVER INFORMATION', () => {
+      row('Full Name:', penalty.driver_name);
+      row('Phone:', penalty.driver_phone || '---');
+      row('License Plate:', penalty.license_plate || '---');
+    });
+
+    section('PENALTY DETAILS', () => {
+      row('Date:', penalty.penalty_date);
+      row('Scan Time:', penalty.scan_time ? new Date(penalty.scan_time).toLocaleString('ar-DZ') : '---');
+      row('Reason:', penalty.reason);
+      row('Amount:', penalty.amount + ' DZD');
+    });
+
+    doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
+    y += 18;
+
+    doc.font('ArB').fontSize(13).fillColor('#1A1A1A')
+      .text('NOTICE', L, y, { width: W, align: 'center' });
     y += 22;
 
-    // line
-    doc.moveTo(colL, y).lineTo(colL + colW, y).strokeColor('#E5E7EB').stroke();
-    y += 18;
-
-    // info rows
-    const rows = [
-      [rtl('اسم السائق:'), penalty.driver_name],
-      [rtl('رقم الهاتف:'), penalty.driver_phone || '---'],
-      [rtl('لوحة السيارة:'), penalty.license_plate || '---'],
-      [rtl('تاريخ الغرامة:'), penalty.penalty_date],
-      [rtl('وقت التسجيل:'), penalty.scan_time ? new Date(penalty.scan_time).toLocaleString('ar-DZ') : '---'],
-      [rtl('السبب:'), penalty.reason],
-    ];
-    for (const [label, value] of rows) {
-      doc.font('ArB').fontSize(11).fillColor('#374151')
-        .text(label, colL, y, { width: colW, align: 'right' });
-      doc.font('ArR').fillColor('#1A1A1A')
-        .text(rtl(String(value)), colL + 130, y, { width: colW - 130, align: 'right' });
-      y += 20;
-    }
-
-    y += 8;
-    doc.moveTo(colL, y).lineTo(colL + colW, y).strokeColor('#E5E7EB').stroke();
-    y += 24;
-
-    // section title
-    doc.font('ArB').fontSize(13).fillColor('#1A1A1A')
-      .text(rtl('تفاصيل العقوبة'), colL, y, { width: colW, align: 'center' });
-    y += 24;
-
-    // body text
-    const body = rtl(
-      'سيدي السائق،\n\n' +
-      'نود إعلامك أنه نتيجة لتأخرك عن الموعد المحدد في تاريخ ' + penalty.penalty_date +
-      '، فقد تم تسجيل غرامة عليك بمبلغ ' + penalty.amount + ' د.ج.\n\n' +
-      'كما يتم تخفيض تعويضات جميع الطرود التي قمت بتوزيعها في هذا اليوم من 250 د.ج للطرد إلى 150 د.ج للطرد.\n\n' +
-      'عليك الالتزام بالمواعيد المحددة تفادياً للغرامات المستقبلية.'
-    );
-
     doc.font('ArR').fontSize(11).fillColor('#4B5563')
-      .text(body, colL, y, { width: colW, align: 'right' });
+      .text(
+        'Dear Driver ' + penalty.driver_name + ',\n\n' +
+        'You are being penalized for being late on ' + penalty.penalty_date +
+        ' at ' + (penalty.scan_time ? new Date(penalty.scan_time).toLocaleTimeString('en-DZ') : '---') + '.\n\n' +
+        'As a consequence, all parcels you delivered today will be remunerated at 150 DA per parcel instead of 250 DA per parcel.\n\n' +
+        'Please ensure you arrive on time in the future to avoid further penalties.',
+        L, y, { width: W, align: 'left' }
+      );
     y = doc.y + 20;
 
-    // line
-    doc.moveTo(colL, y).lineTo(colL + colW, y).strokeColor('#E5E7EB').stroke();
-    y += 18;
+    doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
+    y += 16;
 
-    // footer
     doc.font('ArR').fontSize(9).fillColor('#9CA3AF')
-      .text(rtl('تم إصدار هذا التقرير بواسطة DriverTRACK — ' + new Date().toLocaleString('ar-DZ')), colL, y, { width: colW, align: 'center' });
+      .text('Generated by DriverTRACK penalty system — ' + new Date().toLocaleString('en-DZ'), L, y, { width: W, align: 'center' });
 
     doc.end();
   } catch (err) {
