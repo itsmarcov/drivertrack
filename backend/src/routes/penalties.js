@@ -76,16 +76,18 @@ router.get('/:id/report', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    const PdfPrinter = require('pdfmake');
-    const fonts = {
+    const pdfmake = require('pdfmake');
+
+    const fontsDir = path.join(__dirname, '..', '..', 'fonts');
+    pdfmake.setFonts({
       Arabic: {
-        normal: path.join(__dirname, '..', '..', 'fonts', 'NotoSansArabic-Regular.ttf'),
-        bold: path.join(__dirname, '..', '..', 'fonts', 'NotoSansArabic-Bold.ttf'),
+        normal: path.join(fontsDir, 'NotoSansArabic-Regular.ttf'),
+        bold: path.join(fontsDir, 'NotoSansArabic-Bold.ttf'),
       },
-    };
-    const printer = new PdfPrinter(fonts);
+    });
 
     const scanTime = penalty.scan_time ? new Date(penalty.scan_time).toLocaleString('ar-DZ') : '---';
+    const logoPath = path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png');
 
     const docDef = {
       pageSize: 'A4',
@@ -97,7 +99,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
       },
       content: [
         {
-          image: path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png'),
+          image: logoPath,
           width: 120,
           alignment: 'center',
           margin: [0, 0, 0, 20],
@@ -208,11 +210,12 @@ router.get('/:id/report', authenticate, async (req, res) => {
       },
     };
 
-    const pdfDoc = printer.createPdfKitDocument(docDef);
+    const outputDoc = pdfmake.createPdf(docDef);
+    const stream = await outputDoc.getStream();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
-    pdfDoc.pipe(res);
-    pdfDoc.end();
+    stream.pipe(res);
+    stream.end();
   } catch (err) {
     console.error('PDF generation error:', err);
     if (!res.headersSent) {
