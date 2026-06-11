@@ -83,7 +83,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
       info: { Title: 'Penalty Report', Author: 'DriverTRACK' },
     });
 
-    const fontsDir = path.join(__dirname, '..', 'fonts');
+    const fontsDir = path.join(__dirname, '..', '..', 'fonts');
     doc.registerFont('Arabic', path.join(fontsDir, 'NotoSansArabic-Regular.ttf'));
     doc.registerFont('Arabic-Bold', path.join(fontsDir, 'NotoSansArabic-Bold.ttf'));
 
