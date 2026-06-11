@@ -61,4 +61,12 @@ export const penalties = {
   },
   my: () => request('/penalties/my'),
   stats: () => request('/penalties/stats'),
+  report: async (id) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/penalties/${id}/report`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to generate report');
+    return res.blob();
+  },
 };

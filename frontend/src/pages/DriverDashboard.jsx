@@ -62,6 +62,8 @@ export default function DriverDashboard() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('qr');
 
+  const [dlId, setDlId] = useState(null);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -75,6 +77,22 @@ export default function DriverDashboard() {
 
   const todayRecord = records.find((r) => r.scan_date === qrData?.date);
   const recentRecords = records.slice(0, 5);
+
+  const downloadReport = async (id) => {
+    try {
+      setDlId(id);
+      const blob = await penalties.report(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `penalty-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) { setError(err.message); }
+    finally { setDlId(null); }
+  };
 
   return (
     <div className="driver-app">
@@ -101,6 +119,9 @@ export default function DriverDashboard() {
             <strong>غرامة تأخير</strong>
             <p>{penaltyList[0].reason} — {penaltyList[0].amount} د.ج</p>
           </div>
+          <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginRight: 8 }} onClick={() => downloadReport(penaltyList[0].id)} disabled={dlId === penaltyList[0].id}>
+            {dlId === penaltyList[0].id ? '...' : 'PDF'}
+          </button>
         </div>
       )}
 
@@ -108,6 +129,9 @@ export default function DriverDashboard() {
         <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
         <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف الشخصي</button>
         <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
+        {penaltyList.length > 0 && (
+          <button className={`driver-tab ${activeTab === 'penalties' ? 'active' : ''}`} onClick={() => setActiveTab('penalties')}>الغرامات</button>
+        )}
       </div>
 
       {activeTab === 'qr' && (
@@ -178,6 +202,34 @@ export default function DriverDashboard() {
                 <div className="dhi-sub">
                   <span>{r.scanned_by_name}</span>
                   {r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === 'penalties' && (
+        <div className="driver-history-section">
+          <h3>الغرامات المسجلة</h3>
+          {penaltyList.length === 0 ? (
+            <div className="nx-empty">
+              <div className="nx-empty-icon">💰</div>
+              <h3>لا توجد غرامات</h3>
+              <p>سيتم تسجيل الغرامات تلقائياً عند التأخير</p>
+            </div>
+          ) : (
+            penaltyList.map((p) => (
+              <div key={p.id} className="driver-history-item">
+                <div className="dhi-main">
+                  <span className="dhi-date">{p.penalty_date}</span>
+                  <span className="dhi-time" style={{ color: '#B91C1C' }}>{p.amount} د.ج</span>
+                </div>
+                <div className="dhi-sub">
+                  <span>{p.reason}</span>
+                  <button className="btn btn-sm btn-outline" onClick={() => downloadReport(p.id)} disabled={dlId === p.id}>
+                    {dlId === p.id ? '...' : 'PDF'}
+                  </button>
                 </div>
               </div>
             ))

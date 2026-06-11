@@ -6,6 +6,7 @@ export default function PenaltiesManagement() {
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState('');
   const [error, setError] = useState('');
+  const [dlId, setDlId] = useState(null);
 
   const load = async () => {
     try {
@@ -21,6 +22,22 @@ export default function PenaltiesManagement() {
   useEffect(() => { load(); }, []);
 
   const handleFilter = (e) => { e.preventDefault(); load(); };
+
+  const downloadReport = async (id) => {
+    try {
+      setDlId(id);
+      const blob = await penalties.report(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `penalty-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) { setError(err.message); }
+    finally { setDlId(null); }
+  };
 
   return (
     <div className="page">
@@ -62,6 +79,7 @@ export default function PenaltiesManagement() {
                 <th>التاريخ</th>
                 <th>السبب</th>
                 <th>المبلغ</th>
+                <th>التقرير</th>
               </tr>
             </thead>
             <tbody>
@@ -72,6 +90,11 @@ export default function PenaltiesManagement() {
                   <td>{p.penalty_date}</td>
                   <td className="text-sm">{p.reason}</td>
                   <td><strong style={{ color: '#B91C1C' }}>{p.amount} د.ج</strong></td>
+                  <td>
+                    <button className="btn btn-sm btn-outline" onClick={() => downloadReport(p.id)} disabled={dlId === p.id}>
+                      {dlId === p.id ? '...' : 'PDF'}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
