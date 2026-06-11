@@ -66,7 +66,10 @@ export const penalties = {
     const res = await fetch(`/api/penalties/${id}/report`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error('Failed to generate report');
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to generate report');
+    }
     return res.blob();
   },
 };
