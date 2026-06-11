@@ -5,6 +5,26 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
+function rtl(text) {
+  const tokens = [];
+  let buf = '';
+  for (const ch of text) {
+    if (ch === ' ' || ch === '\n') {
+      if (buf) tokens.push(buf);
+      tokens.push(ch);
+      buf = '';
+    } else {
+      buf += ch;
+    }
+  }
+  if (buf) tokens.push(buf);
+  const rev = tokens.map(t => {
+    if (/^\s+$/.test(t) || /^[\d.,:;\-\/]+$/.test(t)) return t;
+    return t.split('').reverse().join('');
+  });
+  return rev.reverse().join('');
+}
+
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id } = req.query;
   let sql = `
@@ -76,158 +96,100 @@ router.get('/:id/report', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
     }
 
-    const pdfmake = require('pdfmake');
+    const PDFDocument = require('pdfkit');
+    const fs = require('fs');
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 40, bottom: 40, left: 50, right: 50 },
+      info: { Title: 'Penalty Report', Author: 'DriverTRACK' },
+    });
 
     const fontsDir = path.join(__dirname, '..', '..', 'fonts');
-    pdfmake.setFonts({
-      Arabic: {
-        normal: path.join(fontsDir, 'NotoSansArabic-Regular.ttf'),
-        bold: path.join(fontsDir, 'NotoSansArabic-Bold.ttf'),
-      },
-    });
-    const scanTime = penalty.scan_time ? new Date(penalty.scan_time).toLocaleString('ar-DZ') : '---';
+    doc.registerFont('ArR', path.join(fontsDir, 'NotoSansArabic-Regular.ttf'));
+    doc.registerFont('ArB', path.join(fontsDir, 'NotoSansArabic-Bold.ttf'));
 
-    const fs = require('fs');
-    const logoBase64 = (() => {
-      const paths = [
-        path.join(__dirname, '..', '..', '..', 'frontend', 'dist', 'NAVEXlogo.png'),
-        path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png'),
-      ];
-      for (const p of paths) {
-        if (fs.existsSync(p)) return fs.readFileSync(p).toString('base64');
-      }
-      return null;
-    })();
+    let logoPath = path.join(__dirname, '..', '..', '..', 'frontend', 'dist', 'NAVEXlogo.png');
+    if (!fs.existsSync(logoPath)) {
+      const altPath = path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png');
+      if (fs.existsSync(altPath)) logoPath = altPath;
+    }
 
-    const docDef = {
-      pageSize: 'A4',
-      pageMargins: [50, 40, 50, 40],
-      images: {
-        logo: logoBase64 ? 'data:image/png;base64,' + logoBase64 : undefined,
-      },
-      defaultStyle: {
-        font: 'Arabic',
-        alignment: 'right',
-        direction: 'rtl',
-      },
-      content: [
-        ...(logoBase64 ? [{
-          image: 'logo',
-          width: 120,
-          alignment: 'center',
-          margin: [0, 0, 0, 20],
-        }] : []),
-        {
-          text: 'إشعار غرامة',
-          style: 'header',
-          alignment: 'center',
-          margin: [0, 0, 0, 4],
-        },
-        {
-          text: 'Penalty Notification',
-          style: 'subheader',
-          alignment: 'center',
-          margin: [0, 0, 0, 20],
-        },
-        {
-          canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 1, lineColor: '#E5E7EB' }],
-          margin: [0, 0, 0, 16],
-        },
-        {
-          columns: [
-            { width: 120, text: 'اسم السائق:', style: 'label' },
-            { width: '*', text: penalty.driver_name, style: 'value' },
-          ],
-          columnGap: 4,
-          margin: [0, 0, 0, 6],
-        },
-        {
-          columns: [
-            { width: 120, text: 'رقم الهاتف:', style: 'label' },
-            { width: '*', text: penalty.driver_phone || '---', style: 'value' },
-          ],
-          columnGap: 4,
-          margin: [0, 0, 0, 6],
-        },
-        {
-          columns: [
-            { width: 120, text: 'لوحة السيارة:', style: 'label' },
-            { width: '*', text: penalty.license_plate || '---', style: 'value' },
-          ],
-          columnGap: 4,
-          margin: [0, 0, 0, 6],
-        },
-        {
-          columns: [
-            { width: 120, text: 'تاريخ الغرامة:', style: 'label' },
-            { width: '*', text: penalty.penalty_date, style: 'value' },
-          ],
-          columnGap: 4,
-          margin: [0, 0, 0, 6],
-        },
-        {
-          columns: [
-            { width: 120, text: 'وقت التسجيل:', style: 'label' },
-            { width: '*', text: scanTime, style: 'value' },
-          ],
-          columnGap: 4,
-          margin: [0, 0, 0, 6],
-        },
-        {
-          columns: [
-            { width: 120, text: 'السبب:', style: 'label' },
-            { width: '*', text: penalty.reason, style: 'value' },
-          ],
-          columnGap: 4,
-          margin: [0, 0, 0, 16],
-        },
-        {
-          canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 1, lineColor: '#E5E7EB' }],
-          margin: [0, 0, 0, 20],
-        },
-        {
-          text: 'تفاصيل العقوبة',
-          style: 'sectionTitle',
-          alignment: 'center',
-          margin: [0, 0, 0, 16],
-        },
-        {
-          text: [
-            { text: 'سيدي السائق،\n\n', style: 'body' },
-            { text: 'نود إعلامك أنه نتيجة لتأخرك عن الموعد المحدد في تاريخ ' + penalty.penalty_date + '، فقد تم تسجيل غرامة عليك بمبلغ ' + penalty.amount + ' د.ج.\n\n', style: 'body' },
-            { text: 'كما يتم تخفيض تعويضات جميع الطرود التي قمت بتوزيعها في هذا اليوم من 250 د.ج للطرد إلى 150 د.ج للطرد.\n\n', style: 'body' },
-            { text: 'عليك الالتزام بالمواعيد المحددة تفادياً للغرامات المستقبلية.', style: 'bodyBold', color: '#E53935' },
-          ],
-          alignment: 'right',
-          margin: [0, 0, 0, 30],
-        },
-        {
-          canvas: [{ type: 'line', x1: 0, y1: 0, x2: 495, y2: 0, lineWidth: 1, lineColor: '#E5E7EB' }],
-          margin: [0, 0, 0, 16],
-        },
-        {
-          text: 'تم إصدار هذا التقرير بواسطة DriverTRACK — ' + new Date().toLocaleString('ar-DZ'),
-          style: 'footer',
-          alignment: 'center',
-        },
-      ],
-      styles: {
-        header: { fontSize: 22, bold: true, color: '#E53935' },
-        subheader: { fontSize: 11, color: '#6B7280' },
-        sectionTitle: { fontSize: 13, bold: true, color: '#1A1A1A' },
-        label: { fontSize: 11, bold: true, color: '#374151' },
-        value: { fontSize: 11, color: '#1A1A1A' },
-        body: { fontSize: 11, color: '#4B5563' },
-        bodyBold: { fontSize: 11, bold: true },
-        footer: { fontSize: 9, color: '#9CA3AF' },
-      },
-    };
-
-    const outputDoc = pdfmake.createPdf(docDef);
-    const buffer = await outputDoc.getBuffer();
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
-    res.send(buffer);
+    doc.pipe(res);
+
+    const pgW = 545;
+    let y = 40;
+    const colL = 50;
+    const colW = 495;
+
+    // logo
+    if (fs.existsSync(logoPath)) {
+      doc.image(logoPath, colL + colW / 2 - 60, y, { height: 40 });
+      y += 55;
+    }
+
+    // header
+    doc.font('ArB').fontSize(22).fillColor('#E53935')
+      .text(rtl('إشعار غرامة'), colL, y, { width: colW, align: 'center' });
+    y += 32;
+    doc.font('ArR').fontSize(11).fillColor('#6B7280')
+      .text('Penalty Notification', colL, y, { width: colW, align: 'center' });
+    y += 22;
+
+    // line
+    doc.moveTo(colL, y).lineTo(colL + colW, y).strokeColor('#E5E7EB').stroke();
+    y += 18;
+
+    // info rows
+    const rows = [
+      [rtl('اسم السائق:'), penalty.driver_name],
+      [rtl('رقم الهاتف:'), penalty.driver_phone || '---'],
+      [rtl('لوحة السيارة:'), penalty.license_plate || '---'],
+      [rtl('تاريخ الغرامة:'), penalty.penalty_date],
+      [rtl('وقت التسجيل:'), penalty.scan_time ? new Date(penalty.scan_time).toLocaleString('ar-DZ') : '---'],
+      [rtl('السبب:'), penalty.reason],
+    ];
+    for (const [label, value] of rows) {
+      doc.font('ArB').fontSize(11).fillColor('#374151')
+        .text(label, colL, y, { width: colW, align: 'right' });
+      doc.font('ArR').fillColor('#1A1A1A')
+        .text(rtl(String(value)), colL + 130, y, { width: colW - 130, align: 'right' });
+      y += 20;
+    }
+
+    y += 8;
+    doc.moveTo(colL, y).lineTo(colL + colW, y).strokeColor('#E5E7EB').stroke();
+    y += 24;
+
+    // section title
+    doc.font('ArB').fontSize(13).fillColor('#1A1A1A')
+      .text(rtl('تفاصيل العقوبة'), colL, y, { width: colW, align: 'center' });
+    y += 24;
+
+    // body text
+    const body = rtl(
+      'سيدي السائق،\n\n' +
+      'نود إعلامك أنه نتيجة لتأخرك عن الموعد المحدد في تاريخ ' + penalty.penalty_date +
+      '، فقد تم تسجيل غرامة عليك بمبلغ ' + penalty.amount + ' د.ج.\n\n' +
+      'كما يتم تخفيض تعويضات جميع الطرود التي قمت بتوزيعها في هذا اليوم من 250 د.ج للطرد إلى 150 د.ج للطرد.\n\n' +
+      'عليك الالتزام بالمواعيد المحددة تفادياً للغرامات المستقبلية.'
+    );
+
+    doc.font('ArR').fontSize(11).fillColor('#4B5563')
+      .text(body, colL, y, { width: colW, align: 'right' });
+    y = doc.y + 20;
+
+    // line
+    doc.moveTo(colL, y).lineTo(colL + colW, y).strokeColor('#E5E7EB').stroke();
+    y += 18;
+
+    // footer
+    doc.font('ArR').fontSize(9).fillColor('#9CA3AF')
+      .text(rtl('تم إصدار هذا التقرير بواسطة DriverTRACK — ' + new Date().toLocaleString('ar-DZ')), colL, y, { width: colW, align: 'center' });
+
+    doc.end();
   } catch (err) {
     console.error('PDF generation error:', err);
     if (!res.headersSent) {
