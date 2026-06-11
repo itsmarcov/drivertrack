@@ -64,7 +64,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
     const penalty = await queryOne(
       `SELECT p.id, p.penalty_date, p.reason, p.amount, p.created_at, p.driver_id,
               u.full_name as driver_name, u.phone as driver_phone, u.license_plate,
-              a.scanned_at as scan_time
+              a.scan_time as scan_time
        FROM penalties p
        JOIN users u ON p.driver_id = u.id
        LEFT JOIN attendance a ON p.attendance_id = a.id
