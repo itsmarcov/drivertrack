@@ -85,19 +85,25 @@ router.get('/:id/report', authenticate, async (req, res) => {
         bold: path.join(fontsDir, 'NotoSansArabic-Bold.ttf'),
       },
     });
-    pdfmake.setLocalAccessPolicy(() => true);
-
     const scanTime = penalty.scan_time ? new Date(penalty.scan_time).toLocaleString('ar-DZ') : '---';
+
+    const fs = require('fs');
+    const logoBase64 = (() => {
+      const paths = [
+        path.join(__dirname, '..', '..', '..', 'frontend', 'dist', 'NAVEXlogo.png'),
+        path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png'),
+      ];
+      for (const p of paths) {
+        if (fs.existsSync(p)) return fs.readFileSync(p).toString('base64');
+      }
+      return null;
+    })();
 
     const docDef = {
       pageSize: 'A4',
       pageMargins: [50, 40, 50, 40],
       images: {
-        logo: (() => {
-          const distPath = path.join(__dirname, '..', '..', '..', 'frontend', 'dist', 'NAVEXlogo.png');
-          if (require('fs').existsSync(distPath)) return distPath;
-          return path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png');
-        })(),
+        logo: logoBase64 ? 'data:image/png;base64,' + logoBase64 : undefined,
       },
       defaultStyle: {
         font: 'Arabic',
@@ -105,12 +111,12 @@ router.get('/:id/report', authenticate, async (req, res) => {
         direction: 'rtl',
       },
       content: [
-        {
+        ...(logoBase64 ? [{
           image: 'logo',
           width: 120,
           alignment: 'center',
           margin: [0, 0, 0, 20],
-        },
+        }] : []),
         {
           text: 'إشعار غرامة',
           style: 'header',
