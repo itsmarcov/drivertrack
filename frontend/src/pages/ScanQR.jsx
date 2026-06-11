@@ -8,6 +8,7 @@ export default function ScanQR() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [location, setLocation] = useState(null);
   const inputRef = useRef(null);
   const beepRef = useRef(null);
 
@@ -15,6 +16,13 @@ export default function ScanQR() {
     inputRef.current?.focus();
     const beep = new AudioContext();
     beepRef.current = beep;
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {},
+        { timeout: 5000, enableHighAccuracy: true }
+      );
+    }
     return () => beep.close();
   }, []);
 
@@ -47,7 +55,7 @@ export default function ScanQR() {
     try {
       let parsed = data;
       try { parsed = JSON.parse(data); } catch { throw new Error('بيانات QR غير صالحة. يجب أن تكون بصيغة JSON صحيحة.'); }
-      const response = await qr.scan(parsed);
+      const response = await qr.scan(parsed, location?.lat, location?.lng);
       setResult(response);
       playBeep('success');
     } catch (err) {
@@ -86,6 +94,7 @@ export default function ScanQR() {
         <h2>مسح رمز QR</h2>
         <p>قم بتوجيه الدوشيت (ماسح QR) نحو رمز السائق</p>
         <span className="scan-agent-name">{user.full_name}</span>
+        {location && <div className="scan-location-badge">📍 تم تحديد الموقع</div>}
       </div>
 
       <form onSubmit={handleSubmit} className="douchette-form" autoComplete="off">
@@ -146,6 +155,18 @@ export default function ScanQR() {
               <span className="result-label">الحالة</span>
               {result.record.is_late ? <span className="badge badge-late">متأخر ⚠</span> : <span className="badge badge-success">موثق ✓</span>}
             </div>
+            {result.penalty && (
+              <div className="result-row">
+                <span className="result-label">غرامة تأخير</span>
+                <span className="result-value" style={{ color: '#B91C1C', fontWeight: 700 }}>{result.penalty.amount} درهم</span>
+              </div>
+            )}
+            {result.record.lat && result.record.lng && (
+              <div className="result-row">
+                <span className="result-label">الموقع</span>
+                <span className="result-value text-sm" style={{ direction: 'ltr' }}>{result.record.lat}, {result.record.lng}</span>
+              </div>
+            )}
           </div>
           <button className="btn btn-outline scan-another" onClick={() => { setResult(null); setError(''); inputRef.current?.focus(); }}>
             مسح آخر +

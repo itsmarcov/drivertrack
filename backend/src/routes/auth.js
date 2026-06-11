@@ -86,4 +86,39 @@ router.get('/ops', authenticate, authorize('admin'), async (req, res) => {
   res.json(opsList);
 });
 
+router.put('/ops/:id', authenticate, authorize('admin'), async (req, res) => {
+  const { id } = req.params;
+  const { full_name, email, phone, station_id, is_active } = req.body;
+  const ops = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'ops'", [id]);
+  if (!ops) return res.status(404).json({ error: 'OPS user not found.' });
+  const updates = [];
+  const params = [];
+  let p = 1;
+  if (full_name !== undefined) { updates.push(`full_name = $${p++}`); params.push(full_name); }
+  if (email !== undefined) { updates.push(`email = $${p++}`); params.push(email); }
+  if (phone !== undefined) { updates.push(`phone = $${p++}`); params.push(phone); }
+  if (station_id !== undefined) { updates.push(`station_id = $${p++}`); params.push(station_id || null); }
+  if (is_active !== undefined) { updates.push(`is_active = $${p++}`); params.push(is_active); }
+  if (updates.length > 0) {
+    updates.push(`updated_at = NOW()`);
+    params.push(id);
+    await run(`UPDATE users SET ${updates.join(', ')} WHERE id = $${p}`, params);
+  }
+  const updated = await queryOne(
+    `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.station_id, u.is_active, u.created_at,
+            s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = $1`,
+    [id]
+  );
+  res.json(updated);
+});
+
+router.delete('/ops/:id', authenticate, authorize('admin'), async (req, res) => {
+  const { id } = req.params;
+  const ops = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'ops'", [id]);
+  if (!ops) return res.status(404).json({ error: 'OPS user not found.' });
+  await run('UPDATE attendance SET scanned_by = NULL WHERE scanned_by = $1', [id]);
+  const result = await run('DELETE FROM users WHERE id = $1', [id]);
+  res.json({ message: 'OPS user deleted successfully.' });
+});
+
 module.exports = router;

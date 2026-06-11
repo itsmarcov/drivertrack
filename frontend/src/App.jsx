@@ -10,6 +10,7 @@ import OpsManagement from './pages/OpsManagement';
 import AttendanceLogs from './pages/AttendanceLogs';
 import ScanQR from './pages/ScanQR';
 import StationsManagement from './pages/StationsManagement';
+import PenaltiesManagement from './pages/PenaltiesManagement';
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/admin/attendance" element={<ProtectedRoute roles={['admin', 'ops']}><AttendanceLogs /></ProtectedRoute>} />
           <Route path="/admin/scan" element={<ProtectedRoute roles={['admin', 'ops']}><ScanQR /></ProtectedRoute>} />
           <Route path="/admin/stations" element={<ProtectedRoute roles={['admin']}><StationsManagement /></ProtectedRoute>} />
+          <Route path="/admin/penalties" element={<ProtectedRoute roles={['admin', 'ops']}><PenaltiesManagement /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

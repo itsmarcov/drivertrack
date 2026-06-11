@@ -1165,6 +1165,26 @@ body {
   font-weight: 700;
 }
 .driver-alert { margin: 0.75rem 1rem 0; }
+.driver-penalty-banner {
+  margin: 0.75rem 1rem;
+  padding: 0.75rem 1rem;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: var(--nx-radius);
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  animation: nx-bounce-in 0.35s ease-out;
+}
+.driver-penalty-icon { font-size: 1.25rem; }
+.driver-penalty-content strong { display: block; font-size: 0.85rem; color: #991B1B; }
+.driver-penalty-content p { font-size: 0.8rem; color: #7F1D1D; margin-top: 0.15rem; }
+.scan-location-badge {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--nx-success);
+  font-weight: 600;
+}
 
 /* ─── Driver Tabs ─── */
 .driver-tabs {

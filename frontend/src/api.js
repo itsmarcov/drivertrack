@@ -17,10 +17,15 @@ export const auth = {
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   me: () => request('/auth/me'),
   listOps: () => request('/auth/ops'),
+  updateOps: (id, data) => request(`/auth/ops/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteOps: (id) => request(`/auth/ops/${id}`, { method: 'DELETE' }),
 };
 
 export const drivers = {
-  list: () => request('/drivers'),
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/drivers${qs ? '?' + qs : ''}`);
+  },
   get: (id) => request(`/drivers/${id}`),
   create: (data) => request('/drivers', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/drivers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -29,7 +34,7 @@ export const drivers = {
 
 export const qr = {
   getMyQR: () => request('/qr/my-qr'),
-  scan: (qrData) => request('/qr/scan', { method: 'POST', body: JSON.stringify({ qrData }) }),
+  scan: (qrData, lat, lng) => request('/qr/scan', { method: 'POST', body: JSON.stringify({ qrData, lat, lng }) }),
 };
 
 export const attendance = {
@@ -47,4 +52,14 @@ export const stations = {
   create: (data) => request('/stations', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/stations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/stations/${id}`, { method: 'DELETE' }),
+};
+
+export const penalties = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/penalties${qs ? '?' + qs : ''}`);
+  },
+  my: () => request('/penalties/my'),
+  stats: () => request('/penalties/stats'),
+  togglePaid: (id) => request(`/penalties/${id}/pay`, { method: 'PUT' }),
 };

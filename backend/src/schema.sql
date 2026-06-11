@@ -30,6 +30,19 @@ CREATE TABLE IF NOT EXISTS attendance (
   qr_signature TEXT NOT NULL,
   verified INTEGER DEFAULT 1,
   is_late INTEGER DEFAULT 0,
+  lat DECIMAL(10,7),
+  lng DECIMAL(10,7),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS penalties (
+  id SERIAL PRIMARY KEY,
+  driver_id INTEGER NOT NULL REFERENCES users(id),
+  attendance_id INTEGER REFERENCES attendance(id),
+  penalty_date VARCHAR(20) NOT NULL,
+  reason VARCHAR(255) NOT NULL,
+  amount DECIMAL(10,2) NOT NULL DEFAULT 10.00,
+  paid INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT NOW()
 );
 

@@ -17,7 +17,7 @@ function stationFilter(user, params, paramIndex) {
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id, station_id } = req.query;
   let sql = `
-    SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.created_at,
+    SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, a.created_at,
            u.full_name as driver_name, u.phone as driver_phone, u.license_plate, u.station_id,
            s.full_name as scanned_by_name
     FROM attendance a
@@ -43,8 +43,8 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
 
 router.get('/my', authenticate, authorize('driver'), async (req, res) => {
   const records = await queryAll(
-    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.created_at,
-            s.full_name as scanned_by_name
+    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, a.created_at,
+             s.full_name as scanned_by_name
      FROM attendance a
      JOIN users s ON a.scanned_by = s.id
      WHERE a.driver_id = $1

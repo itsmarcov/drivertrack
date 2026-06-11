@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
-import { qr, attendance } from '../api';
+import { qr, attendance, penalties } from '../api';
 
 function QRDisplay({ data }) {
   const qrValue = JSON.stringify({
@@ -58,6 +58,7 @@ export default function DriverDashboard() {
   const navigate = useNavigate();
   const [qrData, setQrData] = useState(null);
   const [records, setRecords] = useState([]);
+  const [penaltyList, setPenaltyList] = useState([]);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('qr');
 
@@ -69,6 +70,7 @@ export default function DriverDashboard() {
   useEffect(() => {
     qr.getMyQR().then(setQrData).catch((err) => setError(err.message));
     attendance.my().then(setRecords).catch(() => {});
+    penalties.my().then(setPenaltyList).catch(() => {});
   }, []);
 
   const todayRecord = records.find((r) => r.scan_date === qrData?.date);
@@ -91,6 +93,16 @@ export default function DriverDashboard() {
       </div>
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
+
+      {penaltyList.length > 0 && (
+        <div className="driver-penalty-banner">
+          <span className="driver-penalty-icon">💰</span>
+          <div className="driver-penalty-content">
+            <strong>غرامة تأخير</strong>
+            <p>{penaltyList[0].reason} — {penaltyList[0].amount} درهم{penaltyList[0].paid ? ' (مدفوعة)' : ' (غير مدفوعة)'}</p>
+          </div>
+        </div>
+      )}
 
       <div className="driver-tabs">
         <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>

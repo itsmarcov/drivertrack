@@ -6,6 +6,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 const router = express.Router();
 const QR_SECRET = process.env.QR_SECRET;
 const LATE_CUTOFF = process.env.LATE_CUTOFF || '10:00:00';
+const PENALTY_AMOUNT = process.env.PENALTY_AMOUNT || 10;
 
 function generateDateStr() {
   const d = new Date();
@@ -39,7 +40,7 @@ router.get('/my-qr', authenticate, authorize('driver'), async (req, res) => {
 });
 
 router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) => {
-  const { qrData } = req.body;
+  const { qrData, lat, lng } = req.body;
   if (!qrData) return res.status(400).json({ error: 'QR data is required.' });
 
   let parsed;
@@ -84,12 +85,21 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
   const late = isLate(time) ? 1 : 0;
 
   const result = await run(
-    'INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late) VALUES ($1, $2, $3, $4, $5, $6)',
-    [driverId, req.user.id, today, time, signature, late]
+    'INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late, lat, lng) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+    [driverId, req.user.id, today, time, signature, late, lat || null, lng || null]
   );
 
+  let penalty = null;
+  if (late) {
+    const penResult = await run(
+      "INSERT INTO penalties (driver_id, attendance_id, penalty_date, reason, amount) VALUES ($1, $2, $3, $4, $5)",
+      [driverId, result.lastInsertRowid, today, `تأخر عن الحضور (${time})`, parseFloat(PENALTY_AMOUNT)]
+    );
+    penalty = await queryOne('SELECT * FROM penalties WHERE id = $1', [penResult.lastInsertRowid]);
+  }
+
   const record = await queryOne(
-    `SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.created_at,
+    `SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, a.created_at,
             u.full_name as driver_name
      FROM attendance a
      JOIN users u ON a.driver_id = u.id
@@ -100,6 +110,7 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
   res.status(201).json({
     message: `Attendance recorded successfully for ${driver.full_name}`,
     record,
+    penalty,
   });
 });
 
