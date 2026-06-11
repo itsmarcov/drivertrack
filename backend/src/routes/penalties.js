@@ -5,8 +5,11 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
+const { convertArabic } = require('arabic-reshaper');
+
 function rtl(text) {
-  const paragraphs = text.split('\n');
+  const reshaped = convertArabic(text);
+  const paragraphs = reshaped.split('\n');
   return paragraphs.map(para => {
     const tokens = [];
     let buf = '';
