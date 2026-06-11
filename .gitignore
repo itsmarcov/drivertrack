@@ -5,3 +5,4 @@ dist/
 logs/
 .DS_Store
 Thumbs.db
+backend/test_arabic*.pdf
