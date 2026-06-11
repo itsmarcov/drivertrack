@@ -1,3 +1,10 @@
+CREATE TABLE IF NOT EXISTS stations (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  code VARCHAR(50) UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(100) UNIQUE NOT NULL,
@@ -8,6 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone VARCHAR(50),
   vehicle_type VARCHAR(100),
   license_plate VARCHAR(50),
+  station_id INTEGER REFERENCES stations(id),
   is_active INTEGER DEFAULT 1,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

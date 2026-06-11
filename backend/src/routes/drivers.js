@@ -6,10 +6,20 @@ const { authenticate, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
-  const drivers = await queryAll(
-    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, is_active, created_at, updated_at
-     FROM users WHERE role = 'driver' ORDER BY full_name ASC`
-  );
+  const { station_id } = req.query;
+  let sql = `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, is_active, created_at, updated_at
+             FROM users WHERE role = 'driver'`;
+  const params = [];
+  let paramIndex = 1;
+  if (req.user.role === 'ops') {
+    sql += ` AND station_id = $${paramIndex++}`;
+    params.push(req.user.station_id);
+  } else if (station_id) {
+    sql += ` AND station_id = $${paramIndex++}`;
+    params.push(parseInt(station_id));
+  }
+  sql += ' ORDER BY full_name ASC';
+  const drivers = await queryAll(sql, params);
   res.json(drivers);
 });
 
@@ -19,7 +29,7 @@ router.get('/:id', authenticate, async (req, res) => {
     return res.status(403).json({ error: 'Access denied.' });
   }
   const driver = await queryOne(
-    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, is_active, created_at, updated_at
+    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, is_active, created_at, updated_at
      FROM users WHERE id = $1 AND role = 'driver'`,
     [id]
   );
@@ -28,20 +38,29 @@ router.get('/:id', authenticate, async (req, res) => {
 });
 
 router.post('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
-  const { username, password, full_name, email, phone, vehicle_type, license_plate } = req.body;
+  const { username, password, full_name, email, phone, vehicle_type, license_plate, station_id } = req.body;
   if (!username || !password || !full_name) {
     return res.status(400).json({ error: 'Username, password, and full name are required.' });
+  }
+  let driverStationId = station_id || null;
+  if (req.user.role === 'ops') {
+    driverStationId = req.user.station_id;
+    if (!driverStationId) return res.status(400).json({ error: 'No station assigned to your account.' });
+  }
+  if (driverStationId) {
+    const station = await queryOne('SELECT id FROM stations WHERE id = $1', [driverStationId]);
+    if (!station) return res.status(400).json({ error: 'Invalid station.' });
   }
   const existing = await queryOne('SELECT id FROM users WHERE username = $1', [username]);
   if (existing) return res.status(409).json({ error: 'Username already exists.' });
   const hash = bcrypt.hashSync(password, 10);
   const result = await run(
-    `INSERT INTO users (username, password_hash, role, full_name, email, phone, vehicle_type, license_plate)
-     VALUES ($1, $2, 'driver', $3, $4, $5, $6, $7)`,
-    [username, hash, full_name, email || null, phone || null, vehicle_type || null, license_plate || null]
+    `INSERT INTO users (username, password_hash, role, full_name, email, phone, vehicle_type, license_plate, station_id)
+     VALUES ($1, $2, 'driver', $3, $4, $5, $6, $7, $8)`,
+    [username, hash, full_name, email || null, phone || null, vehicle_type || null, license_plate || null, driverStationId]
   );
   const driver = await queryOne(
-    'SELECT id, username, full_name, email, phone, vehicle_type, license_plate, is_active, created_at FROM users WHERE id = $1',
+    'SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, is_active, created_at FROM users WHERE id = $1',
     [result.lastInsertRowid]
   );
   res.status(201).json(driver);
@@ -49,7 +68,7 @@ router.post('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
 
 router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   const { id } = req.params;
-  const { full_name, email, phone, vehicle_type, license_plate, is_active, password } = req.body;
+  const { full_name, email, phone, vehicle_type, license_plate, station_id, is_active, password } = req.body;
   const existing = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'driver'", [id]);
   if (!existing) return res.status(404).json({ error: 'Driver not found.' });
 
@@ -61,6 +80,7 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   if (phone !== undefined) { updates.push(`phone = $${paramIndex++}`); params.push(phone); }
   if (vehicle_type !== undefined) { updates.push(`vehicle_type = $${paramIndex++}`); params.push(vehicle_type); }
   if (license_plate !== undefined) { updates.push(`license_plate = $${paramIndex++}`); params.push(license_plate); }
+  if (station_id !== undefined) { updates.push(`station_id = $${paramIndex++}`); params.push(station_id); }
   if (is_active !== undefined) { updates.push(`is_active = $${paramIndex++}`); params.push(is_active); }
   if (password) { updates.push(`password_hash = $${paramIndex++}`); params.push(bcrypt.hashSync(password, 10)); }
 
@@ -71,7 +91,7 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   }
 
   const driver = await queryOne(
-    'SELECT id, username, full_name, email, phone, vehicle_type, license_plate, is_active, created_at, updated_at FROM users WHERE id = $1',
+    'SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, is_active, created_at, updated_at FROM users WHERE id = $1',
     [id]
   );
   res.json(driver);

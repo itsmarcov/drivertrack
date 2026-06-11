@@ -41,3 +41,10 @@ export const attendance = {
   stats: () => request('/attendance/stats'),
   late: () => request('/attendance/late'),
 };
+
+export const stations = {
+  list: () => request('/stations'),
+  create: (data) => request('/stations', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/stations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/stations/${id}`, { method: 'DELETE' }),
+};

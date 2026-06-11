@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { drivers } from '../api';
+import { drivers, stations } from '../api';
 
 function DriverForm({ driver, onSave, onCancel }) {
+  const [stationList, setStationList] = useState([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user.role === 'admin') stations.list().then(setStationList).catch(() => {});
+  }, []);
+
   const [form, setForm] = useState({
     username: '',
     password: '',
@@ -11,6 +18,7 @@ function DriverForm({ driver, onSave, onCancel }) {
     phone: '',
     vehicle_type: '',
     license_plate: '',
+    station_id: '',
     ...driver,
   });
 
@@ -62,6 +70,15 @@ function DriverForm({ driver, onSave, onCancel }) {
               <input name="license_plate" value={form.license_plate} onChange={handleChange} />
             </div>
           </div>
+          {user.role === 'admin' && (
+            <div className="form-group">
+              <label>المحطة</label>
+              <select name="station_id" value={form.station_id} onChange={handleChange}>
+                <option value="">بدون محطة</option>
+                {stationList.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
+              </select>
+            </div>
+          )}
           <div className="form-actions">
             <button type="submit" className="btn btn-primary">{driver ? 'حفظ التعديلات' : 'إضافة السائق'}</button>
             <button type="button" className="btn btn-outline" onClick={onCancel}>إلغاء</button>
@@ -99,8 +116,13 @@ export default function DriversManagement() {
 
   const handleSave = async (formData) => {
     try {
+      const payload = { ...formData };
+      if (payload.station_id === '' || payload.station_id === undefined) {
+        delete payload.station_id;
+      } else {
+        payload.station_id = parseInt(payload.station_id);
+      }
       if (editingDriver) {
-        const payload = { ...formData };
         delete payload.username;
         delete payload.id;
         delete payload.created_at;
@@ -108,7 +130,7 @@ export default function DriversManagement() {
         if (!payload.password) delete payload.password;
         await drivers.update(editingDriver.id, payload);
       } else {
-        await drivers.create(formData);
+        await drivers.create(payload);
       }
       setShowForm(false);
       setEditingDriver(null);
@@ -197,6 +219,7 @@ export default function DriversManagement() {
                 <th>الهاتف</th>
                 <th>المركبة</th>
                 <th>اللوحة</th>
+                <th>المحطة</th>
                 <th>الحالة</th>
                 {isAdmin && <th>الإجراءات</th>}
               </tr>
@@ -209,6 +232,7 @@ export default function DriversManagement() {
                   <td>{d.phone || '—'}</td>
                   <td>{d.vehicle_type || '—'}</td>
                   <td>{d.license_plate || '—'}</td>
+                  <td>{d.station_id ? <span className="badge badge-info">محطة {d.station_id}</span> : '—'}</td>
                   <td>{d.is_active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">غير نشط</span>}</td>
                   {isAdmin && (
                     <td>

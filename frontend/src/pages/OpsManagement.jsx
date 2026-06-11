@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { auth } from '../api';
+import { auth, stations } from '../api';
 
 export default function OpsManagement() {
   const { user } = useAuth();
   const [opsList, setOpsList] = useState([]);
+  const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', phone: '', role: 'ops' });
+  const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', phone: '', role: 'ops', station_id: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const loadOps = async () => {
-    try { setLoading(true); const data = await auth.listOps(); setOpsList(data); } catch (err) { setError(err.message); }
+    try { setLoading(true); const [data, st] = await Promise.all([auth.listOps(), stations.list()]); setOpsList(data); setStationList(st); } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   };
 
@@ -24,10 +25,11 @@ export default function OpsManagement() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    const payload = { ...form, station_id: form.station_id ? parseInt(form.station_id) : null };
     try {
-      await auth.register({ ...form });
+      await auth.register(payload);
       setSuccess(`تم إنشاء حساب "${form.full_name}" بنجاح`);
-      setForm({ username: '', password: '', full_name: '', email: '', phone: '', role: 'ops' });
+      setForm({ username: '', password: '', full_name: '', email: '', phone: '', role: 'ops', station_id: '' });
       setShowForm(false);
       loadOps();
     } catch (err) {
@@ -86,11 +88,18 @@ export default function OpsManagement() {
                   <label>البريد الإلكتروني</label>
                   <input name="email" type="email" value={form.email} onChange={handleChange} />
                 </div>
-                <div className="form-group">
-                  <label>رقم الهاتف</label>
-                  <input name="phone" value={form.phone} onChange={handleChange} />
-                </div>
+              <div className="form-group">
+                <label>رقم الهاتف</label>
+                <input name="phone" value={form.phone} onChange={handleChange} />
               </div>
+            </div>
+            <div className="form-group">
+              <label>المحطة</label>
+              <select name="station_id" value={form.station_id} onChange={handleChange}>
+                <option value="">بدون محطة</option>
+                {stationList.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
+              </select>
+            </div>
               <div className="form-actions">
                 <button type="submit" className="btn btn-primary">إنشاء الحساب</button>
                 <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>إلغاء</button>
@@ -115,6 +124,7 @@ export default function OpsManagement() {
                 <th>اسم المستخدم</th>
                 <th>البريد</th>
                 <th>الهاتف</th>
+                <th>المحطة</th>
                 <th>الحالة</th>
                 <th>تاريخ الإنشاء</th>
               </tr>
@@ -126,6 +136,7 @@ export default function OpsManagement() {
                   <td>{o.username}</td>
                   <td>{o.email || '—'}</td>
                   <td>{o.phone || '—'}</td>
+                  <td>{o.station_name ? <span className="badge badge-info">{o.station_name}</span> : '—'}</td>
                   <td>{o.is_active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">غير نشط</span>}</td>
                   <td className="text-sm text-muted">{o.created_at}</td>
                 </tr>

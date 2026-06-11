@@ -31,6 +31,9 @@ export default function Navbar() {
           {user.role === 'admin' && (
             <Link to="/admin/ops" className={`nav-link ${isActive('/admin/ops')}`}>المشغلين</Link>
           )}
+          {user.role === 'admin' && (
+            <Link to="/admin/stations" className={`nav-link ${isActive('/admin/stations')}`}>المحطات</Link>
+          )}
         </div>
         <div className="nav-user">
           <div className="nav-user-info">
