@@ -1,5 +1,6 @@
 process.env.TZ = 'Africa/Algiers';
 
+require('express-async-errors');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -31,6 +32,11 @@ app.use('/api/penalties', penaltyRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err?.message || err);
+  res.status(err?.status || 500).json({ error: err?.message || 'Internal server error.' });
 });
 
 const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
