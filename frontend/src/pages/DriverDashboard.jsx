@@ -98,7 +98,7 @@ export default function DriverDashboard() {
     <div className="driver-app">
       <div className="driver-top-bar">
         <div className="driver-top-row">
-          <div className="driver-top-info">
+          <div className="driver-top-info" onClick={handleLogout} style={{ cursor: 'pointer' }} title="خروج">
             <img src="/NAVEXlogo.png" alt="NAVEX" className="nav-brand-logo" />
             <span className="driver-role-badge">سائق</span>
             <span className="driver-username">{user.username}</span>

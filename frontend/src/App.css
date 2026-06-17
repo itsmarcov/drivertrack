@@ -158,7 +158,6 @@ body {
   align-items: center;
   height: 68px;
   gap: 1rem;
-  overflow: hidden;
 }
 .nav-brand {
   display: flex;
@@ -167,6 +166,12 @@ body {
   text-decoration: none !important;
   color: var(--nx-text) !important;
   flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
 }
 .nav-brand-logo {
   height: 36px;
@@ -185,6 +190,7 @@ body {
   display: flex;
   gap: 0.25rem;
   flex: 1;
+  overflow: hidden;
 }
 .nav-link {
   padding: 0.5rem 0.55rem;
@@ -1496,7 +1502,7 @@ body {
   .nav-user { gap: 0.4rem; }
   .nav-user-name { font-size: 0.8rem; }
   .nav-user-info { display: none; }
-  .nav-user .btn-ghost { display: none; }
+  .nav-user .btn-ghost { font-size: 0.75rem; padding: 0.3rem 0.6rem; }
   .nav-brand-text { font-size: 1rem; }
   .nav-brand-logo { height: 28px; }
   .nav-logout-mobile { display: flex !important; }
