@@ -20,10 +20,10 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="nav-inner">
-        <button onClick={handleLogout} className="nav-brand" type="button" title="خروج">
+        <Link to="/login" className="nav-brand">
           <img src="/NAVEXlogo.png" alt="NAVEX" className="nav-brand-logo" />
           <span className="nav-brand-text">Driver<span className="nav-brand-dot">TRACK</span></span>
-        </button>
+        </Link>
         <div className="nav-links">
           <Link to="/admin" className={`nav-link ${isActive('/admin')}`}>لوحة التحكم</Link>
           <Link to="/admin/drivers" className={`nav-link ${isActive('/admin/drivers')}`}>السائقين</Link>

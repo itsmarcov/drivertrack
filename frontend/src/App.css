@@ -166,12 +166,6 @@ body {
   text-decoration: none !important;
   color: var(--nx-text) !important;
   flex-shrink: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  padding: 0;
 }
 .nav-brand-logo {
   height: 36px;
@@ -1502,7 +1496,16 @@ body {
   .nav-user { gap: 0.4rem; }
   .nav-user-name { font-size: 0.8rem; }
   .nav-user-info { display: none; }
-  .nav-user .btn-ghost { font-size: 0.75rem; padding: 0.3rem 0.6rem; }
+  .nav-user .btn-ghost {
+    background: var(--nx-red);
+    color: #fff !important;
+    border-color: var(--nx-red);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+  }
+  .nav-user .btn-ghost:hover { background: var(--nx-red-dark); }
   .nav-brand-text { font-size: 1rem; }
   .nav-brand-logo { height: 28px; }
   .nav-logout-mobile { display: flex !important; }
