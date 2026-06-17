@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
 import { qr, attendance, penalties } from '../api';
 
-function QRDisplay({ data }) {
+function QRDisplay({ data, isLate, penaltyAmount }) {
   const qrValue = JSON.stringify({
     driverId: data.driverId,
     date: data.date,
@@ -30,13 +30,24 @@ function QRDisplay({ data }) {
 
   const refreshPage = () => window.location.reload();
 
+  const moneyIcons = ['💰', '💵', '💸', '💰', '💵', '💸', '💰', '💵'];
+
   return (
     <div className="driver-qr-section">
       <div className="driver-greeting">
         <p>{data.date}</p>
         <h2>{data.fullName}</h2>
       </div>
-      <div className="driver-qr-card">
+      <div className={`driver-qr-card${isLate ? ' late' : ''}`}>
+        {isLate && (
+          <div className="money-rain">
+            {moneyIcons.map((icon, i) => (
+              <span key={i} className="money-piece" style={{ '--i': i, '--x': `${10 + (i * 10)}%` }}>
+                {icon}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="driver-qr-header">
           <span className="driver-date">رمز QR اليومي</span>
           <span className="driver-validity">ينتهي بعد: <strong className="countdown">{countdown}</strong></span>
@@ -46,6 +57,12 @@ function QRDisplay({ data }) {
         </div>
         <button onClick={refreshPage} className="btn btn-sm btn-outline driver-refresh">تحديث</button>
       </div>
+      {isLate && (
+        <div className="money-loss-tag">
+          <span className="money-loss-icon">💸</span>
+          خسارة مالية — {penaltyAmount || '100'} د.ج
+        </div>
+      )}
       <div className="driver-instructions">
         اعرض هذا الرمز لموظف التشغيل عند المحطة لتسجيل الحضور
       </div>
@@ -136,7 +153,7 @@ export default function DriverDashboard() {
 
       {activeTab === 'qr' && (
         <>
-          {qrData && <QRDisplay data={qrData} />}
+          {qrData && <QRDisplay data={qrData} isLate={todayRecord?.is_late} penaltyAmount={penaltyList[0]?.amount || 100} />}
           {todayRecord && (
             <div className={`driver-today-banner ${todayRecord.is_late ? 'late' : 'success'}`}>
               <span>{todayRecord.is_late ? '⚠️ تم التسجيل متأخراً' : 'تم تسجيل حضورك اليوم'}</span>
