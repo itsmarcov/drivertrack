@@ -32,6 +32,10 @@ export default function Navbar() {
             <span className="nav-scan-badge">مسح QR</span>
           </Link>
           <Link to="/admin/penalties" className={`nav-link ${isActive('/admin/penalties')}`}>الغرامات</Link>
+          <Link to="/admin/absences" className={`nav-link ${isActive('/admin/absences')}`}>الغيابات</Link>
+          {user.role === 'admin' && (
+            <Link to="/admin/settings" className={`nav-link ${isActive('/admin/settings')}`}>الإعدادات</Link>
+          )}
           {user.role === 'admin' && (
             <Link to="/admin/ops" className={`nav-link ${isActive('/admin/ops')}`}>المشغلين</Link>
           )}

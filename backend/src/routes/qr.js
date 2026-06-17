@@ -5,7 +5,6 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 const QR_SECRET = process.env.QR_SECRET;
-const LATE_CUTOFF = process.env.LATE_CUTOFF || '10:00:00';
 const PENALTY_AMOUNT = process.env.PENALTY_AMOUNT || 100;
 
 function generateDateStr() {
@@ -22,8 +21,15 @@ function generateSignature(driverId, dateStr) {
     .digest('hex');
 }
 
-function isLate(timeStr) {
-  return timeStr > LATE_CUTOFF;
+async function getShiftCutoffs(shift) {
+  const { queryOne } = require('../database');
+  const prefix = shift === 'evening' ? 'evening' : 'morning';
+  const late = await queryOne("SELECT value FROM settings WHERE key = $1", [`${prefix}_late_cutoff`]);
+  const absent = await queryOne("SELECT value FROM settings WHERE key = $1", [`${prefix}_absent_cutoff`]);
+  return {
+    late_cutoff: late?.value || (shift === 'evening' ? '16:00:00' : '10:00:00'),
+    absent_cutoff: absent?.value || (shift === 'evening' ? '17:30:00' : '12:30:00'),
+  };
 }
 
 router.get('/my-qr', authenticate, authorize('driver'), async (req, res) => {
@@ -65,7 +71,7 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
     return res.status(400).json({ error: 'Invalid QR signature. Possible tampering detected.' });
   }
 
-  const driver = await queryOne("SELECT id, full_name, is_active FROM users WHERE id = $1 AND role = 'driver'", [driverId]);
+  const driver = await queryOne("SELECT id, full_name, is_active, shift FROM users WHERE id = $1 AND role = 'driver'", [driverId]);
   if (!driver) return res.status(404).json({ error: 'Driver not found.' });
   if (!driver.is_active) return res.status(403).json({ error: 'Driver account is deactivated.' });
 
@@ -82,7 +88,8 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
                String(now.getMinutes()).padStart(2, '0') + ':' +
                String(now.getSeconds()).padStart(2, '0');
 
-  const late = isLate(time) ? 1 : 0;
+  const cutoffs = await getShiftCutoffs(driver.shift);
+  const late = time > cutoffs.late_cutoff ? 1 : 0;
 
   const result = await run(
     'INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late, lat, lng) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',

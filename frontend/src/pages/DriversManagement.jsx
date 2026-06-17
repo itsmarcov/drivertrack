@@ -19,6 +19,7 @@ function DriverForm({ driver, onSave, onCancel }) {
     vehicle_type: '',
     license_plate: '',
     station_id: '',
+    shift: 'morning',
     ...driver,
   });
 
@@ -79,6 +80,13 @@ function DriverForm({ driver, onSave, onCancel }) {
               </select>
             </div>
           )}
+          <div className="form-group">
+            <label>الوردية</label>
+            <select name="shift" value={form.shift} onChange={handleChange}>
+              <option value="morning">صباحية</option>
+              <option value="evening">مسائية</option>
+            </select>
+          </div>
           <div className="form-actions">
             <button type="submit" className="btn btn-primary">{driver ? 'حفظ التعديلات' : 'إضافة السائق'}</button>
             <button type="button" className="btn btn-outline" onClick={onCancel}>إلغاء</button>
@@ -220,6 +228,7 @@ export default function DriversManagement() {
                 <th>المركبة</th>
                 <th>اللوحة</th>
                 <th>المحطة</th>
+                <th>الوردية</th>
                 <th>الحالة</th>
                 {isAdmin && <th>الإجراءات</th>}
               </tr>
@@ -233,6 +242,7 @@ export default function DriversManagement() {
                   <td>{d.vehicle_type || '—'}</td>
                   <td>{d.license_plate || '—'}</td>
                   <td>{d.station_id ? <span className="badge badge-info">محطة {d.station_id}</span> : '—'}</td>
+                  <td>{d.shift === 'evening' ? <span className="badge badge-warning">مسائية</span> : <span className="badge badge-info">صباحية</span>}</td>
                   <td>{d.is_active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">غير نشط</span>}</td>
                   {isAdmin && (
                     <td>

@@ -1,0 +1,171 @@
+import { useState, useEffect } from 'react';
+import { absences } from '../api';
+import { useAuth } from '../context/AuthContext';
+
+export default function AbsencesManagement() {
+  const { user } = useAuth();
+  const [absenceList, setAbsenceList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterShift, setFilterShift] = useState('');
+  const [marking, setMarking] = useState(false);
+
+  const loadAbsences = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (filterDateFrom) params.date_from = filterDateFrom;
+      if (filterDateTo) params.date_to = filterDateTo;
+      if (filterShift) params.shift = filterShift;
+      const data = await absences.list(params);
+      setAbsenceList(data);
+    } catch (err) {
+      setMessage('❌ ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadAbsences(); }, []);
+
+  const handleMark = async () => {
+    if (!window.confirm('هل أنت متأكد من تسجيل غياب اليوم للسائقين الذين لم يسجلوا حضورهم؟')) return;
+    setMarking(true);
+    setMessage('');
+    try {
+      const res = await absences.mark();
+      setMessage('✅ ' + res.message);
+      loadAbsences();
+    } catch (err) {
+      setMessage('❌ ' + err.message);
+    } finally {
+      setMarking(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const params = {};
+      if (filterDateFrom) params.date_from = filterDateFrom;
+      if (filterDateTo) params.date_to = filterDateTo;
+      if (filterShift) params.shift = filterShift;
+      const blob = await absences.exportExcel(params);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'absences.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setMessage('❌ ' + err.message);
+    }
+  };
+
+  const handleFilter = (e) => {
+    e.preventDefault();
+    loadAbsences();
+  };
+
+  if (loading) return (
+    <div className="loading-screen">
+      <div className="nx-loader">
+        <div className="nx-spinner"></div>
+        <span className="nx-loader-label">جاري تحميل الغيابات...</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div className="page-header-content">
+          <h2>إدارة الغيابات</h2>
+          <p>{absenceList.length} غياب مسجل</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn btn-primary" onClick={handleMark} disabled={marking}>
+            {marking ? 'جاري...' : 'تسجيل غياب اليوم'}
+          </button>
+          <button className="btn btn-outline" onClick={handleExport}>
+            تصدير Excel
+          </button>
+        </div>
+      </div>
+
+      {message && (
+        <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-error'}`} onClick={() => setMessage('')}>
+          {message}
+        </div>
+      )}
+
+      <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <form onSubmit={handleFilter}>
+          <div className="form-row">
+            <div className="form-group">
+              <label>من تاريخ</label>
+              <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>إلى تاريخ</label>
+              <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>الوردية</label>
+              <select value={filterShift} onChange={(e) => setFilterShift(e.target.value)}>
+                <option value="">الكل</option>
+                <option value="morning">صباحية</option>
+                <option value="evening">مسائية</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ alignSelf: 'flex-end' }}>
+              <button type="submit" className="btn btn-outline">تصفية</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div className="table-container">
+        {absenceList.length === 0 ? (
+          <div className="nx-empty">
+            <div className="nx-empty-icon">📋</div>
+            <h3>لا توجد غيابات</h3>
+            <p>جميع السائقين مسجلون حضورهم اليوم</p>
+          </div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الاسم</th>
+                <th>الهاتف</th>
+                <th>المركبة</th>
+                <th>اللوحة</th>
+                <th>المحطة</th>
+                <th>التاريخ</th>
+                <th>الوردية</th>
+              </tr>
+            </thead>
+            <tbody>
+              {absenceList.map((a, i) => (
+                <tr key={a.id}>
+                  <td>{i + 1}</td>
+                  <td><strong>{a.driver_name}</strong></td>
+                  <td>{a.phone || '—'}</td>
+                  <td>{a.vehicle_type || '—'}</td>
+                  <td>{a.license_plate || '—'}</td>
+                  <td>{a.station_name || '—'}</td>
+                  <td>{a.absence_date}</td>
+                  <td>{a.shift === 'evening' ? <span className="badge badge-warning">مسائية</span> : <span className="badge badge-info">صباحية</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}

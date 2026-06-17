@@ -45,6 +45,27 @@ CREATE TABLE IF NOT EXISTS penalties (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS settings (
+  key VARCHAR(100) PRIMARY KEY,
+  value VARCHAR(255) NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO settings (key, value) VALUES ('morning_late_cutoff', '10:00:00') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('morning_absent_cutoff', '12:30:00') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('evening_late_cutoff', '16:00:00') ON CONFLICT (key) DO NOTHING;
+INSERT INTO settings (key, value) VALUES ('evening_absent_cutoff', '17:30:00') ON CONFLICT (key) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS absences (
+  id SERIAL PRIMARY KEY,
+  driver_id INTEGER NOT NULL REFERENCES users(id),
+  absence_date VARCHAR(20) NOT NULL,
+  shift VARCHAR(20) NOT NULL,
+  marked_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(driver_id, absence_date)
+);
+
 CREATE INDEX IF NOT EXISTS idx_attendance_driver ON attendance(driver_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(scan_date);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);

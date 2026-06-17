@@ -118,18 +118,30 @@ export default function AdminDashboard() {
           <h3>إدارة السائقين</h3>
           <p>{isAdmin ? 'إضافة وتعديل ومراقبة حسابات السائقين' : 'إضافة وعرض السائقين'}</p>
         </Link>
-        <Link to="/admin/attendance" className="nx-action">
-          <div className="nx-action-icon">📋</div>
-          <h3>سجلات الحضور</h3>
-          <p>عرض وتصفية سجلات حضور السائقين</p>
-        </Link>
-        {isAdmin && (
-          <Link to="/admin/ops" className="nx-action">
-            <div className="nx-action-icon">🔧</div>
-            <h3>إدارة المشغلين</h3>
-            <p>إضافة وإدارة حسابات وكلاء العمليات (OPS)</p>
+          <Link to="/admin/attendance" className="nx-action">
+            <div className="nx-action-icon">📋</div>
+            <h3>سجلات الحضور</h3>
+            <p>عرض وتصفية سجلات حضور السائقين</p>
           </Link>
-        )}
+          <Link to="/admin/absences" className="nx-action">
+            <div className="nx-action-icon">🚫</div>
+            <h3>الغيابات</h3>
+            <p>تسجيل وعرض الغيابات وتصدير Excel</p>
+          </Link>
+          {isAdmin && (
+            <Link to="/admin/settings" className="nx-action">
+              <div className="nx-action-icon">⚙️</div>
+              <h3>إعدادات الورديات</h3>
+              <p>تحديد أوقات التأخير والغياب لكل وردية</p>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link to="/admin/ops" className="nx-action">
+              <div className="nx-action-icon">🔧</div>
+              <h3>إدارة المشغلين</h3>
+              <p>إضافة وإدارة حسابات وكلاء العمليات (OPS)</p>
+            </Link>
+          )}
       </div>
 
       <div className="nx-card">

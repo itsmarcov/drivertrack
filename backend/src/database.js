@@ -25,6 +25,7 @@ async function initDatabase() {
     await pool.query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS lat DECIMAL(10,7)');
     await pool.query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS lng DECIMAL(10,7)');
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS station_id INTEGER REFERENCES stations(id)');
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS shift VARCHAR(20) DEFAULT 'morning'");
   } catch {}
   return pool;
 }

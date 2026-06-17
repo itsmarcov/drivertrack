@@ -15,6 +15,8 @@ const qrRoutes = require('./routes/qr');
 const attendanceRoutes = require('./routes/attendance');
 const stationRoutes = require('./routes/stations');
 const penaltyRoutes = require('./routes/penalties');
+const settingsRoutes = require('./routes/settings');
+const absenceRoutes = require('./routes/absences');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,6 +31,8 @@ app.use('/api/qr', qrRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/stations', stationRoutes);
 app.use('/api/penalties', penaltyRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/absences', absenceRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

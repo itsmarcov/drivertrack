@@ -73,3 +73,28 @@ export const penalties = {
     return res.blob();
   },
 };
+
+export const settings = {
+  get: () => request('/settings'),
+  update: (data) => request('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+export const absences = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/absences${qs ? '?' + qs : ''}`);
+  },
+  mark: (date) => request('/absences/mark', { method: 'POST', body: JSON.stringify({ date }) }),
+  exportExcel: async (params = {}) => {
+    const token = localStorage.getItem('token');
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`/api/absences/export${qs ? '?' + qs : ''}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to export absences');
+    }
+    return res.blob();
+  },
+};
