@@ -131,8 +131,8 @@ export default function AdminDashboard() {
           {isAdmin && (
             <Link to="/admin/settings" className="nx-action">
               <div className="nx-action-icon">⚙️</div>
-              <h3>إعدادات الورديات</h3>
-              <p>تحديد أوقات التأخير والغياب لكل وردية</p>
+              <h3>إعدادات الفترات</h3>
+              <p>تحديد أوقات التأخير والغياب لكل فترة</p>
             </Link>
           )}
           {isAdmin && (

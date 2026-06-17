@@ -81,7 +81,7 @@ function DriverForm({ driver, onSave, onCancel }) {
             </div>
           )}
           <div className="form-group">
-            <label>الوردية</label>
+            <label>الفترة</label>
             <select name="shift" value={form.shift} onChange={handleChange}>
               <option value="morning">صباحية</option>
               <option value="evening">مسائية</option>
@@ -228,7 +228,7 @@ export default function DriversManagement() {
                 <th>المركبة</th>
                 <th>اللوحة</th>
                 <th>المحطة</th>
-                <th>الوردية</th>
+                <th>الفترة</th>
                 <th>الحالة</th>
                 {isAdmin && <th>الإجراءات</th>}
               </tr>

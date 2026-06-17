@@ -50,8 +50,8 @@ export default function SettingsManagement() {
     <div className="page">
       <div className="page-header">
         <div className="page-header-content">
-          <h2>إعدادات الورديات</h2>
-          <p>تحديد أوقات التأخير والغياب لكل وردية</p>
+          <h2>إعدادات الفترات</h2>
+          <p>تحديد أوقات التأخير والغياب لكل فترة</p>
         </div>
       </div>
 
@@ -63,7 +63,7 @@ export default function SettingsManagement() {
 
       <div className="card" style={{ padding: '1.5rem' }}>
         <form onSubmit={handleSave}>
-          <h3 style={{ marginBottom: '0.75rem', color: '#e53935' }}>الوردية الصباحية</h3>
+          <h3 style={{ marginBottom: '0.75rem', color: '#e53935' }}>الفترة الصباحية</h3>
           <div className="form-row">
             <div className="form-group">
               <label>وقت التأخير (بعد هذا الوقت يعتبر متأخراً)</label>
@@ -85,7 +85,7 @@ export default function SettingsManagement() {
             </div>
           </div>
 
-          <h3 style={{ marginBottom: '0.75rem', marginTop: '1.5rem', color: '#e53935' }}>الوردية المسائية</h3>
+          <h3 style={{ marginBottom: '0.75rem', marginTop: '1.5rem', color: '#e53935' }}>الفترة المسائية</h3>
           <div className="form-row">
             <div className="form-group">
               <label>وقت التأخير</label>

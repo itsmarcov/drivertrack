@@ -114,7 +114,7 @@ export default function AbsencesManagement() {
               <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} />
             </div>
             <div className="form-group">
-              <label>الوردية</label>
+              <label>الفترة</label>
               <select value={filterShift} onChange={(e) => setFilterShift(e.target.value)}>
                 <option value="">الكل</option>
                 <option value="morning">صباحية</option>
@@ -146,7 +146,7 @@ export default function AbsencesManagement() {
                 <th>اللوحة</th>
                 <th>المحطة</th>
                 <th>التاريخ</th>
-                <th>الوردية</th>
+                <th>الفترة</th>
               </tr>
             </thead>
             <tbody>
