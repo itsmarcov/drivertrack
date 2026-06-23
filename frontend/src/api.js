@@ -73,6 +73,7 @@ export const penalties = {
   },
   my: () => request('/penalties/my'),
   stats: () => request('/penalties/stats'),
+  update: (id, data) => request(`/penalties/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   report: async (id) => {
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/penalties/${id}/report`, {

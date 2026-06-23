@@ -99,8 +99,8 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
   let penalty = null;
   if (late) {
     const penResult = await run(
-      "INSERT INTO penalties (driver_id, attendance_id, penalty_date, reason, amount) VALUES ($1, $2, $3, $4, $5)",
-      [driverId, result.lastInsertRowid, today, `تأخر عن الحضور (${time})`, parseFloat(PENALTY_AMOUNT)]
+      "INSERT INTO penalties (driver_id, attendance_id, penalty_date, reason, amount, parcels_count) VALUES ($1, $2, $3, $4, $5, $6)",
+      [driverId, result.lastInsertRowid, today, `تأخر عن الحضور (${time})`, 0, 0]
     );
     penalty = await queryOne('SELECT * FROM penalties WHERE id = $1', [penResult.lastInsertRowid]);
   }
