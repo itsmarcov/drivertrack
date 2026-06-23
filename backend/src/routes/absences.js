@@ -10,7 +10,7 @@ function dateStr(d) {
 }
 
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
-  const { date_from, date_to, shift } = req.query;
+  const { date_from, date_to, shift, station_id } = req.query;
   const today = dateStr(new Date());
   let sql = `SELECT a.id, a.driver_id, a.absence_date, a.shift, a.created_at,
                     u.full_name as driver_name, u.phone, u.vehicle_type, u.license_plate, u.station_id,
@@ -27,6 +27,9 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   if (req.user.role === 'ops') {
     sql += ` AND u.station_id = $${paramIndex++}`;
     params.push(req.user.station_id);
+  } else if (station_id) {
+    sql += ` AND u.station_id = $${paramIndex++}`;
+    params.push(parseInt(station_id));
   }
   sql += ' ORDER BY a.absence_date DESC, u.full_name ASC';
   const records = await queryAll(sql, params);
@@ -142,6 +145,12 @@ router.get('/export', authenticate, authorize('admin', 'ops'), async (req, res) 
   res.setHeader('Content-Disposition', `attachment; filename="absences-${dateStr(new Date())}.xlsx"`);
   await wb.xlsx.write(res);
   res.end();
+});
+
+router.delete('/:date', authenticate, authorize('admin'), async (req, res) => {
+  const { date } = req.params;
+  const result = await run('DELETE FROM absences WHERE absence_date = $1', [date]);
+  res.json({ message: `Deleted ${result.changes} absences for ${date}.` });
 });
 
 module.exports = router;

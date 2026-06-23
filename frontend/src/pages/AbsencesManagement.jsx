@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { absences } from '../api';
+import { absences, stations as stationsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
 function todayStr() {
@@ -10,18 +10,21 @@ function todayStr() {
 export default function AbsencesManagement() {
   const { user } = useAuth();
   const [absenceList, setAbsenceList] = useState([]);
+  const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [filterDate, setFilterDate] = useState(todayStr());
   const [filterShift, setFilterShift] = useState('');
+  const [filterStation, setFilterStation] = useState('');
   const [marking, setMarking] = useState(false);
 
-  const loadAbsences = async (date, shift) => {
+  const loadAbsences = async (date, shift, station) => {
     try {
       setLoading(true);
       const params = {};
       if (date) { params.date_from = date; params.date_to = date; }
       if (shift) params.shift = shift;
+      if (station && user.role === 'admin') params.station_id = station;
       const data = await absences.list(params);
       setAbsenceList(data);
     } catch (err) {
@@ -31,7 +34,12 @@ export default function AbsencesManagement() {
     }
   };
 
-  useEffect(() => { loadAbsences(filterDate, filterShift); }, []);
+  useEffect(() => {
+    loadAbsences(filterDate, filterShift, filterStation);
+    if (user.role === 'admin') {
+      stationsApi.list().then(setStationList).catch(() => {});
+    }
+  }, []);
 
   const handleMark = async () => {
     if (!window.confirm('هل أنت متأكد من تسجيل غياب اليوم للسائقين الذين لم يسجلوا حضورهم؟')) return;
@@ -40,7 +48,7 @@ export default function AbsencesManagement() {
     try {
       const res = await absences.mark();
       setMessage('✅ ' + res.message);
-      loadAbsences(filterDate, filterShift);
+      loadAbsences(filterDate, filterShift, filterStation);
     } catch (err) {
       setMessage('❌ ' + err.message);
     } finally {
@@ -53,6 +61,7 @@ export default function AbsencesManagement() {
       const params = {};
       if (filterDate) { params.date_from = filterDate; params.date_to = filterDate; }
       if (filterShift) params.shift = filterShift;
+      if (filterStation && user.role === 'admin') params.station_id = filterStation;
       const blob = await absences.exportExcel(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -69,12 +78,29 @@ export default function AbsencesManagement() {
 
   const handleDateChange = (date) => {
     setFilterDate(date);
-    loadAbsences(date, filterShift);
+    loadAbsences(date, filterShift, filterStation);
   };
 
   const handleShiftChange = (shift) => {
     setFilterShift(shift);
-    loadAbsences(filterDate, shift);
+    loadAbsences(filterDate, shift, filterStation);
+  };
+
+  const handleStationChange = (station) => {
+    setFilterStation(station);
+    loadAbsences(filterDate, filterShift, station);
+  };
+
+  const handleDeleteDate = async () => {
+    if (!window.confirm(`هل أنت متأكد من حذف جميع غيابات ${filterDate}؟`)) return;
+    setMessage('');
+    try {
+      const res = await absences.deleteByDate(filterDate);
+      setMessage('✅ ' + res.message);
+      loadAbsences(filterDate, filterShift, filterStation);
+    } catch (err) {
+      setMessage('❌ ' + err.message);
+    }
   };
 
   if (loading) return (
@@ -123,6 +149,22 @@ export default function AbsencesManagement() {
               <option value="evening">مسائية</option>
             </select>
           </div>
+          {user.role === 'admin' && (
+            <div className="form-group">
+              <label>المحطة</label>
+              <select value={filterStation} onChange={(e) => handleStationChange(e.target.value)}>
+                <option value="">جميع المحطات</option>
+                {stationList.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {user.role === 'admin' && (
+            <div className="form-group" style={{ alignSelf: 'flex-end' }}>
+              <button className="btn btn-danger" onClick={handleDeleteDate}>حذف غيابات هذا اليوم</button>
+            </div>
+          )}
         </div>
       </div>
 

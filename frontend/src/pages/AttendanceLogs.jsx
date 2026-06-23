@@ -1,22 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { attendance, drivers } from '../api';
+import { attendance, drivers, stations as stationsApi } from '../api';
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 
 export default function AttendanceLogs() {
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [driverList, setDriverList] = useState([]);
+  const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterDate, setFilterDate] = useState('');
+  const [filterDate, setFilterDate] = useState(todayStr());
   const [filterDriver, setFilterDriver] = useState('');
+  const [filterStation, setFilterStation] = useState('');
   const [exporting, setExporting] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (date, driver, station) => {
     try {
       setLoading(true);
       const params = {};
-      if (filterDate) params.date = filterDate;
-      if (filterDriver) params.driver_id = filterDriver;
+      if (date) params.date = date;
+      if (driver) params.driver_id = driver;
+      if (station && user.role === 'admin') params.station_id = station;
       const data = await attendance.list(params);
       setRecords(data);
     } catch (err) {
@@ -27,14 +35,12 @@ export default function AttendanceLogs() {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(filterDate, filterDriver, filterStation);
     drivers.list().then(setDriverList).catch(() => {});
+    if (user.role === 'admin') {
+      stationsApi.list().then(setStationList).catch(() => {});
+    }
   }, []);
-
-  const handleFilter = (e) => {
-    e.preventDefault();
-    loadData();
-  };
 
   const handleExport = async () => {
     try {
@@ -42,11 +48,12 @@ export default function AttendanceLogs() {
       const params = {};
       if (filterDate) params.date = filterDate;
       if (filterDriver) params.driver_id = filterDriver;
+      if (filterStation && user.role === 'admin') params.station_id = filterStation;
       const blob = await attendance.exportExcel(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'attendance.xlsx';
+      a.download = `attendance-${filterDate}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -69,7 +76,7 @@ export default function AttendanceLogs() {
       <div className="page-header">
         <div className="page-header-content">
           <h2>سجلات الحضور</h2>
-          <p>{records.length} تسجيل</p>
+          <p>{records.length} تسجيل في {filterDate}</p>
         </div>
         <div className="page-header-actions">
           <button className="btn btn-outline" onClick={handleExport} disabled={exporting}>
@@ -78,23 +85,34 @@ export default function AttendanceLogs() {
         </div>
       </div>
 
-      <form className="nx-filter" onSubmit={handleFilter}>
-        <div className="form-group">
-          <label>التاريخ</label>
-          <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+      <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <div className="form-row">
+          <div className="form-group">
+            <label>التاريخ</label>
+            <input type="date" value={filterDate} onChange={(e) => { setFilterDate(e.target.value); loadData(e.target.value, filterDriver, filterStation); }} />
+          </div>
+          <div className="form-group">
+            <label>السائق</label>
+            <select value={filterDriver} onChange={(e) => { setFilterDriver(e.target.value); loadData(filterDate, e.target.value, filterStation); }}>
+              <option value="">جميع السائقين</option>
+              {driverList.map((d) => (
+                <option key={d.id} value={d.id}>{d.full_name}</option>
+              ))}
+            </select>
+          </div>
+          {user.role === 'admin' && (
+            <div className="form-group">
+              <label>المحطة</label>
+              <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadData(filterDate, filterDriver, e.target.value); }}>
+                <option value="">جميع المحطات</option>
+                {stationList.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
-        <div className="form-group">
-          <label>السائق</label>
-          <select value={filterDriver} onChange={(e) => setFilterDriver(e.target.value)}>
-            <option value="">جميع السائقين</option>
-            {driverList.map((d) => (
-              <option key={d.id} value={d.id}>{d.full_name}</option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>تصفية</button>
-        <button type="button" className="btn btn-outline" style={{ whiteSpace: 'nowrap' }} onClick={() => { setFilterDate(''); setFilterDriver(''); loadData(); }}>إعادة تعيين</button>
-      </form>
+      </div>
 
       {loading ? (
         <div className="loading-screen" style={{ minHeight: 200 }}>

@@ -109,4 +109,5 @@ export const absences = {
     }
     return res.blob();
   },
+  deleteByDate: (date) => request(`/absences/${date}`, { method: 'DELETE' }),
 };
