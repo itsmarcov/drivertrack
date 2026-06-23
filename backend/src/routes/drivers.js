@@ -100,9 +100,12 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
 
 router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
   const { id } = req.params;
-  const result = await run("DELETE FROM users WHERE id = $1 AND role = 'driver'", [id]);
-  if (result.changes === 0) return res.status(404).json({ error: 'Driver not found.' });
+  const existing = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'driver'", [id]);
+  if (!existing) return res.status(404).json({ error: 'Driver not found.' });
+  await run('DELETE FROM absences WHERE driver_id = $1', [id]);
+  await run('DELETE FROM penalties WHERE driver_id = $1', [id]);
   await run('DELETE FROM attendance WHERE driver_id = $1', [id]);
+  await run("DELETE FROM users WHERE id = $1 AND role = 'driver'", [id]);
   res.json({ message: 'Driver deleted successfully.' });
 });
 

@@ -1,0 +1,8 @@
+{
+  "appId": "com.navex.drivertrack",
+  "appName": "DriverTRACK",
+  "webDir": "dist",
+  "server": {
+    "url": "https://drivertrack-qlsq.onrender.com"
+  }
+}

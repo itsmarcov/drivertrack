@@ -6,3 +6,16 @@ logs/
 .DS_Store
 Thumbs.db
 backend/test_arabic*.pdf
+mobile/
+.idea/
+
+# Capacitor / Android build outputs
+frontend/android/.gradle/
+frontend/android/build/
+frontend/android/app/build/
+frontend/android/local.properties
+frontend/android/captures/
+frontend/android/.idea/
+frontend/ios/App/Pods/
+*.apk
+*.ipa

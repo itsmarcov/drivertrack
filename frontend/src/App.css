@@ -184,13 +184,24 @@ body {
   display: flex;
   gap: 0.25rem;
   flex: 1;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--nx-border) transparent;
+  -ms-overflow-style: none;
+}
+.nav-links::-webkit-scrollbar {
+  height: 3px;
+}
+.nav-links::-webkit-scrollbar-thumb {
+  background: var(--nx-border);
+  border-radius: 3px;
 }
 .nav-link {
-  padding: 0.5rem 0.55rem;
+  padding: 0.5rem 0.5rem;
   border-radius: var(--nx-radius-sm);
   color: var(--nx-text-secondary) !important;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 500;
   transition: all var(--nx-transition);
   text-decoration: none !important;
