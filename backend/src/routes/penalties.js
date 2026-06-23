@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { queryAll, queryOne, run } = require('../database');
+const { queryAll, queryOne } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -27,8 +27,7 @@ function rtl(text) {
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id, station_id } = req.query;
   let sql = `
-    SELECT p.id, p.driver_id, p.attendance_id, p.penalty_date, p.reason,
-           p.amount, p.parcels_count, p.created_at,
+    SELECT p.id, p.driver_id, p.attendance_id, p.penalty_date, p.reason, p.amount, p.created_at,
            u.full_name as driver_name, u.phone as driver_phone, u.station_id
     FROM penalties p
     JOIN users u ON p.driver_id = u.id
@@ -46,11 +45,7 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
     params.push(parseInt(station_id));
   }
   sql += ' ORDER BY p.created_at DESC';
-  const rows = await queryAll(sql, params);
-  const penalties = rows.map(r => ({
-    ...r,
-    amount: (r.parcels_count || 0) * 150,
-  }));
+  const penalties = await queryAll(sql, params);
   res.json(penalties);
 });
 
@@ -60,7 +55,7 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
 
-  let sql = `SELECT COUNT(*) as count, COALESCE(SUM(COALESCE(parcels_count,0) * 150),0) as total FROM penalties p JOIN users u ON p.driver_id = u.id WHERE p.penalty_date = $1`;
+  let sql = 'SELECT COUNT(*) as count, COALESCE(SUM(amount),0) as total FROM penalties p JOIN users u ON p.driver_id = u.id WHERE p.penalty_date = $1';
   const params = [dateStr];
   if (req.user.role === 'ops' && req.user.station_id) {
     sql += ' AND u.station_id = $2';
@@ -75,18 +70,14 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
 });
 
 router.get('/my', authenticate, authorize('driver'), async (req, res) => {
-  const rows = await queryAll(
-    `SELECT p.id, p.attendance_id, p.penalty_date, p.reason, p.amount, p.parcels_count, p.created_at
+  const penalties = await queryAll(
+    `SELECT p.id, p.attendance_id, p.penalty_date, p.reason, p.amount, p.created_at
      FROM penalties p
      WHERE p.driver_id = $1
      ORDER BY p.created_at DESC
      LIMIT 50`,
     [req.user.id]
   );
-  const penalties = rows.map(r => ({
-    ...r,
-    amount: (r.parcels_count || 0) * 150,
-  }));
   res.json(penalties);
 });
 
@@ -175,21 +166,12 @@ router.get('/:id/report', authenticate, async (req, res) => {
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 20;
 
-    const parcels = penalty.parcels_count || 0;
-    const totalAmount = parcels * 150;
-
-    let bodyText =
+    const bodyText =
       'نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.\n\n' +
       'كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ' +
-      '150 دج فقط عن كل طرد يتم توصيله.\n';
-
-    if (parcels > 0) {
-      bodyText += `\nعدد الطرود الموصلة: ${parcels}\n` +
-              `إجمالي الربح: ${totalAmount} د.ج`;
-    }
-
-    bodyText += '\n\nنرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.\n\n' +
-            'مع الشكر والتقدير.';
+      '150 دج فقط عن كل طرد يتم توصيله.\n\n' +
+      'نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.\n\n' +
+      'مع الشكر والتقدير.';
 
     doc.font('ArR').fontSize(12).fillColor('#1A1A1A')
       .text(rtl(bodyText), L, y, { width: W, align: 'right', lineGap: 4 });
@@ -208,20 +190,6 @@ router.get('/:id/report', authenticate, async (req, res) => {
       res.status(500).json({ error: 'Failed to generate report: ' + err.message });
     }
   }
-});
-
-router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
-  const { parcels_count } = req.body;
-  const id = parseInt(req.params.id);
-  if (parcels_count === undefined || parcels_count < 0) {
-    return res.status(400).json({ error: 'parcels_count must be a non-negative number' });
-  }
-  await run(
-    'UPDATE penalties SET parcels_count = $1 WHERE id = $2',
-    [parseInt(parcels_count), id]
-  );
-  const updated = await queryOne('SELECT * FROM penalties WHERE id = $1', [id]);
-  res.json({ message: 'تم تحديث عدد الطرود', penalty: { ...updated, amount: (updated.parcels_count || 0) * 150 } });
 });
 
 module.exports = router;

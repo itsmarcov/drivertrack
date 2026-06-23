@@ -16,8 +16,6 @@ export default function PenaltiesManagement() {
   const [filterStation, setFilterStation] = useState('');
   const [error, setError] = useState('');
   const [dlId, setDlId] = useState(null);
-  const [editingId, setEditingId] = useState(null);
-  const [editParcels, setEditParcels] = useState('');
 
   const load = async (date, station) => {
     try {
@@ -62,24 +60,6 @@ export default function PenaltiesManagement() {
       URL.revokeObjectURL(url);
     } catch (err) { setError(err.message); }
     finally { setDlId(null); }
-  };
-
-  const startEdit = (p) => {
-    setEditingId(p.id);
-    setEditParcels(String(p.parcels_count || 0));
-  };
-
-  const saveParcels = async (id) => {
-    try {
-      const res = await penalties.update(id, { parcels_count: parseInt(editParcels) || 0 });
-      setList(prev => prev.map(p => p.id === id ? { ...p, parcels_count: res.penalty.parcels_count, amount: res.penalty.amount } : p));
-      setEditingId(null);
-    } catch (err) { setError(err.message); }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditParcels('');
   };
 
   return (
@@ -132,8 +112,7 @@ export default function PenaltiesManagement() {
                 <th>السائق</th>
                 <th>التاريخ</th>
                 <th>السبب</th>
-                <th>الطرود</th>
-                <th>الربح</th>
+                <th>المبلغ</th>
                 <th>التقرير</th>
               </tr>
             </thead>
@@ -144,28 +123,6 @@ export default function PenaltiesManagement() {
                   <td><strong>{p.driver_name}</strong></td>
                   <td>{p.penalty_date}</td>
                   <td className="text-sm">{p.reason}</td>
-                  <td>
-                    {user.role === 'admin' && editingId === p.id ? (
-                      <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-                        <input
-                          type="number" min="0"
-                          value={editParcels}
-                          onChange={(e) => setEditParcels(e.target.value)}
-                          style={{ width: 60, padding: '0.2rem' }}
-                        />
-                        <button className="btn btn-sm btn-primary" onClick={() => saveParcels(p.id)}>حفظ</button>
-                        <button className="btn btn-sm btn-outline" onClick={cancelEdit}>إلغاء</button>
-                      </div>
-                    ) : (
-                      <span
-                        style={{ cursor: user.role === 'admin' ? 'pointer' : 'default', borderBottom: user.role === 'admin' ? '1px dashed #999' : 'none' }}
-                        onClick={() => user.role === 'admin' && startEdit(p)}
-                        title={user.role === 'admin' ? 'انقر لتعديل عدد الطرود' : ''}
-                      >
-                        {p.parcels_count ?? '0'}
-                      </span>
-                    )}
-                  </td>
                   <td><strong style={{ color: '#B91C1C' }}>{p.amount} د.ج</strong></td>
                   <td>
                     <button className="btn btn-sm btn-outline" onClick={() => downloadReport(p.id)} disabled={dlId === p.id}>

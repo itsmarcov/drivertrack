@@ -41,8 +41,7 @@ CREATE TABLE IF NOT EXISTS penalties (
   attendance_id INTEGER REFERENCES attendance(id),
   penalty_date VARCHAR(20) NOT NULL,
   reason VARCHAR(255) NOT NULL,
-  amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  parcels_count INTEGER DEFAULT 0,
+  amount DECIMAL(10,2) NOT NULL DEFAULT 150.00,
   created_at TIMESTAMP DEFAULT NOW()
 );
 
