@@ -2,23 +2,26 @@ import { useState, useEffect } from 'react';
 import { absences } from '../api';
 import { useAuth } from '../context/AuthContext';
 
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 export default function AbsencesManagement() {
   const { user } = useAuth();
   const [absenceList, setAbsenceList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [filterDateFrom, setFilterDateFrom] = useState('');
-  const [filterDateTo, setFilterDateTo] = useState('');
+  const [filterDate, setFilterDate] = useState(todayStr());
   const [filterShift, setFilterShift] = useState('');
   const [marking, setMarking] = useState(false);
 
-  const loadAbsences = async () => {
+  const loadAbsences = async (date, shift) => {
     try {
       setLoading(true);
       const params = {};
-      if (filterDateFrom) params.date_from = filterDateFrom;
-      if (filterDateTo) params.date_to = filterDateTo;
-      if (filterShift) params.shift = filterShift;
+      if (date) { params.date_from = date; params.date_to = date; }
+      if (shift) params.shift = shift;
       const data = await absences.list(params);
       setAbsenceList(data);
     } catch (err) {
@@ -28,7 +31,7 @@ export default function AbsencesManagement() {
     }
   };
 
-  useEffect(() => { loadAbsences(); }, []);
+  useEffect(() => { loadAbsences(filterDate, filterShift); }, []);
 
   const handleMark = async () => {
     if (!window.confirm('هل أنت متأكد من تسجيل غياب اليوم للسائقين الذين لم يسجلوا حضورهم؟')) return;
@@ -37,7 +40,7 @@ export default function AbsencesManagement() {
     try {
       const res = await absences.mark();
       setMessage('✅ ' + res.message);
-      loadAbsences();
+      loadAbsences(filterDate, filterShift);
     } catch (err) {
       setMessage('❌ ' + err.message);
     } finally {
@@ -48,14 +51,13 @@ export default function AbsencesManagement() {
   const handleExport = async () => {
     try {
       const params = {};
-      if (filterDateFrom) params.date_from = filterDateFrom;
-      if (filterDateTo) params.date_to = filterDateTo;
+      if (filterDate) { params.date_from = filterDate; params.date_to = filterDate; }
       if (filterShift) params.shift = filterShift;
       const blob = await absences.exportExcel(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'absences.xlsx';
+      a.download = `absences-${filterDate}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -65,9 +67,14 @@ export default function AbsencesManagement() {
     }
   };
 
-  const handleFilter = (e) => {
-    e.preventDefault();
-    loadAbsences();
+  const handleDateChange = (date) => {
+    setFilterDate(date);
+    loadAbsences(date, filterShift);
+  };
+
+  const handleShiftChange = (shift) => {
+    setFilterShift(shift);
+    loadAbsences(filterDate, shift);
   };
 
   if (loading) return (
@@ -84,7 +91,7 @@ export default function AbsencesManagement() {
       <div className="page-header">
         <div className="page-header-content">
           <h2>إدارة الغيابات</h2>
-          <p>{absenceList.length} غياب مسجل</p>
+          <p>{absenceList.length} غياب في {filterDate}</p>
         </div>
         <div className="page-header-actions">
           <button className="btn btn-primary" onClick={handleMark} disabled={marking}>
@@ -103,29 +110,20 @@ export default function AbsencesManagement() {
       )}
 
       <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
-        <form onSubmit={handleFilter}>
-          <div className="form-row">
-            <div className="form-group">
-              <label>من تاريخ</label>
-              <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>إلى تاريخ</label>
-              <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>الفترة</label>
-              <select value={filterShift} onChange={(e) => setFilterShift(e.target.value)}>
-                <option value="">الكل</option>
-                <option value="morning">صباحية</option>
-                <option value="evening">مسائية</option>
-              </select>
-            </div>
-            <div className="form-group" style={{ alignSelf: 'flex-end' }}>
-              <button type="submit" className="btn btn-outline">تصفية</button>
-            </div>
+        <div className="form-row">
+          <div className="form-group">
+            <label>التاريخ (الأرشيف)</label>
+            <input type="date" value={filterDate} onChange={(e) => handleDateChange(e.target.value)} />
           </div>
-        </form>
+          <div className="form-group">
+            <label>الفترة</label>
+            <select value={filterShift} onChange={(e) => handleShiftChange(e.target.value)}>
+              <option value="">الكل</option>
+              <option value="morning">صباحية</option>
+              <option value="evening">مسائية</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="table-container">

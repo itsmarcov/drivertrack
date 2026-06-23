@@ -207,4 +207,82 @@ router.get('/late/export', authenticate, authorize('admin', 'ops'), async (req, 
   res.end();
 });
 
+router.get('/export', authenticate, authorize('admin', 'ops'), async (req, res) => {
+  const { date, driver_id } = req.query;
+  let sql = `SELECT a.id, a.scan_date, a.scan_time, a.is_late, a.verified,
+                    u.full_name as driver_name, u.username, u.phone as driver_phone, u.vehicle_type, u.license_plate,
+                    st.name as station_name, s.full_name as scanned_by_name
+             FROM attendance a
+             JOIN users u ON a.driver_id = u.id
+             JOIN users s ON a.scanned_by = s.id
+             LEFT JOIN stations st ON u.station_id = st.id
+             WHERE 1=1`;
+  const params = [];
+  let paramIndex = 1;
+  if (date) { sql += ` AND a.scan_date = $${paramIndex++}`; params.push(date); }
+  if (driver_id) { sql += ` AND a.driver_id = $${paramIndex++}`; params.push(parseInt(driver_id)); }
+  if (req.user.role === 'ops') {
+    sql += ` AND u.station_id = $${paramIndex++}`;
+    params.push(req.user.station_id);
+  }
+  sql += ' ORDER BY a.scan_date DESC, u.full_name ASC';
+  const records = await queryAll(sql, params);
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Attendance');
+  ws.columns = [
+    { header: '#', key: 'num', width: 5 },
+    { header: 'Full Name', key: 'driver_name', width: 22 },
+    { header: 'Username', key: 'username', width: 16 },
+    { header: 'Phone', key: 'driver_phone', width: 16 },
+    { header: 'Vehicle Type', key: 'vehicle_type', width: 16 },
+    { header: 'License Plate', key: 'license_plate', width: 16 },
+    { header: 'Station', key: 'station_name', width: 18 },
+    { header: 'Date', key: 'scan_date', width: 14 },
+    { header: 'Time', key: 'scan_time', width: 10 },
+    { header: 'Scanned By', key: 'scanned_by_name', width: 20 },
+    { header: 'Status', key: 'status', width: 12 },
+  ];
+
+  const headerRow = ws.getRow(1);
+  headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE53935' } };
+  headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+  headerRow.height = 24;
+
+  records.forEach((d, i) => {
+    ws.addRow({
+      num: i + 1,
+      driver_name: d.driver_name,
+      username: d.username,
+      driver_phone: d.driver_phone || '—',
+      vehicle_type: d.vehicle_type || '—',
+      license_plate: d.license_plate || '—',
+      station_name: d.station_name || '—',
+      scan_date: d.scan_date,
+      scan_time: d.scan_time,
+      scanned_by_name: d.scanned_by_name,
+      status: d.is_late ? 'Late' : d.verified ? 'Present' : 'Unverified',
+    });
+  });
+
+  ws.eachRow((row, rowNum) => {
+    if (rowNum > 1) {
+      row.alignment = { vertical: 'middle' };
+      row.border = {
+        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+      };
+    }
+  });
+
+  const todayStr = new Date().getFullYear() + '-' +
+    String(new Date().getMonth() + 1).padStart(2, '0') + '-' +
+    String(new Date().getDate()).padStart(2, '0');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="attendance-${todayStr}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
 module.exports = router;

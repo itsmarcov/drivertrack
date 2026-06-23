@@ -211,6 +211,10 @@ body {
 .nav-link:hover {
   background: var(--nx-bg);
   color: var(--nx-text) !important;
+  transform: scale(1.08);
+}
+.nav-link:active {
+  transform: scale(0.95);
 }
 .nav-link.active {
   color: var(--nx-red) !important;
@@ -1478,6 +1482,14 @@ body {
     flex: 1;
     border-radius: var(--nx-radius-sm);
     white-space: nowrap;
+    transition: all var(--nx-transition);
+  }
+  .nav-link:hover {
+    transform: scale(1.15);
+    background: var(--nx-red-50);
+  }
+  .nav-link:active {
+    transform: scale(0.92);
   }
   .nav-link.active::after { display: none; }
   .nav-link.active { background: var(--nx-red-50); color: var(--nx-red) !important; font-weight: 600; }
@@ -1502,7 +1514,8 @@ body {
     transition: all var(--nx-transition);
     flex: 1;
   }
-  .nav-logout-mobile:hover { background: #FEF2F2; color: var(--nx-red) !important; }
+  .nav-logout-mobile:hover { background: #FEF2F2; color: var(--nx-red) !important; transform: scale(1.15); }
+  .nav-logout-mobile:active { transform: scale(0.92); }
   .nav-logout-label { font-size: 0.6rem; }
   .nav-user { gap: 0.4rem; }
   .nav-user-name { font-size: 0.8rem; }

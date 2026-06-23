@@ -9,6 +9,7 @@ export default function AttendanceLogs() {
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState('');
   const [filterDriver, setFilterDriver] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const loadData = async () => {
     try {
@@ -35,6 +36,28 @@ export default function AttendanceLogs() {
     loadData();
   };
 
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      const params = {};
+      if (filterDate) params.date = filterDate;
+      if (filterDriver) params.driver_id = filterDriver;
+      const blob = await attendance.exportExcel(params);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'attendance.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const isDriver = user.role === 'driver';
 
   if (isDriver) {
@@ -47,6 +70,11 @@ export default function AttendanceLogs() {
         <div className="page-header-content">
           <h2>سجلات الحضور</h2>
           <p>{records.length} تسجيل</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn btn-outline" onClick={handleExport} disabled={exporting}>
+            {exporting ? 'جاري...' : 'تصدير Excel'}
+          </button>
         </div>
       </div>
 
