@@ -205,15 +205,18 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   flex-shrink: 0;
 }
 .nav-brand-logo {
-  height: 32px;
+  height: 28px;
   width: auto;
+  transition: filter var(--nx-transition);
 }
+.dark .nav-brand-logo { filter: brightness(0) invert(1); }
 .nav-brand-text {
-  font-size: 1.2rem;
+  font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.5px;
   color: var(--nx-black);
   font-family: var(--nx-font-display);
+  transition: color var(--nx-transition);
 }
 .dark .nav-brand-text { color: var(--nx-text); }
 .nav-brand-dot { color: var(--nx-red); }
@@ -255,13 +258,15 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
+  margin-right: auto;
+  padding-right: 0;
 }
 
 .theme-toggle {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: var(--nx-radius-full);
   border: none;
   background: transparent;
@@ -271,6 +276,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   justify-content: center;
   color: var(--nx-text-secondary);
   transition: all var(--nx-transition);
+  flex-shrink: 0;
 }
 .theme-toggle:hover {
   background: var(--nx-bg);
@@ -284,31 +290,52 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 4px;
-  border-radius: var(--nx-radius-full);
-  background: var(--nx-bg);
+  gap: 3px;
+  flex-shrink: 0;
+}
+.nav-user-name {
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--nx-text-secondary);
+  white-space: nowrap;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 4px;
   transition: all var(--nx-transition);
 }
-.nav-user:hover { background: var(--nx-border-light); }
-.nav-user-info { text-align: left; direction: ltr; }
-.nav-user-name {
-  font-weight: 600;
-  font-size: 0.82rem;
+.nav-user-name:hover {
   color: var(--nx-text);
-  white-space: nowrap;
-  line-height: 1.2;
+  background: var(--nx-bg);
 }
 .nav-user-role {
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
-  padding: 0.1rem 0.4rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 4px;
 }
 .role-admin { background: var(--nx-red); color: white; }
 .role-ops { background: var(--nx-warning); color: white; }
+
+.nav-user-logout {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--nx-radius-full);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nx-text-muted);
+  transition: all var(--nx-transition);
+  flex-shrink: 0;
+}
+.nav-user-logout:hover {
+  background: var(--nx-error-bg);
+  color: var(--nx-error);
+}
 
 .nav-logout-mobile { display: none; }
 .nav-link.active {
