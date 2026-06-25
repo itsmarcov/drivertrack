@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,10 +10,12 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  if (user) {
-    const target = user.role === 'driver' ? '/driver' : '/admin';
-    navigate(target, { replace: true });
-  }
+  useEffect(() => {
+    if (user) {
+      const target = user.role === 'driver' ? '/driver' : '/admin';
+      navigate(target, { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

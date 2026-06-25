@@ -8,15 +8,17 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const token = localStorage.getItem('token');
     if (token) {
       auth.me()
-        .then(setUser)
-        .catch(() => localStorage.removeItem('token'))
-        .finally(() => setLoading(false));
+        .then(u => { if (!cancelled) setUser(u); })
+        .catch(() => { if (!cancelled) localStorage.removeItem('token'); })
+        .finally(() => { if (!cancelled) setLoading(false); });
     } else {
       setLoading(false);
     }
+    return () => { cancelled = true; };
   }, []);
 
   const login = async (username, password) => {
