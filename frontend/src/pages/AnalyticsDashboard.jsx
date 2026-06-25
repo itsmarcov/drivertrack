@@ -35,8 +35,8 @@ function Donut({ attendance, absence, total }) {
         <linearGradient id="donutGreen" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#22C55E"/><stop offset="100%" stopColor="#16A34A"/></linearGradient>
         <linearGradient id="donutRed" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#EF4444"/><stop offset="100%" stopColor="#DC2626"/></linearGradient>
       </defs>
-      <text x="90" y="82" textAnchor="middle" fontSize="28" fontWeight="800" fill="#1A1A1A">{attended}</text>
-      <text x="90" y="104" textAnchor="middle" fontSize="11" fontWeight="600" fill="#6B7280">حاضر</text>
+      <text x="90" y="82" textAnchor="middle" fontSize="28" fontWeight="800" fill="var(--nx-text)">{attended}</text>
+      <text x="90" y="104" textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--nx-text-secondary)">حاضر</text>
     </svg>
   );
 }
