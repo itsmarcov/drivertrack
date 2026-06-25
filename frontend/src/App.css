@@ -786,10 +786,13 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   margin-bottom: 2rem;
 }
 .nx-stat {
-  background: var(--nx-white);
-  border-radius: var(--nx-radius);
+  background: var(--nx-bg-glass-strong);
+  backdrop-filter: var(--nx-blur);
+  -webkit-backdrop-filter: var(--nx-blur);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-lg);
   padding: 1.25rem 1.5rem;
-  border: 1px solid var(--nx-border-light);
+  box-shadow: var(--nx-shadow-glass);
   transition: all var(--nx-transition);
   position: relative;
   overflow: hidden;
@@ -814,7 +817,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .nx-stat.highlight { --nx-stat-accent: var(--nx-success); }
 .nx-stat.warning { --nx-stat-accent: var(--nx-warning); }
 .nx-stat-type { font-size: 0.75rem; font-weight: 600; color: var(--nx-text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-.nx-stat-value { font-size: 2rem; font-weight: 700; color: var(--nx-black); line-height: 1.15; margin-top: 0.15rem; letter-spacing: -0.02em; }
+.nx-stat-value { font-size: 2rem; font-weight: 700; color: var(--nx-text); line-height: 1.15; margin-top: 0.15rem; letter-spacing: -0.02em; }
 .nx-stat-label { font-size: 0.8125rem; color: var(--nx-text-secondary); margin-top: 0.15rem; }
 .nx-stat-icon {
   position: absolute;
@@ -826,9 +829,11 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 
 /* ─── Late Warning Banner ─── */
 .nx-late-banner {
-  background: #FEF2F2;
+  background: var(--nx-error-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1.5px solid #FECACA;
-  border-radius: var(--nx-radius);
+  border-radius: var(--nx-radius-lg);
   padding: 1rem 1.25rem;
   margin-bottom: 2rem;
   display: flex;
@@ -874,10 +879,13 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   margin-bottom: 2rem;
 }
 .nx-action {
-  background: var(--nx-white);
-  border-radius: var(--nx-radius);
+  background: var(--nx-bg-glass-strong);
+  backdrop-filter: var(--nx-blur);
+  -webkit-backdrop-filter: var(--nx-blur);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-lg);
   padding: 1.5rem;
-  border: 1px solid var(--nx-border-light);
+  box-shadow: var(--nx-shadow-glass);
   text-align: center;
   transition: all var(--nx-transition);
   cursor: pointer;
@@ -1344,7 +1352,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 /* ─── Driver Tabs ─── */
 .driver-tabs {
   display: flex;
-  background: var(--nx-white);
+  background: var(--nx-bg-glass-strong);
+  backdrop-filter: var(--nx-blur);
+  -webkit-backdrop-filter: var(--nx-blur);
   border-bottom: 1px solid var(--nx-border);
   position: sticky;
   top: 0;
