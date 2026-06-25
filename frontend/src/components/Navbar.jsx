@@ -1,11 +1,25 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useState, useEffect } from 'react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
   const location = useLocation();
+  const [hidden, setHidden] = useState(false);
+  const [lastY, setLastY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const y = window.scrollY;
+      if (y > lastY && y > 80) setHidden(true);
+      else if (y < lastY) setHidden(false);
+      setLastY(y);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastY]);
 
   if (!user) return null;
   if (user.role === 'driver') return null;
@@ -18,7 +32,7 @@ export default function Navbar() {
   const handleLogout = () => { logout(); };
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar${hidden ? ' navbar-hidden' : ''}`}>
       <div className="nav-inner">
         <Link to="/login" className="nav-brand">
           <img src="/NAVEXlogo.png" alt="NAVEX" className="nav-brand-logo" />

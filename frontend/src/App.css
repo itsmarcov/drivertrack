@@ -225,7 +225,12 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   -webkit-backdrop-filter: var(--nx-blur);
   border: 1px solid var(--nx-border);
   box-shadow: var(--nx-shadow-glass);
-  transition: all var(--nx-transition-slow);
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.navbar-hidden {
+  transform: translateY(-80px);
+  opacity: 0;
+  pointer-events: none;
 }
 .nav-inner {
   max-width: 1200px;
