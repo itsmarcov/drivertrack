@@ -6,19 +6,32 @@ const { authenticate, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
-  const { station_id } = req.query;
-  let sql = `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, created_at, updated_at
-             FROM users WHERE role = 'driver'`;
+  const { station_id, shift, search } = req.query;
+  let sql = `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.vehicle_type, u.license_plate,
+                    u.station_id, u.shift, u.is_active, u.created_at, u.updated_at,
+                    s.name as station_name
+             FROM users u
+             LEFT JOIN stations s ON u.station_id = s.id
+             WHERE u.role = 'driver'`;
   const params = [];
   let paramIndex = 1;
   if (req.user.role === 'ops') {
-    sql += ` AND station_id = $${paramIndex++}`;
+    sql += ` AND u.station_id = $${paramIndex++}`;
     params.push(req.user.station_id);
   } else if (station_id) {
-    sql += ` AND station_id = $${paramIndex++}`;
+    sql += ` AND u.station_id = $${paramIndex++}`;
     params.push(parseInt(station_id));
   }
-  sql += ' ORDER BY full_name ASC';
+  if (shift) {
+    sql += ` AND u.shift = $${paramIndex++}`;
+    params.push(shift);
+  }
+  if (search) {
+    sql += ` AND (u.full_name ILIKE $${paramIndex} OR u.username ILIKE $${paramIndex} OR u.phone ILIKE $${paramIndex})`;
+    params.push(`%${search}%`);
+    paramIndex++;
+  }
+  sql += ' ORDER BY u.full_name ASC';
   const drivers = await queryAll(sql, params);
   res.json(drivers);
 });

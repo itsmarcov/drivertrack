@@ -102,16 +102,23 @@ export default function DriversManagement() {
   const isAdmin = user.role === 'admin';
   const canAdd = user.role === 'admin' || user.role === 'ops';
   const [driverList, setDriverList] = useState([]);
+  const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingDriver, setEditingDriver] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [filterStation, setFilterStation] = useState('');
+  const [filterShift, setFilterShift] = useState('');
 
-  const loadDrivers = async () => {
+  const loadDrivers = async (station, shift, srch) => {
     try {
       setLoading(true);
-      const data = await drivers.list();
+      const params = {};
+      if (station && user.role === 'admin') params.station_id = station;
+      if (shift) params.shift = shift;
+      if (srch) params.search = srch;
+      const data = await drivers.list(params);
       setDriverList(data);
     } catch (err) {
       setError(err.message);
@@ -120,7 +127,10 @@ export default function DriversManagement() {
     }
   };
 
-  useEffect(() => { loadDrivers(); }, []);
+  useEffect(() => {
+    loadDrivers(filterStation, filterShift, search);
+    if (isAdmin) stations.list().then(setStationList).catch(() => {});
+  }, []);
 
   const handleSave = async (formData) => {
     try {
@@ -172,9 +182,7 @@ export default function DriversManagement() {
     }
   };
 
-  const filtered = driverList.filter((d) =>
-    !search || d.full_name.includes(search) || d.username.includes(search) || (d.phone && d.phone.includes(search))
-  );
+  const filtered = driverList;
 
   if (loading) return (
     <div className="loading-screen">
@@ -204,13 +212,36 @@ export default function DriversManagement() {
       {error && <div className="alert alert-error" onClick={() => setError('')}>{error}</div>}
       {showForm && canAdd && <DriverForm driver={editingDriver} onSave={handleSave} onCancel={() => { setShowForm(false); setEditingDriver(null); }} />}
 
+      <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <div className="form-row">
+          <div className="form-group">
+            <label>بحث</label>
+            <input type="text" placeholder="اسم / هاتف / مستخدم..." value={search}
+              onChange={(e) => { setSearch(e.target.value); loadDrivers(filterStation, filterShift, e.target.value); }} />
+          </div>
+          {isAdmin && (
+            <div className="form-group">
+              <label>المحطة</label>
+              <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadDrivers(e.target.value, filterShift, search); }}>
+                <option value="">جميع المحطات</option>
+                {stationList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          )}
+          <div className="form-group">
+            <label>الفترة</label>
+            <select value={filterShift} onChange={(e) => { setFilterShift(e.target.value); loadDrivers(filterStation, e.target.value, search); }}>
+              <option value="">الكل</option>
+              <option value="morning">صباحية</option>
+              <option value="evening">مسائية</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div className="table-container">
         <div className="table-toolbar">
-          <div className="nx-search">
-            <span className="nx-search-icon">🔍</span>
-            <input type="text" placeholder="بحث عن سائق..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          <span className="text-sm text-muted">{filtered.length} من {driverList.length}</span>
+          <span className="text-sm text-muted">{filtered.length} سائق</span>
         </div>
         {filtered.length === 0 ? (
           <div className="nx-empty">
@@ -241,7 +272,7 @@ export default function DriversManagement() {
                   <td>{d.phone || '—'}</td>
                   <td>{d.vehicle_type || '—'}</td>
                   <td>{d.license_plate || '—'}</td>
-                  <td>{d.station_id ? <span className="badge badge-info">محطة {d.station_id}</span> : '—'}</td>
+                  <td>{d.station_name || (d.station_id ? <span className="badge badge-info">محطة {d.station_id}</span> : '—')}</td>
                   <td>{d.shift === 'evening' ? <span className="badge badge-warning">مسائية</span> : <span className="badge badge-info">صباحية</span>}</td>
                   <td>{d.is_active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">غير نشط</span>}</td>
                   {isAdmin && (
