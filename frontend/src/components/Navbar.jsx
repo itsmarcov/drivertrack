@@ -14,7 +14,7 @@ export default function Navbar() {
     const handleScroll = () => {
       const y = window.scrollY;
       if (y > lastY && y > 80) setHidden(true);
-      else if (y < lastY) setHidden(false);
+      else if (y < 10) setHidden(false);
       setLastY(y);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
