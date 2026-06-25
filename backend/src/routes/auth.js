@@ -125,7 +125,7 @@ router.delete('/ops/:id', authenticate, authorize('admin'), async (req, res) => 
   const { id } = req.params;
   const ops = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'ops'", [id]);
   if (!ops) return res.status(404).json({ error: 'OPS user not found.' });
-  await run('UPDATE attendance SET scanned_by = NULL WHERE scanned_by = $1', [id]);
+  await run('UPDATE attendance SET scanned_by = $1 WHERE scanned_by = $2', [req.user.id, id]);
   const result = await run('DELETE FROM users WHERE id = $1', [id]);
   res.json({ message: 'OPS user deleted successfully.' });
 });
