@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -16,9 +17,20 @@ import AbsencesManagement from './pages/AbsencesManagement';
 
 function HomeRedirect() {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'driver') return <Navigate to="/driver" replace />;
-  return <Navigate to="/admin" replace />;
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!user) { navigate('/login', { replace: true }); return; }
+    if (user.role === 'driver') { navigate('/driver', { replace: true }); return; }
+    navigate('/admin', { replace: true });
+  }, [user, navigate]);
+  return (
+    <div className="loading-screen" style={{ minHeight: '100vh' }}>
+      <div className="nx-loader">
+        <div className="nx-spinner"></div>
+        <span className="nx-loader-label">جاري التوجيه...</span>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
