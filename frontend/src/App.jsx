@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import AnimatedBackground from './components/AnimatedBackground';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingScreen from './components/LoadingScreen';
 import Login from './pages/Login';
@@ -37,6 +38,7 @@ export default function App() {
   );
   return (
     <div className="app">
+      <AnimatedBackground />
       <Navbar />
       <main className="main-content">
         <Routes>
