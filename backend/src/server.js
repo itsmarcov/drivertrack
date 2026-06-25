@@ -17,6 +17,7 @@ const stationRoutes = require('./routes/stations');
 const penaltyRoutes = require('./routes/penalties');
 const settingsRoutes = require('./routes/settings');
 const absenceRoutes = require('./routes/absences');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,6 +34,7 @@ app.use('/api/stations', stationRoutes);
 app.use('/api/penalties', penaltyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/absences', absenceRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

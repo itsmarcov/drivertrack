@@ -33,6 +33,7 @@ export default function Navbar() {
           </Link>
           <Link to="/admin/penalties" className={`nav-link ${isActive('/admin/penalties')}`}>الغرامات</Link>
           <Link to="/admin/absences" className={`nav-link ${isActive('/admin/absences')}`}>الغيابات</Link>
+          <Link to="/admin/analytics" className={`nav-link ${isActive('/admin/analytics')}`}>التحليلات</Link>
           {user.role === 'admin' && (
             <Link to="/admin/settings" className={`nav-link ${isActive('/admin/settings')}`}>الإعدادات</Link>
           )}

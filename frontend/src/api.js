@@ -111,3 +111,7 @@ export const absences = {
   },
   deleteByDate: (date) => request(`/absences/${date}`, { method: 'DELETE' }),
 };
+
+export const analytics = {
+  get: () => request('/analytics'),
+};
