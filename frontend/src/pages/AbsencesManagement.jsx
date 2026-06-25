@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { absences, stations as stationsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -103,14 +104,7 @@ export default function AbsencesManagement() {
     }
   };
 
-  if (loading) return (
-    <div className="loading-screen">
-      <div className="nx-loader">
-        <div className="nx-spinner"></div>
-        <span className="nx-loader-label">جاري تحميل الغيابات...</span>
-      </div>
-    </div>
-  );
+  if (loading) return <LoadingScreen message="جاري تحميل الغيابات..." />;
 
   return (
     <div className="page">

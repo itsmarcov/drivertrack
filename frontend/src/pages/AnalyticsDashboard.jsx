@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { analytics } from '../api';
 
 function Donut({ attendance, absence, total }) {
@@ -121,14 +122,7 @@ export default function AnalyticsDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <div className="loading-screen">
-      <div className="nx-loader">
-        <div className="nx-spinner"></div>
-        <span className="nx-loader-label">جاري تحميل التحليلات...</span>
-      </div>
-    </div>
-  );
+  if (loading) return <LoadingScreen message="جاري تحميل التحليلات..." />;
   if (!data) return <div className="page"><p>لا توجد بيانات</p></div>;
 
   const maxPeak = Math.max(...data.peak_scan_hours.map(h => h.count), 1);

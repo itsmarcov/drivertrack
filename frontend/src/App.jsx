@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import LoadingScreen from './components/LoadingScreen';
 import Login from './pages/Login';
 import DriverDashboard from './pages/DriverDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -25,24 +26,14 @@ function HomeRedirect() {
     navigate('/admin', { replace: true });
   }, [user, navigate]);
   return (
-    <div className="loading-screen" style={{ minHeight: '100vh' }}>
-      <div className="nx-loader">
-        <div className="nx-spinner"></div>
-        <span className="nx-loader-label">جاري التوجيه...</span>
-      </div>
-    </div>
+<LoadingScreen message="جاري التوجيه..." />
   );
 }
 
 export default function App() {
   const { loading } = useAuth();
   if (loading) return (
-    <div className="loading-screen">
-      <div className="nx-loader">
-        <div className="nx-spinner"></div>
-        <span className="nx-loader-label">جاري التحميل...</span>
-      </div>
-    </div>
+<LoadingScreen message="جاري التحميل..." />
   );
   return (
     <div className="app">

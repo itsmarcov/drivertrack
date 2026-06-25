@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { stations } from '../api';
 
 export default function StationsManagement() {
@@ -48,11 +49,7 @@ export default function StationsManagement() {
     } catch (err) { setError(err.message); }
   };
 
-  if (loading) return (
-    <div className="loading-screen" style={{ minHeight: 200 }}>
-      <div className="nx-loader"><div className="nx-spinner"></div></div>
-    </div>
-  );
+  if (loading) return <LoadingScreen />;
 
   return (
     <div className="page">

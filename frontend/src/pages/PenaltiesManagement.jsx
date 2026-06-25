@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { penalties, stations as stationsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
 
@@ -93,11 +94,7 @@ export default function PenaltiesManagement() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="loading-screen" style={{ minHeight: 200 }}>
-          <div className="nx-loader"><div className="nx-spinner"></div></div>
-        </div>
-      ) : list.length === 0 ? (
+      {loading ? <LoadingScreen /> : list.length === 0 ? (
         <div className="nx-empty">
           <div className="nx-empty-icon">💰</div>
           <h3>لا توجد غرامات</h3>

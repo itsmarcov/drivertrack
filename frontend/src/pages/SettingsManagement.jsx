@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { settings } from '../api';
 
 export default function SettingsManagement() {
@@ -37,14 +38,7 @@ export default function SettingsManagement() {
     }
   };
 
-  if (loading) return (
-    <div className="loading-screen">
-      <div className="nx-loader">
-        <div className="nx-spinner"></div>
-        <span className="nx-loader-label">جاري تحميل الإعدادات...</span>
-      </div>
-    </div>
-  );
+  if (loading) return <LoadingScreen message="جاري تحميل الإعدادات..." />;
 
   return (
     <div className="page">

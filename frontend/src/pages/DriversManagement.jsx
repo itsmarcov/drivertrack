@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { drivers, stations } from '../api';
 
@@ -184,14 +185,7 @@ export default function DriversManagement() {
 
   const filtered = driverList;
 
-  if (loading) return (
-    <div className="loading-screen">
-      <div className="nx-loader">
-        <div className="nx-spinner"></div>
-        <span className="nx-loader-label">جاري تحميل السائقين...</span>
-      </div>
-    </div>
-  );
+  if (loading) return <LoadingScreen message="جاري تحميل السائقين..." />;
 
   return (
     <div className="page">

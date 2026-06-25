@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { auth, stations } from '../api';
 
@@ -69,14 +70,7 @@ export default function OpsManagement() {
     } catch (err) { setError(err.message); }
   };
 
-  if (loading) return (
-    <div className="loading-screen">
-      <div className="nx-loader">
-        <div className="nx-spinner"></div>
-        <span className="nx-loader-label">جاري التحميل...</span>
-      </div>
-    </div>
-  );
+  if (loading) return <LoadingScreen message="جاري التحميل..." />;
 
   return (
     <div className="page">

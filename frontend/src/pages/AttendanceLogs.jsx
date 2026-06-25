@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from '../components/LoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { attendance, drivers, stations as stationsApi } from '../api';
 
@@ -114,13 +115,7 @@ export default function AttendanceLogs() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="loading-screen" style={{ minHeight: 200 }}>
-          <div className="nx-loader">
-            <div className="nx-spinner"></div>
-          </div>
-        </div>
-      ) : records.length === 0 ? (
+      {loading ? <LoadingScreen /> : records.length === 0 ? (
         <div className="nx-empty">
           <div className="nx-empty-icon">📋</div>
           <h3>لا توجد سجلات حضور</h3>
@@ -181,13 +176,7 @@ function DriverAttendanceView() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="loading-screen" style={{ minHeight: 200 }}>
-          <div className="nx-loader">
-            <div className="nx-spinner"></div>
-          </div>
-        </div>
-      ) : records.length === 0 ? (
+      {loading ? <LoadingScreen /> : records.length === 0 ? (
         <div className="nx-empty">
           <div className="nx-empty-icon">📋</div>
           <h3>لا توجد سجلات حضور بعد</h3>
