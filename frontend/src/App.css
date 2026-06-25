@@ -220,12 +220,23 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   z-index: 100;
   margin: 0 12px;
   border-radius: var(--nx-radius-xl);
-  background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
+  background: var(--nx-bg-glass);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid var(--nx-border);
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-glass), 0 0 0 0.5px rgba(255,255,255,0.1) inset;
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.navbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-xl);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+  pointer-events: none;
+}
+.dark .navbar::before {
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
 }
 .navbar-hidden {
   transform: translateY(-80px);
