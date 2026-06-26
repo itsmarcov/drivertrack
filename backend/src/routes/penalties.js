@@ -5,7 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// --- Arabic text helpers (manual reshaper) ---
+// --- Arabic text helpers ---
 
 const AR_FORMS = {
   '\u0627': ['\uFE8D', '\uFE8E', '\uFE8E', '\uFE8D'],
@@ -72,7 +72,9 @@ function isJoinerLeft(ch) {
   return isArabic && !nonJoiners.includes(ch) && ch !== '\u0621';
 }
 
+// Only reshape Arabic characters — leave Latin, numbers, punctuation untouched
 function arabicReshape(text) {
+  if (!/[\u0600-\u06FF]/.test(text)) return text;
   let result = text;
   for (const [pair, form] of Object.entries(LAM_ALEF_FORMS)) {
     result = result.replace(new RegExp(pair, 'g'), form);
@@ -92,6 +94,9 @@ function arabicReshape(text) {
   }).join('');
 }
 
+// rtl() function has been REMOVED — it was reversing word order.
+// PDFKit handles RTL direction natively via align:'right'.
+
 function fixToUnicode(doc) {
   const font = doc._font;
   if (!font || !font.unicode) return;
@@ -101,18 +106,6 @@ function fixToUnicode(doc) {
       font.unicode[i] = PF_TO_LOGICAL[cps[0]];
     }
   }
-}
-
-function renderArabicText(doc, text, x, y, options) {
-  const lines = text.split('\n');
-  lines.forEach(line => {
-    doc.text(arabicReshape(line), x, y, {
-      ...options,
-      lineBreak: false,
-    });
-    y += 20;
-  });
-  return y;
 }
 
 // --- End Arabic helpers ---
@@ -230,28 +223,34 @@ router.get('/:id/report', authenticate, async (req, res) => {
     let y = 40;
     const L = 50, W = 495;
 
+    // Logo
     if (fs.existsSync(logoPath)) {
       doc.image(logoPath, L + W / 2 - 60, y, { height: 40 });
       y += 55;
     }
 
+    // Title — no rtl(), arabicReshape only
     doc.font('ArB').fontSize(22).fillColor('#E53935')
-      .text(arabicReshape('إشعار غرامة تأخير'), L, y, { width: W, align: 'center', features: { ccmp: false } });
+      .text(arabicReshape('إشعار غرامة تأخير'), L, y, { width: W, align: 'center', lineBreak: false, features: { ccmp: false } });
     fixToUnicode(doc);
     y += 35;
 
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 18;
 
+    // Row: labels reshaped, values left as-is (names/phone/date are Latin)
     const row = (label, value) => {
-      const tw = doc.font('ArB').fontSize(11).fillColor('#374151');
       const labelW = 100;
-      tw.text(arabicReshape(label), L, y, { width: labelW, align: 'right', features: { ccmp: false } });
+      const strVal = String(value);
+      const isArabicValue = /[\u0600-\u06FF]/.test(strVal);
+      const displayValue = isArabicValue ? arabicReshape(strVal) : strVal;
+
+      doc.font('ArB').fontSize(11).fillColor('#374151')
+        .text(arabicReshape(label), L, y, { width: labelW, align: 'right', lineBreak: false, features: { ccmp: false } });
       fixToUnicode(doc);
-      const isArabic = /[\u0600-\u06FF]/.test(String(value));
-      const displayValue = isArabic ? arabicReshape(String(value)) : String(value);
+
       doc.font('ArR').fillColor('#1A1A1A')
-        .text(displayValue, L + labelW + 5, y, { width: W - labelW - 5, align: 'right', features: { ccmp: false } });
+        .text(displayValue, L + labelW + 5, y, { width: W - labelW - 5, align: 'right', lineBreak: false, features: { ccmp: false } });
       fixToUnicode(doc);
       y += 20;
     };
@@ -264,34 +263,39 @@ router.get('/:id/report', authenticate, async (req, res) => {
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 20;
 
-    const para1 = 'نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.';
-    const para2a = 'كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ';
-    const para2b = ' دج فقط عن كل طرد يتم توصيله.';
-    const para3 = 'نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.';
-    const para4 = 'مع الشكر والتقدير.';
+    // Body — render line by line with lineBreak:false to stop PDFKit mid-word splitting
+    // Amount kept outside arabicReshape so it never gets reversed
+    const amount = penalty.amount != null ? String(penalty.amount) : '150';
+
+    const bodyLines = [
+      arabicReshape('نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.'),
+      '',
+      arabicReshape('كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ')
+        + amount
+        + arabicReshape(' دج فقط عن كل طرد يتم توصيله.'),
+      '',
+      arabicReshape('نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.'),
+      '',
+      arabicReshape('مع الشكر والتقدير.'),
+    ];
 
     doc.font('ArR').fontSize(12).fillColor('#1A1A1A');
-    y = renderArabicText(doc, para1, L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
-    fixToUnicode(doc);
-    y += 8;
-    const line2 = arabicReshape(para2a) + '150' + arabicReshape(para2b);
-    doc.text(line2, L, y, { width: W, align: 'right', lineBreak: false, features: { ccmp: false } });
-    fixToUnicode(doc);
-    y += 24;
-    y = renderArabicText(doc, para3, L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
-    fixToUnicode(doc);
-    y += 8;
-    y = renderArabicText(doc, para4, L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
-    fixToUnicode(doc);
-    y += 24;
+    for (const line of bodyLines) {
+      if (line === '') { y += 10; continue; }
+      doc.text(line, L, y, { width: W, align: 'right', lineBreak: false, lineGap: 4, features: { ccmp: false } });
+      fixToUnicode(doc);
+      y += 22;
+    }
 
+    y += 14;
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 14;
 
+    // Footer — DriverTRACK and date outside arabicReshape to prevent reversal
     const now = new Date().toLocaleString('ar-DZ');
     const footer = arabicReshape('تم إصدار هذا التقرير بواسطة') + ' DriverTRACK — ' + now;
     doc.font('ArR').fontSize(8).fillColor('#9CA3AF')
-      .text(footer, L, y, { width: W, align: 'right', features: { ccmp: false } });
+      .text(footer, L, y, { width: W, align: 'right', lineBreak: false, features: { ccmp: false } });
     fixToUnicode(doc);
 
     doc.end();
