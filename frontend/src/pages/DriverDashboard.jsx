@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
-import { qr, attendance, penalties } from '../api';
+import { qr, attendance } from '../api';
 
 function QRDisplay({ data }) {
   const qrValue = JSON.stringify({
@@ -58,11 +58,8 @@ export default function DriverDashboard() {
   const navigate = useNavigate();
   const [qrData, setQrData] = useState(null);
   const [records, setRecords] = useState([]);
-  const [penaltyList, setPenaltyList] = useState([]);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('qr');
-
-  const [dlId, setDlId] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -72,29 +69,11 @@ export default function DriverDashboard() {
   useEffect(() => {
     qr.getMyQR().then(setQrData).catch((err) => setError(err.message));
     attendance.my().then(setRecords).catch(() => {});
-    penalties.my().then(setPenaltyList).catch(() => {});
   }, []);
 
   const safeRecords = Array.isArray(records) ? records : [];
-  const safePenalties = Array.isArray(penaltyList) ? penaltyList : [];
   const todayRecord = safeRecords.find((r) => r.scan_date === qrData?.date);
   const recentRecords = safeRecords.slice(0, 5);
-
-  const downloadReport = async (id) => {
-    try {
-      setDlId(id);
-      const blob = await penalties.report(id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `penalty-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) { setError(err.message); }
-    finally { setDlId(null); }
-  };
 
   return (
     <div className="driver-app">
@@ -114,38 +93,21 @@ export default function DriverDashboard() {
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
 
-      {safePenalties.length > 0 && (
-        <div className="driver-penalty-banner">
-          <span className="driver-penalty-icon">💰</span>
-          <div className="driver-penalty-content">
-            <strong>غرامة تأخير</strong>
-            <p>{safePenalties[0].reason} — {safePenalties[0].amount} د.ج</p>
-          </div>
-          <button className="btn btn-sm btn-outline" style={{ flexShrink: 0, marginRight: 8 }} onClick={() => downloadReport(safePenalties[0].id)} disabled={dlId === safePenalties[0].id}>
-            {dlId === safePenalties[0].id ? '...' : 'PDF'}
-          </button>
-        </div>
-      )}
-
       <div className="driver-tabs">
         <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
         <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف الشخصي</button>
         <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
-        {safePenalties.length > 0 && (
-          <button className={`driver-tab ${activeTab === 'penalties' ? 'active' : ''}`} onClick={() => setActiveTab('penalties')}>الغرامات</button>
-        )}
       </div>
 
       {activeTab === 'qr' && (
         <>
           {qrData && <QRDisplay data={qrData} />}
-          {todayRecord && (
-            <div className={`driver-today-banner ${todayRecord.is_late ? 'late' : 'success'}`}>
-              <span>{todayRecord.is_late ? '⚠️ تم التسجيل متأخراً' : 'تم تسجيل حضورك اليوم'}</span>
-              <small>الساعة {todayRecord.scan_time}{todayRecord.is_late ? ' (بعد 10:00 صباحاً)' : ''}</small>
+          {todayRecord ? (
+            <div className="driver-today-banner success">
+              <span>تم تسجيل حضورك اليوم</span>
+              <small>الساعة {todayRecord.scan_time}</small>
             </div>
-          )}
-          {!todayRecord && qrData && (
+          ) : qrData && (
             <div className="driver-today-banner warning">
               <span>لم يتم تسجيل الحضور بعد</span>
               <small>اعرض رمز QR لموظف التشغيل</small>
@@ -203,35 +165,7 @@ export default function DriverDashboard() {
                 </div>
                 <div className="dhi-sub">
                   <span>{r.scanned_by_name}</span>
-                  {r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {activeTab === 'penalties' && (
-        <div className="driver-history-section">
-          <h3>الغرامات المسجلة</h3>
-          {safePenalties.length === 0 ? (
-            <div className="nx-empty">
-              <div className="nx-empty-icon">💰</div>
-              <h3>لا توجد غرامات</h3>
-              <p>سيتم تسجيل الغرامات تلقائياً عند التأخير</p>
-            </div>
-          ) : (
-            safePenalties.map((p) => (
-              <div key={p.id} className="driver-history-item">
-                <div className="dhi-main">
-                  <span className="dhi-date">{p.penalty_date}</span>
-                  <span className="dhi-time" style={{ color: '#B91C1C' }}>{p.amount} د.ج</span>
-                </div>
-                <div className="dhi-sub">
-                  <span>{p.reason}</span>
-                  <button className="btn btn-sm btn-outline" onClick={() => downloadReport(p.id)} disabled={dlId === p.id}>
-                    {dlId === p.id ? '...' : 'PDF'}
-                  </button>
+                  {r.verified ? <span className="badge badge-success">مسجل</span> : <span className="badge badge-danger">غير موثق</span>}
                 </div>
               </div>
             ))
