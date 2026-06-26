@@ -11,8 +11,9 @@ if (!DATABASE_URL) {
 const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
-  max: 10,
-  idleTimeoutMillis: 30000,
+  max: 3,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
 });
 
 async function initDatabase() {

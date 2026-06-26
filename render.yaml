@@ -4,11 +4,14 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    healthCheckPath: /api/health
     envVars:
       - key: PORT
         value: 5000
       - key: NODE_ENV
         value: production
+      - key: TZ
+        value: Africa/Algiers
       - key: JWT_SECRET
         generateValue: true
       - key: QR_SECRET
