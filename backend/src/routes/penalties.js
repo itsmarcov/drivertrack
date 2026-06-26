@@ -5,7 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// --- Arabic text helpers (manual reshaper + bidi) ---
+// --- Arabic text helpers (manual reshaper) ---
 
 const AR_FORMS = {
   '\u0627': ['\uFE8D', '\uFE8E', '\uFE8E', '\uFE8D'],
@@ -90,24 +90,6 @@ function arabicReshape(text) {
     if (prevJoins && !nextJoins) return form[1];
     return form[0];
   }).join('');
-}
-
-function rtl(text) {
-  return text.split('\n').map(para => {
-    const tokens = [];
-    let buf = '';
-    for (const ch of para) {
-      if (ch === ' ') {
-        if (buf) tokens.push(buf);
-        tokens.push(ch);
-        buf = '';
-      } else {
-        buf += ch;
-      }
-    }
-    if (buf) tokens.push(buf);
-    return tokens.reverse().join('');
-  }).join('\n');
 }
 
 function fixToUnicode(doc) {
@@ -242,7 +224,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
     }
 
     doc.font('ArB').fontSize(22).fillColor('#E53935')
-      .text(rtl(arabicReshape('إشعار غرامة تأخير')), L, y, { width: W, align: 'center', features: { ccmp: false } });
+      .text(arabicReshape('إشعار غرامة تأخير'), L, y, { width: W, align: 'center', features: { ccmp: false } });
     fixToUnicode(doc);
     y += 35;
 
@@ -252,10 +234,12 @@ router.get('/:id/report', authenticate, async (req, res) => {
     const row = (label, value) => {
       const tw = doc.font('ArB').fontSize(11).fillColor('#374151');
       const labelW = 100;
-      tw.text(rtl(arabicReshape(label)), L, y, { width: labelW, align: 'right', features: { ccmp: false } });
+      tw.text(arabicReshape(label), L, y, { width: labelW, align: 'right', features: { ccmp: false } });
       fixToUnicode(doc);
+      const isArabic = /[\u0600-\u06FF]/.test(String(value));
+      const displayValue = isArabic ? arabicReshape(String(value)) : String(value);
       doc.font('ArR').fillColor('#1A1A1A')
-        .text(rtl(arabicReshape(String(value))), L + labelW + 5, y, { width: W - labelW - 5, align: 'right', features: { ccmp: false } });
+        .text(displayValue, L + labelW + 5, y, { width: W - labelW - 5, align: 'right', features: { ccmp: false } });
       fixToUnicode(doc);
       y += 20;
     };
@@ -276,15 +260,17 @@ router.get('/:id/report', authenticate, async (req, res) => {
       'مع الشكر والتقدير.';
 
     doc.font('ArR').fontSize(12).fillColor('#1A1A1A')
-      .text(rtl(arabicReshape(bodyText)), L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
+      .text(arabicReshape(bodyText), L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
     fixToUnicode(doc);
     y = doc.y + 24;
 
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 14;
 
+    const now = new Date().toLocaleString('ar-DZ');
+    const footer = arabicReshape('تم إصدار هذا التقرير بواسطة') + ' DriverTRACK — ' + now;
     doc.font('ArR').fontSize(8).fillColor('#9CA3AF')
-      .text(rtl(arabicReshape('تم إصدار هذا التقرير بواسطة DriverTRACK — ' + new Date().toLocaleString('ar-DZ'))), L, y, { width: W, align: 'right', features: { ccmp: false } });
+      .text(footer, L, y, { width: W, align: 'right', features: { ccmp: false } });
     fixToUnicode(doc);
 
     doc.end();
