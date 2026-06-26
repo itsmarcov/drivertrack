@@ -1,0 +1,86 @@
+workflows:
+  android-workflow:
+    name: DriverTRACK Android
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      android_signing:
+        - drivertrack_keystore
+      vars:
+        PACKAGE_NAME: "com.navex.drivertrack"
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          cd frontend
+          npm ci
+      - name: Build web app
+        script: |
+          cd frontend
+          npm run build
+      - name: Sync Capacitor Android
+        script: |
+          cd frontend
+          npm run build
+          npx cap sync android
+      - name: Build Android release
+        script: |
+          cd frontend/android
+          ./gradlew assembleRelease --no-daemon
+    artifacts:
+      - frontend/android/app/build/outputs/**/*.apk
+      - frontend/android/app/build/outputs/**/*.aab
+    publishing:
+      email:
+        recipients:
+          - user_1@example.com
+        notify:
+          success: true
+          failure: false
+
+  ios-workflow:
+    name: DriverTRACK iOS
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: drivertrack_api_key
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.navex.drivertrack
+      vars:
+        BUNDLE_ID: "com.navex.drivertrack"
+        XCODE_WORKSPACE: "App.xcworkspace"
+        XCODE_SCHEME: "App"
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          cd frontend
+          npm ci
+      - name: Build web app
+        script: |
+          cd frontend
+          npm run build
+      - name: Sync Capacitor iOS
+        script: |
+          cd frontend
+          npx cap sync ios
+      - name: Set up provisioning profiles on Xcode project
+        script: |
+          cd frontend/ios
+          xcode-project use-profiles
+      - name: Build ipa for distribution
+        script: |
+          cd frontend/ios
+          xcode-project build-ipa \
+            --workspace "$CM_BUILD_DIR/frontend/ios/App/$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - user_1@example.com
+        notify:
+          success: true
+          failure: false
