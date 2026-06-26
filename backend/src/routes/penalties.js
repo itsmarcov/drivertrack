@@ -160,28 +160,33 @@ router.get('/:id/report', authenticate, async (req, res) => {
     y += 6;
     doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 20;
 
-    // Body paragraphs — use lineBreak:true + doc.y to track real height
+    // Body — manual word-wrap with lineBreak:false so PDFKit never loses RTL
     const amount = formatAmount(penalty.amount);
+    const LH = 22;
 
-    function bodyPara(text, gap=14) {
-      doc.font('ArR').fontSize(12).fillColor('#111827')
-         .text(ar(text), PL, y, { width:W, align:'right', lineBreak:true, lineGap:3 });
-      fixU(doc);
-      y = doc.y + gap;
+    function wrap(text, gap) {
+      if (text === '') { y += gap; return; }
+      const words = text.split(' ');
+      let line = '';
+      for (const w of words) {
+        const test = line ? line + ' ' + w : w;
+        if (doc.widthOfString(test) > W && line) {
+          doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false });
+          fixU(doc);
+          y += LH; line = w;
+        } else {
+          line = test;
+        }
+      }
+      if (line) { doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false }); fixU(doc); y += LH; }
+      y += gap;
     }
 
-    bodyPara('نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.');
-
-    // Amount: digits kept outside ar() so they are never reversed
-    const amountLine =
-      ar('كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ') +
-      amount + ' ' + ar('دج فقط عن كل طرد يتم توصيله.');
-    doc.font('ArR').fontSize(12).fillColor('#111827')
-       .text(amountLine, PL, y, { width:W, align:'right', lineBreak:true, lineGap:3 });
-    fixU(doc); y = doc.y + 14;
-
-    bodyPara('نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.');
-    bodyPara('مع الشكر والتقدير.', 20);
+    doc.font('ArR').fontSize(12).fillColor('#111827');
+    wrap(ar('نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.'), 8);
+    wrap(ar('كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ') + amount + ' ' + ar('دج فقط عن كل طرد يتم توصيله.'), 8);
+    wrap(ar('نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.'), 8);
+    wrap(ar('مع الشكر والتقدير.'), 20);
 
     // Footer
     doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 12;
