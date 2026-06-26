@@ -103,6 +103,18 @@ function fixToUnicode(doc) {
   }
 }
 
+function renderArabicText(doc, text, x, y, options) {
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    doc.text(arabicReshape(line), x, y, {
+      ...options,
+      lineBreak: false,
+    });
+    y += 20;
+  });
+  return y;
+}
+
 // --- End Arabic helpers ---
 
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
@@ -252,17 +264,26 @@ router.get('/:id/report', authenticate, async (req, res) => {
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 20;
 
-    const bodyText =
-      'نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.\n\n' +
-      'كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ' +
-      '150 دج فقط عن كل طرد يتم توصيله.\n\n' +
-      'نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.\n\n' +
-      'مع الشكر والتقدير.';
+    const para1 = 'نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.';
+    const para2a = 'كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ';
+    const para2b = ' دج فقط عن كل طرد يتم توصيله.';
+    const para3 = 'نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.';
+    const para4 = 'مع الشكر والتقدير.';
 
-    doc.font('ArR').fontSize(12).fillColor('#1A1A1A')
-      .text(arabicReshape(bodyText), L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
+    doc.font('ArR').fontSize(12).fillColor('#1A1A1A');
+    y = renderArabicText(doc, para1, L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
     fixToUnicode(doc);
-    y = doc.y + 24;
+    y += 8;
+    const line2 = arabicReshape(para2a) + '150' + arabicReshape(para2b);
+    doc.text(line2, L, y, { width: W, align: 'right', lineBreak: false, features: { ccmp: false } });
+    fixToUnicode(doc);
+    y += 24;
+    y = renderArabicText(doc, para3, L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
+    fixToUnicode(doc);
+    y += 8;
+    y = renderArabicText(doc, para4, L, y, { width: W, align: 'right', lineGap: 4, features: { ccmp: false } });
+    fixToUnicode(doc);
+    y += 24;
 
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 14;
