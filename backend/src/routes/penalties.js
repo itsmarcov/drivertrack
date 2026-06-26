@@ -72,7 +72,6 @@ function isJoinerLeft(ch) {
   return isArabic && !nonJoiners.includes(ch) && ch !== '\u0621';
 }
 
-// Only reshape Arabic characters — leave Latin, numbers, punctuation untouched
 function arabicReshape(text) {
   if (!/[\u0600-\u06FF]/.test(text)) return text;
   let result = text;
@@ -94,9 +93,6 @@ function arabicReshape(text) {
   }).join('');
 }
 
-// rtl() function has been REMOVED — it was reversing word order.
-// PDFKit handles RTL direction natively via align:'right'.
-
 function fixToUnicode(doc) {
   const font = doc._font;
   if (!font || !font.unicode) return;
@@ -106,6 +102,13 @@ function fixToUnicode(doc) {
       font.unicode[i] = PF_TO_LOGICAL[cps[0]];
     }
   }
+}
+
+// Format amount: remove decimals, show as integer e.g. 150.00 -> "150"
+function formatAmount(val) {
+  const n = parseFloat(val);
+  if (isNaN(n)) return String(val);
+  return String(Math.round(n));
 }
 
 // --- End Arabic helpers ---
@@ -222,6 +225,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
 
     let y = 40;
     const L = 50, W = 495;
+    const LINE_H = 22; // fixed line height — prevents line overlap
 
     // Logo
     if (fs.existsSync(logoPath)) {
@@ -229,7 +233,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
       y += 55;
     }
 
-    // Title — no rtl(), arabicReshape only
+    // Title
     doc.font('ArB').fontSize(22).fillColor('#E53935')
       .text(arabicReshape('إشعار غرامة تأخير'), L, y, { width: W, align: 'center', lineBreak: false, features: { ccmp: false } });
     fixToUnicode(doc);
@@ -238,7 +242,7 @@ router.get('/:id/report', authenticate, async (req, res) => {
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 18;
 
-    // Row: labels reshaped, values left as-is (names/phone/date are Latin)
+    // Row helper — labels reshaped, values left as-is (Latin names/phone/dates)
     const row = (label, value) => {
       const labelW = 100;
       const strVal = String(value);
@@ -263,13 +267,15 @@ router.get('/:id/report', authenticate, async (req, res) => {
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 20;
 
-    // Body — render line by line with lineBreak:false to stop PDFKit mid-word splitting
-    // Amount kept outside arabicReshape so it never gets reversed
-    const amount = penalty.amount != null ? String(penalty.amount) : '150';
+    // FIX: amount converted to clean integer string (e.g. 150.00 -> "150")
+    const amount = formatAmount(penalty.amount);
 
+    // Body lines — each rendered separately with lineBreak:false + fixed LINE_H
+    // This prevents PDFKit mid-word breaks AND line overlap
     const bodyLines = [
       arabicReshape('نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.'),
       '',
+      // amount kept outside arabicReshape — never reversed
       arabicReshape('كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ')
         + amount
         + arabicReshape(' دج فقط عن كل طرد يتم توصيله.'),
@@ -282,16 +288,16 @@ router.get('/:id/report', authenticate, async (req, res) => {
     doc.font('ArR').fontSize(12).fillColor('#1A1A1A');
     for (const line of bodyLines) {
       if (line === '') { y += 10; continue; }
-      doc.text(line, L, y, { width: W, align: 'right', lineBreak: false, lineGap: 4, features: { ccmp: false } });
+      doc.text(line, L, y, { width: W, align: 'right', lineBreak: false, features: { ccmp: false } });
       fixToUnicode(doc);
-      y += 22;
+      y += LINE_H; // fixed step — no more overlap
     }
 
     y += 14;
     doc.moveTo(L, y).lineTo(L + W, y).strokeColor('#E5E7EB').stroke();
     y += 14;
 
-    // Footer — DriverTRACK and date outside arabicReshape to prevent reversal
+    // Footer — DriverTRACK and date outside arabicReshape
     const now = new Date().toLocaleString('ar-DZ');
     const footer = arabicReshape('تم إصدار هذا التقرير بواسطة') + ' DriverTRACK — ' + now;
     doc.font('ArR').fontSize(8).fillColor('#9CA3AF')
