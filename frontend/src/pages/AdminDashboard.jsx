@@ -188,7 +188,7 @@ export default function AdminDashboard() {
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>خريطة الحرارة — {rangeLabel}</span>
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{presentPct}% حضور</span>
           </div>
-          <CalendarHeatmap presentPct={presentPct} onHover={setTt} dark={dark} />
+          <CalendarHeatmap data={chartData} range={range} presentPct={presentPct} onHover={setTt} dark={dark} totalDrivers={totalDrivers} />
           {tt && (
             <div style={{ position: 'fixed', top: tt.y - 40, right: tt.x + 12, background: tooltipBg, color: '#fff', padding: '5px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, zIndex: 1000, pointerEvents: 'none', whiteSpace: 'nowrap' }}>
               {tt.day} · {tt.rate}% حضور
@@ -315,27 +315,73 @@ function DonutChart({ values, colors, donutBg }) {
   );
 }
 
-function CalendarHeatmap({ presentPct, onHover, dark }) {
-  const days = Array.from({ length: 30 }, (_, i) => 30 - i);
+function CalendarHeatmap({ data, range, presentPct, onHover, dark, totalDrivers }) {
   const textSec = dark ? '#888892' : '#888';
   const defTextCol = (r) => r >= 55 ? '#fff' : (dark ? '#CCC' : '#333');
+  const hc = (v, max) => {
+    if (max === 0) return '#e0e0e0';
+    const r = (v / max) * 100;
+    return r >= 85 ? G : r >= 70 ? '#63c99a' : r >= 55 ? A : r >= 40 ? '#eb6834' : R;
+  };
+
+  if (range === 'today') {
+    const maxA = totalDrivers;
+    const rate = maxA > 0 ? Math.round((presentPct / 100) * maxA) : 0;
+    const pctVal = presentPct;
+    const color = hc(rate, maxA);
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%' }}>
+          <div style={{ width: 80, height: 80, borderRadius: 12, background: color, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: pctVal >= 55 ? '#fff' : '#333', flexShrink: 0 }}>
+            <div style={{ fontSize: 22, fontWeight: 700 }}>{rate}</div>
+            <div style={{ fontSize: 9 }}>حاضر</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 20, fontWeight: 500, color: dark ? '#EDEDEE' : '#111' }}>{pctVal}%</div>
+            <div style={{ fontSize: 11, color: textSec, marginTop: 2 }}>معدل الحضور اليوم</div>
+            <div style={{ width: '100%', height: 6, borderRadius: 4, background: dark ? '#2E2E36' : '#eee', marginTop: 6, overflow: 'hidden' }}>
+              <div style={{ width: pctVal + '%', height: '100%', background: color, borderRadius: 4, transition: 'width 0.8s ease' }} />
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: textSec, textAlign: 'center' }}>{totalDrivers} سائق — {Math.round((100 - pctVal) * totalDrivers / 100)} غائب</div>
+      </div>
+    );
+  }
+
+  // Multi-day view: build rows from data
+  const rows = [];
+  let row = [];
+  // pad first row to align with day-of-week
+  const firstDate = new Date(data[0]?.date || new Date());
+  const pad = firstDate.getDay(); // 0=Sun, 6=Sat — RTL means we want right-side alignment
+  // In RTL, the grid starts with Sunday (أحد) on the right
+  // pad days before the first date
+  for (let i = 0; i < pad; i++) row.push(null);
+  const maxV = Math.max(...data.map(d => d.present), 1);
+  data.forEach((d) => {
+    row.push(d);
+    if (row.length === 7) { rows.push(row); row = []; }
+  });
+  if (row.length > 0) rows.push(row);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 2 }}>
         {daysRTL.map(d => (
           <div key={d} style={{ fontSize: 9, color: textSec, textAlign: 'center', fontWeight: 600, padding: '2px 0' }}>{d}</div>
         ))}
-        {Array.from({ length: 2 }).map((_, i) => <div key={`p${i}`} />)}
-        {days.map((day) => {
-          const noise = Math.sin(day * 1.3) * 15 + Math.cos(day * 0.7) * 8 + 75;
-          const rate = Math.max(30, Math.min(100, Math.round(noise + (presentPct - 73) * 0.4)));
-          const c = rate >= 85 ? G : rate >= 70 ? '#63c99a' : rate >= 55 ? A : rate >= 40 ? '#eb6834' : R;
+        {rows.flat().map((cell, i) => {
+          if (!cell) return <div key={`e${i}`} />;
+          const dayNum = new Date(cell.date).getDate();
+          const rate = maxV > 0 ? (cell.present / maxV) * 100 : 0;
+          const c = hc(cell.present, maxV);
           return (
-            <div key={day}
-              onMouseEnter={(e) => onHover({ x: e.clientX, y: e.clientY, day, rate })}
+            <div key={cell.date}
+              onMouseEnter={(e) => onHover({ x: e.clientX, y: e.clientY, day: dayNum, rate: Math.round(rate) })}
               onMouseLeave={() => onHover(null)}
-              style={{ height: 30, borderRadius: 4, background: c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: defTextCol(rate), cursor: 'pointer', transition: 'transform .12s, box-shadow .12s' }}>
-              {day}
+              style={{ height: 30, borderRadius: 4, background: c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: rate >= 55 ? '#fff' : '#333', cursor: 'pointer', transition: 'transform .12s, box-shadow .12s' }}>
+              {dayNum}
             </div>
           );
         })}
