@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
+import DriverProfile from './DriverProfile';
 import { useAuth } from '../context/AuthContext';
 import { qr, attendance } from '../api';
 
@@ -116,36 +117,7 @@ export default function DriverDashboard() {
         </>
       )}
 
-      {activeTab === 'profile' && (
-        <div className="driver-profile-section">
-          <div className="driver-profile-header">
-            <div className="driver-profile-avatar">{user.full_name ? user.full_name.charAt(0) : '?'}</div>
-            <h3>{user.full_name}</h3>
-          </div>
-          <div className="driver-profile-details">
-            <div className="driver-profile-item">
-              <span className="dpi-label">اسم المستخدم</span>
-              <span className="dpi-value">{user.username}</span>
-            </div>
-            <div className="driver-profile-item">
-              <span className="dpi-label">البريد الإلكتروني</span>
-              <span className="dpi-value">{user.email || '—'}</span>
-            </div>
-            <div className="driver-profile-item">
-              <span className="dpi-label">رقم الهاتف</span>
-              <span className="dpi-value">{user.phone || '—'}</span>
-            </div>
-            <div className="driver-profile-item">
-              <span className="dpi-label">نوع المركبة</span>
-              <span className="dpi-value">{user.vehicle_type || '—'}</span>
-            </div>
-            <div className="driver-profile-item">
-              <span className="dpi-label">رقم اللوحة</span>
-              <span className="dpi-value">{user.license_plate || '—'}</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {activeTab === 'profile' && <DriverProfile />}
 
       {activeTab === 'history' && (
         <div className="driver-history-section">

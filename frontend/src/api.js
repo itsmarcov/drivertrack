@@ -46,6 +46,7 @@ export const attendance = {
     return request(`/attendance${qs ? '?' + qs : ''}`);
   },
   my: () => request('/attendance/my'),
+  profile: () => request('/attendance/my/profile'),
   stats: () => request('/attendance/stats'),
   late: () => request('/attendance/late'),
   exportExcel: async (params = {}) => {

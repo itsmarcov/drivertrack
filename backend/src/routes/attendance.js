@@ -285,4 +285,47 @@ router.get('/export', authenticate, authorize('admin', 'ops'), async (req, res) 
   res.end();
 });
 
+router.get('/my/profile', authenticate, authorize('driver'), async (req, res) => {
+  const id = req.user.id;
+
+  const totalAtt = await queryOne('SELECT COUNT(*) as count FROM attendance WHERE driver_id = $1', [id]);
+  const totalPen = await queryOne('SELECT COUNT(*) as count, COALESCE(SUM(amount),0) as total FROM penalties WHERE driver_id = $1', [id]);
+  const att30d = await queryOne(
+    `SELECT COUNT(DISTINCT scan_date) as count FROM attendance WHERE driver_id = $1 AND scan_date::date >= CURRENT_DATE - INTERVAL '30 days'`, [id]);
+  const abs30d = await queryOne(
+    `SELECT COUNT(*) as count FROM absences WHERE driver_id = $1 AND absence_date::date >= CURRENT_DATE - INTERVAL '30 days'`, [id]);
+  const dates = await queryAll('SELECT DISTINCT scan_date FROM attendance WHERE driver_id = $1 ORDER BY scan_date DESC', [id]);
+  const recent = await queryAll(
+    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, s.full_name as scanned_by_name
+     FROM attendance a JOIN users s ON a.scanned_by = s.id
+     WHERE a.driver_id = $1 ORDER BY a.created_at DESC LIMIT 10`, [id]);
+
+  let streak = 0;
+  if (dates.length > 0) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const last = new Date(dates[0].scan_date); last.setHours(0, 0, 0, 0);
+    if (Math.round((today - last) / 864e5) <= 1) {
+      streak = 1;
+      for (let i = 1; i < dates.length; i++) {
+        const p = new Date(dates[i - 1].scan_date); p.setHours(0, 0, 0, 0);
+        const c = new Date(dates[i].scan_date); c.setHours(0, 0, 0, 0);
+        if (Math.round((p - c) / 864e5) === 1) streak++; else break;
+      }
+    }
+  }
+
+  const rate = Math.min(Math.round((parseInt(att30d.count) / 30) * 100), 100);
+
+  res.json({
+    total_attendance: parseInt(totalAtt.count),
+    total_penalties: parseInt(totalPen.count),
+    total_penalty_amount: parseFloat(totalPen.total),
+    total_present_30d: parseInt(att30d.count),
+    total_absences_30d: parseInt(abs30d.count),
+    streak,
+    attendance_rate_30d: rate,
+    recent_attendance: recent,
+  });
+});
+
 module.exports = router;
