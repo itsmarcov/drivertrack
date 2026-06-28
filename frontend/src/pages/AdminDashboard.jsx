@@ -110,7 +110,7 @@ export default function AdminDashboard() {
 
   const attOverTime = analytics?.attendance_over_time ?? [];
   const chartData = attOverTime.map((d, i) => ({
-    day: i, present: Number(d.attendance) || 0, absent: Number(d.absences) || 0,
+    day: i, date: d.date, present: Number(d.attendance) || 0, absent: Number(d.absences) || 0,
   }));
 
   const chartDays = chartData.length;
