@@ -15,7 +15,10 @@ export const auth = {
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   register: (data) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
-  me: () => request('/auth/me'),
+  me: async () => {
+    try { return await request('/auth/me'); }
+    catch (e) { if (e.message === 'Failed to fetch' || e.name === 'TypeError') return null; throw e; }
+  },
   listOps: () => request('/auth/ops'),
   updateOps: (id, data) => request(`/auth/ops/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteOps: (id) => request(`/auth/ops/${id}`, { method: 'DELETE' }),

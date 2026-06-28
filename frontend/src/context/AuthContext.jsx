@@ -11,10 +11,10 @@ export function AuthProvider({ children }) {
     let cancelled = false;
     const token = localStorage.getItem('token');
     if (token) {
-      const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 5000);
+      const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15000);
       auth.me()
-        .then(u => { clearTimeout(timeout); if (!cancelled) setUser(u); })
-        .catch(() => { clearTimeout(timeout); if (!cancelled) localStorage.removeItem('token'); })
+        .then(u => { clearTimeout(timeout); if (!cancelled) { if (u) setUser(u); else setLoading(false); } })
+        .catch(() => { clearTimeout(timeout); if (!cancelled) { localStorage.removeItem('token'); setLoading(false); } })
         .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
     } else {
       setLoading(false);
