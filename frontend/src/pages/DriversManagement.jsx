@@ -295,7 +295,7 @@ export default function DriversManagement() {
 
       {selectedDriver && (
         <div className="modal-overlay" onClick={() => setSelectedDriver(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480, overflow: 'hidden', padding: '1.5rem' }}>
             <DriverProfile driverId={selectedDriver.id} onClose={() => setSelectedDriver(null)} />
           </div>
         </div>
