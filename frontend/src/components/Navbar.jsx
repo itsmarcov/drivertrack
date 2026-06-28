@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useState, useEffect } from 'react';
+import { attendance } from '../api';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -9,6 +10,9 @@ export default function Navbar() {
   const location = useLocation();
   const [hidden, setHidden] = useState(false);
   const [lastY, setLastY] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [lateDrivers, setLateDrivers] = useState([]);
+  const notifRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +24,24 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastY]);
+
+  useEffect(() => {
+    if (!user || user.role === 'driver') return;
+    const fetchLate = () => {
+      attendance.late().then(setLateDrivers).catch(() => {});
+    };
+    fetchLate();
+    const iv = setInterval(fetchLate, 30000);
+    return () => clearInterval(iv);
+  }, [user]);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   if (!user) return null;
   if (user.role === 'driver') return null;
@@ -63,6 +85,38 @@ export default function Navbar() {
         </div>
 
         <div className="nav-actions">
+          <div ref={notifRef} className="nav-notif-wrapper">
+            <button onClick={() => setNotifOpen(!notifOpen)} className="nav-notif-btn" title="الإشعارات">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              {lateDrivers.length > 0 && <span className="nav-notif-badge">{lateDrivers.length}</span>}
+            </button>
+            {notifOpen && (
+              <div className="nav-notif-dropdown">
+                <div className="nav-notif-header">
+                  <span>الإشعارات</span>
+                  <span className="nav-notif-count">{lateDrivers.length} متأخر</span>
+                </div>
+                <div className="nav-notif-list">
+                  {lateDrivers.length === 0 ? (
+                    <div className="nav-notif-empty">لا يوجد متأخرين اليوم</div>
+                  ) : (
+                    lateDrivers.map((d) => (
+                      <div key={d.id} className="nav-notif-item">
+                        <div className="nav-notif-item-icon">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E53935" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </div>
+                        <div className="nav-notif-item-body">
+                          <div className="nav-notif-item-name">{d.driver_name}</div>
+                          <div className="nav-notif-item-meta">مسح في {d.scan_time} · {d.vehicle_type || ''} {d.license_plate || ''}</div>
+                        </div>
+                        <span className="nav-notif-item-badge">متأخر</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="nav-user">
             <span className={`nav-user-role role-${user.role}`}>{user.role === 'admin' ? 'مدير' : 'عمليات'}</span>
             <span className="nav-user-name">{user.full_name}</span>
