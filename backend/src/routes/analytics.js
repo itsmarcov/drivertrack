@@ -9,63 +9,47 @@ function todayStr(d) {
 }
 
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
-  const today = todayStr(new Date());
   const isOps = req.user.role === 'ops';
   const stationId = isOps ? req.user.station_id : null;
+
+  const from = req.query.from || todayStr(new Date());
+  const to = req.query.to || from;
   const days = Math.min(Math.max(parseInt(req.query.days) || 14, 1), 30);
 
-  const [attendanceToday] = await queryAll(
-    `SELECT COUNT(*) as count FROM attendance a
-     ${stationId ? 'JOIN users du ON a.driver_id = du.id AND du.station_id = $1' : ''}
-     WHERE a.scan_date = '${today}'`,
-    stationId ? [stationId] : []
+  const sf = (sql) => {
+    if (!stationId) return sql;
+    return sql.replace(/FROM attendance a/g, 'FROM attendance a JOIN users du ON a.driver_id = du.id AND du.station_id = ' + stationId)
+              .replace(/FROM absences a/g, 'FROM absences a JOIN users du ON a.driver_id = du.id AND du.station_id = ' + stationId);
+  };
+
+  const [attendanceCount] = await queryAll(
+    sf(`SELECT COUNT(*) as count FROM attendance a WHERE a.scan_date BETWEEN '${from}' AND '${to}'`)
   );
 
-  const [absToday] = await queryAll(
-    `SELECT COUNT(*) as count FROM absences a
-     ${stationId ? 'JOIN users du ON a.driver_id = du.id AND du.station_id = $1' : ''}
-     WHERE a.absence_date = '${today}'`,
-    stationId ? [stationId] : []
+  const [absCount] = await queryAll(
+    sf(`SELECT COUNT(*) as count FROM absences a WHERE a.absence_date BETWEEN '${from}' AND '${to}'`)
   );
 
   const [totalDrivers] = await queryAll(
-    `SELECT COUNT(*) as count FROM users WHERE role = 'driver' AND is_active = 1
-     ${stationId ? 'AND station_id = $1' : ''}`,
-    stationId ? [stationId] : []
+    `SELECT COUNT(*) as count FROM users WHERE role = 'driver' AND is_active = 1${stationId ? ' AND station_id = ' + stationId : ''}`
   );
 
+  // day-by-day trend for the requested days going backward from `to`
   const lastNDays = [];
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
+    const d = new Date(to);
+    d.setDate(d.getDate() - (days - 1 - i));
     const ds = todayStr(d);
-
-    const [att] = await queryAll(
-      `SELECT COUNT(*) as count FROM attendance a
-       ${stationId ? 'JOIN users du ON a.driver_id = du.id AND du.station_id = $1' : ''}
-       WHERE a.scan_date = '${ds}'`,
-      stationId ? [stationId] : []
-    );
-    const [abs] = await queryAll(
-      `SELECT COUNT(*) as count FROM absences a
-       ${stationId ? 'JOIN users du ON a.driver_id = du.id AND du.station_id = $1' : ''}
-       WHERE a.absence_date = '${ds}'`,
-      stationId ? [stationId] : []
-    );
-    lastNDays.push({
-      date: ds,
-      attendance: parseInt(att.count),
-      absences: parseInt(abs.count),
-    });
+    if (ds < from || ds > to) continue;
+    const [att] = await queryAll(sf(`SELECT COUNT(*) as count FROM attendance a WHERE a.scan_date = '${ds}'`));
+    const [abs] = await queryAll(sf(`SELECT COUNT(*) as count FROM absences a WHERE a.absence_date = '${ds}'`));
+    lastNDays.push({ date: ds, attendance: parseInt(att.count), absences: parseInt(abs.count) });
   }
 
   const peakHours = await queryAll(
-    `SELECT SUBSTRING(a.scan_time FROM 1 FOR 2) as hour, COUNT(*) as count
-     FROM attendance a
-     ${stationId ? 'JOIN users du ON a.driver_id = du.id AND du.station_id = $1' : ''}
-     WHERE a.scan_date = '${today}'
-     GROUP BY hour ORDER BY count DESC LIMIT 5`,
-    stationId ? [stationId] : []
+    sf(`SELECT SUBSTRING(a.scan_time FROM 1 FOR 2) as hour, COUNT(*) as count
+        FROM attendance a WHERE a.scan_date BETWEEN '${from}' AND '${to}'
+        GROUP BY hour ORDER BY count DESC LIMIT 5`)
   );
 
   const stationsMostAbsences = await queryAll(
@@ -74,40 +58,39 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
      LEFT JOIN (
        SELECT u.station_id, COUNT(a.id) as cnt
        FROM absences a JOIN users u ON a.driver_id = u.id
-       WHERE a.absence_date = '${today}'
+       WHERE a.absence_date BETWEEN '${from}' AND '${to}'
        GROUP BY u.station_id
      ) sub ON s.id = sub.station_id
-     ${stationId ? 'WHERE s.id = $1' : ''}
-     ORDER BY count DESC LIMIT 5`,
-    stationId ? [stationId] : []
+     ${stationId ? 'WHERE s.id = ' + stationId : ''}
+     ORDER BY count DESC LIMIT 5`
   );
 
   const stationsBestAttendance = await queryAll(
     `SELECT s.id, s.name,
-       COALESCE(ont.cnt, 0) as on_time,
-       COALESCE(tot.cnt, 0) as total
+        COALESCE(ont.cnt, 0) as on_time,
+        COALESCE(tot.cnt, 0) as total
      FROM stations s
      LEFT JOIN (
        SELECT u.station_id, COUNT(a.id) as cnt
        FROM attendance a JOIN users u ON a.driver_id = u.id
-       WHERE a.scan_date = '${today}' AND a.is_late = 0
+       WHERE a.scan_date BETWEEN '${from}' AND '${to}' AND a.is_late = 0
        GROUP BY u.station_id
      ) ont ON s.id = ont.station_id
      LEFT JOIN (
        SELECT u.station_id, COUNT(a.id) as cnt
        FROM attendance a JOIN users u ON a.driver_id = u.id
-       WHERE a.scan_date = '${today}'
+       WHERE a.scan_date BETWEEN '${from}' AND '${to}'
        GROUP BY u.station_id
      ) tot ON s.id = tot.station_id
-     ${stationId ? 'WHERE s.id = $1' : ''}
-     ORDER BY on_time DESC LIMIT 5`,
-    stationId ? [stationId] : []
+     ${stationId ? 'WHERE s.id = ' + stationId : ''}
+     ORDER BY on_time DESC LIMIT 5`
   );
 
   res.json({
-    date: today,
-    attendance_today: parseInt(attendanceToday.count),
-    absence_today: parseInt(absToday.count),
+    date_from: from,
+    date_to: to,
+    attendance_today: parseInt(attendanceCount.count),
+    absence_today: parseInt(absCount.count),
     total_drivers: parseInt(totalDrivers.count),
     attendance_over_time: lastNDays,
     peak_scan_hours: peakHours.map(h => ({ hour: h.hour + ':00', count: parseInt(h.count) })),

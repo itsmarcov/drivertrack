@@ -19,8 +19,8 @@ function fmtDate(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-function AnimatedCard({ i, children, style }) {
-  return <div className="fade-slide-in" style={{ animationDelay: `${i * 0.07}s`, ...style }}>{children}</div>;
+function AnimatedCard({ i, children, style, className }) {
+  return <div className={'fade-slide-in' + (className ? ' ' + className : '')} style={{ animationDelay: `${i * 0.07}s`, ...style }}>{children}</div>;
 }
 
 export default function AdminDashboard() {
@@ -37,29 +37,34 @@ export default function AdminDashboard() {
   const [filterKey, setFilterKey] = useState(0);
   const mounted = useRef(true);
 
-  const getDays = useCallback(() => {
-    if (range === 'week') return 7;
-    if (range === 'month') return 30;
-    if (range === 'custom' && customFrom && customTo) {
-      const diff = Math.round((new Date(customTo) - new Date(customFrom)) / 86400000) + 1;
-      return Math.min(Math.max(diff, 1), 30);
+  const getParams = useCallback(() => {
+    if (range === 'week') return { days: 7 };
+    if (range === 'month') return { days: 30 };
+    if (range === 'custom' && customFrom) {
+      const p = { from: customFrom };
+      if (customTo) p.to = customTo;
+      return p;
     }
-    return 1;
+    return {};
   }, [range, customFrom, customTo]);
 
   const fetchData = useCallback(async () => {
-    const d = getDays();
+    const params = getParams();
+    const isToday = Object.keys(params).length === 0;
     try {
-      const params = d > 1 ? { days: d } : {};
-      const [a, s] = await Promise.all([
-        analyticsApi.get(params),
-        attendance.stats(),
-      ]);
-      if (!mounted.current) return;
-      setAnalytics(a);
-      setStats(s);
+      if (isToday) {
+        const [a, s] = await Promise.all([analyticsApi.get({}), attendance.stats()]);
+        if (!mounted.current) return;
+        setAnalytics(a);
+        setStats(s);
+      } else {
+        const a = await analyticsApi.get(params);
+        if (!mounted.current) return;
+        setAnalytics(a);
+        setStats(null);
+      }
     } catch {}
-  }, [getDays]);
+  }, [getParams]);
 
   useEffect(() => {
     mounted.current = true;
@@ -96,8 +101,9 @@ export default function AdminDashboard() {
     setExporting(false);
   };
 
+  const isToday = range === 'today';
   const totalDrivers = stats?.total_drivers ?? analytics?.total_drivers ?? 0;
-  const presentToday = stats?.present_today ?? analytics?.attendance_today ?? 0;
+  const presentToday = analytics?.attendance_today ?? stats?.present_today ?? 0;
   const absentToday = analytics?.absence_today ?? (totalDrivers - presentToday);
   const presentPct = totalDrivers > 0 ? Math.round((presentToday / totalDrivers) * 100) : 0;
   const lateToday = stats?.late_today ?? 0;
@@ -177,7 +183,7 @@ export default function AdminDashboard() {
       <div key={filterKey} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
 
         {/* Card 1: Calendar Heatmap */}
-        <AnimatedCard i={4} style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
+        <AnimatedCard i={4} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>خريطة الحرارة — {rangeLabel}</span>
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{presentPct}% حضور</span>
@@ -191,7 +197,7 @@ export default function AdminDashboard() {
         </AnimatedCard>
 
         {/* Card 2: Donut */}
-        <AnimatedCard i={5} style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
+        <AnimatedCard i={5} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>الحضور حسب الحالة</span>
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{presentPct}% حضور</span>
@@ -219,7 +225,7 @@ export default function AdminDashboard() {
         </AnimatedCard>
 
         {/* Card 3: Trend Line */}
-        <AnimatedCard i={6} style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
+        <AnimatedCard i={6} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>المتجه اليومي — {chartDays} يوم</span>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -235,7 +241,7 @@ export default function AdminDashboard() {
         </AnimatedCard>
 
         {/* Card 4: Performance Details */}
-        <AnimatedCard i={7} style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
+        <AnimatedCard i={7} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>تفاصيل الأداء</span>
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{rangeLabel}</span>
