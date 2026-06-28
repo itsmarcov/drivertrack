@@ -113,6 +113,11 @@ export default function DriversManagement() {
   const [filterStation, setFilterStation] = useState('');
   const [filterShift, setFilterShift] = useState('');
   const [selectedDriver, setSelectedDriver] = useState(null);
+  const [profileClosing, setProfileClosing] = useState(false);
+  const handleProfileClose = () => {
+    setProfileClosing(true);
+    setTimeout(() => { setSelectedDriver(null); setProfileClosing(false); }, 180);
+  };
 
   const loadDrivers = async (station, shift, srch) => {
     try {
@@ -294,9 +299,9 @@ export default function DriversManagement() {
       )}
 
       {selectedDriver && (
-        <div className="modal-overlay" onClick={() => setSelectedDriver(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480, overflow: 'hidden', padding: '1.5rem' }}>
-            <DriverProfile driverId={selectedDriver.id} onClose={() => setSelectedDriver(null)} />
+        <div className={'modal-overlay' + (profileClosing ? ' modal-closing' : '')} onClick={handleProfileClose}>
+          <div className={'modal' + (profileClosing ? ' modal-closing' : '')} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480, overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '1.5rem' }}>
+            <DriverProfile driverId={selectedDriver.id} onClose={handleProfileClose} />
           </div>
         </div>
       )}

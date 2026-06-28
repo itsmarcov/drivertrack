@@ -1905,11 +1905,17 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .fade-slide-in {
   animation: fadeSlideIn 0.45s ease both;
 }
+.modal-overlay.modal-closing {
+  animation: nx-fade-in 0.18s ease-in reverse forwards;
+}
+.modal.modal-closing {
+  animation: nx-scale-in 0.18s ease-in reverse forwards;
+}
+.modal::-webkit-scrollbar {
+  display: none;
+}
 .profile-open {
   animation: nx-fade-in 0.35s ease-out;
-}
-.profile-closing {
-  animation: nx-fade-in 0.18s ease-in reverse forwards;
 }
 .card-hover {
   transition: transform 0.25s cubic-bezier(0.2,0,0,1), box-shadow 0.25s cubic-bezier(0.2,0,0,1);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { attendance, drivers } from '../api';
 import LoadingScreen from '../components/LoadingScreen';
@@ -49,9 +49,6 @@ export default function DriverProfile({ driverId, onClose }) {
   const [profile, setProfile] = useState(null);
   const [driverInfo, setDriverInfo] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [closing, setClosing] = useState(false);
-  const rootRef = useRef(null);
-
   const isAdminView = driverId != null;
 
   useEffect(() => {
@@ -71,10 +68,7 @@ export default function DriverProfile({ driverId, onClose }) {
     load();
   }, [driverId]);
 
-  const handleClose = () => {
-    setClosing(true);
-    setTimeout(() => onClose?.(), 180);
-  };
+  const handleClose = () => onClose?.();
 
   if (loading) return <LoadingScreen message="جاري تحميل الملف..." />;
 
@@ -90,7 +84,7 @@ export default function DriverProfile({ driverId, onClose }) {
   const daysLabel = rate >= 80 ? 'ممتاز' : rate >= 60 ? 'جيد' : rate >= 40 ? 'مقبول' : 'ضعيف';
 
   return (
-    <div ref={rootRef} className={closing ? 'profile-closing' : 'profile-open'} style={isAdminView ? {} : { padding: '16px' }}>
+    <div className="profile-open" style={isAdminView ? {} : { padding: '16px' }}>
       {isAdminView && onClose && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: '#111' }}>ملف السائق</div>
