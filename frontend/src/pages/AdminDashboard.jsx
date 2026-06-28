@@ -185,7 +185,7 @@ export default function AdminDashboard() {
         {/* Card 1: Calendar Heatmap */}
         <AnimatedCard i={4} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>خريطة الحرارة — {rangeLabel}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>معدل الحضور — {rangeLabel}</span>
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{presentPct}% حضور</span>
           </div>
           <CalendarHeatmap data={chartData} range={range} presentPct={presentPct} onHover={setTt} dark={dark} totalDrivers={totalDrivers} />
@@ -224,10 +224,11 @@ export default function AdminDashboard() {
           </div>
         </AnimatedCard>
 
-        {/* Card 3: Trend Line */}
+        {/* Card 3: Trend Line — hidden for today */}
+        {range !== 'today' && (
         <AnimatedCard i={6} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>المتجه اليومي — {chartDays} يوم</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>مؤشر الحضور — {chartDays} يوم</span>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: textSec }}><span style={{ width: 10, height: 3, borderRadius: 2, background: G, display: 'inline-block' }} /> حاضر</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: textSec }}><span style={{ width: 10, height: 3, borderRadius: 2, background: R, display: 'inline-block' }} /> غائب</span>
@@ -239,8 +240,9 @@ export default function AdminDashboard() {
             <div style={{ textAlign: 'center', padding: '30px 0', fontSize: 12, color: textSec }}>لا توجد بيانات كافية</div>
           )}
         </AnimatedCard>
+        )}
 
-        {/* Card 4: Performance Details */}
+        {/* Card 4: Performance Details — full width when trend hidden */}
         <AnimatedCard i={7} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>تفاصيل الأداء</span>
