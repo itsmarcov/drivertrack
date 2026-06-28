@@ -116,5 +116,8 @@ export const absences = {
 };
 
 export const analytics = {
-  get: () => request('/analytics'),
+  get: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/analytics${qs ? '?' + qs : ''}`);
+  },
 };

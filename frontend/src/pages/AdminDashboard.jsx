@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { attendance, analytics as analyticsApi } from '../api';
@@ -19,10 +19,8 @@ function fmtDate(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-const animStyle = { animation: 'fadeSlideIn 0.45s ease both' };
-
 function AnimatedCard({ i, children, style }) {
-  return <div style={{ ...animStyle, animationDelay: `${i * 0.07}s`, ...style }}>{children}</div>;
+  return <div className="fade-slide-in" style={{ animationDelay: `${i * 0.07}s`, ...style }}>{children}</div>;
 }
 
 export default function AdminDashboard() {
@@ -31,29 +29,52 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
   const [stats, setStats] = useState(null);
-  const [range, setRange] = useState('month');
+  const [range, setRange] = useState('today');
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [tt, setTt] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [filterKey, setFilterKey] = useState(0);
+  const mounted = useRef(true);
+
+  const getDays = useCallback(() => {
+    if (range === 'week') return 7;
+    if (range === 'month') return 30;
+    if (range === 'custom' && customFrom && customTo) {
+      const diff = Math.round((new Date(customTo) - new Date(customFrom)) / 86400000) + 1;
+      return Math.min(Math.max(diff, 1), 30);
+    }
+    return 1;
+  }, [range, customFrom, customTo]);
 
   const fetchData = useCallback(async () => {
+    const d = getDays();
     try {
+      const params = d > 1 ? { days: d } : {};
       const [a, s] = await Promise.all([
-        analyticsApi.get(),
+        analyticsApi.get(params),
         attendance.stats(),
       ]);
+      if (!mounted.current) return;
       setAnalytics(a);
       setStats(s);
     } catch {}
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  }, [getDays]);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 350);
+    mounted.current = true;
+    fetchData();
+    return () => { mounted.current = false; };
+  }, [fetchData]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 300);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    setFilterKey(n => n + 1);
+  }, [range, customFrom, customTo]);
 
   const handleExport = async () => {
     setExporting(true);
@@ -86,15 +107,16 @@ export default function AdminDashboard() {
     day: i, present: d.attendance, absent: d.absences,
   })) : [];
 
+  const chartDays = chartData.length;
+  const lastIdx = chartData.length - 1;
   const perfCols = [
-    { val: analytics?.stations_best_attendance?.[0]?.on_time != null ? analytics.stations_best_attendance[0].on_time + '/' + analytics.stations_best_attendance[0].total : '—', label: 'أفضل محطة التزام', delta: analytics?.stations_best_attendance?.[0]?.name ?? '—', color: G, mid: '' },
-    { val: analytics?.peak_scan_hours?.[0]?.hour ?? '—', label: 'ذروة المسح', delta: analytics?.peak_scan_hours?.[0]?.count != null ? analytics.peak_scan_hours[0].count + ' مسح' : '—', color: A, mid: '' },
-    { val: analytics?.attendance_over_time?.[13]?.attendance ?? '—', label: 'حضور أمس', delta: analytics?.attendance_over_time?.[12]?.attendance != null ? 'من ' + analytics.attendance_over_time[12].attendance : '—', color: B, mid: '' },
+    { val: analytics?.stations_best_attendance?.[0]?.on_time != null ? analytics.stations_best_attendance[0].on_time + '/' + analytics.stations_best_attendance[0].total : '—', label: 'أفضل محطة التزام', delta: analytics?.stations_best_attendance?.[0]?.name ?? '—', color: G },
+    { val: analytics?.peak_scan_hours?.[0]?.hour ?? '—', label: 'ذروة المسح', delta: analytics?.peak_scan_hours?.[0]?.count != null ? analytics.peak_scan_hours[0].count + ' مسح' : '—', color: A },
+    { val: chartData[lastIdx]?.present != null ? chartData[lastIdx].present : '—', label: range === 'today' ? 'حضور اليوم' : 'آخر يوم في الفترة', delta: chartData[Math.max(lastIdx - 1, 0)]?.present != null ? 'قبل: ' + chartData[Math.max(lastIdx - 1, 0)].present : '—', color: B },
   ];
 
   if (loading) return <LoadingScreen message="جاري تحميل لوحة التحكم..." />;
 
-  const c = (mode) => dark ? (mode.dark ?? mode.light) : (mode.light);
   const bg = dark ? '#17171A' : '#F4F5F7';
   const cardBg = dark ? '#232329' : '#FFFFFF';
   const cardBorder = dark ? '#2E2E36' : '#e8e8e8';
@@ -108,6 +130,8 @@ export default function AdminDashboard() {
   const tooltipBg = dark ? '#393943' : '#1F2937';
   const selectBg = dark ? '#232329' : '#FFFFFF';
   const selectColor = dark ? '#A0A0AB' : '#555';
+
+  const rangeLabel = rangeOptions.find(o => o.value === range)?.label ?? 'اليوم';
 
   return (
     <div dir="rtl" style={{ background: bg, minHeight: '100vh', padding: '28px 32px', fontFamily: 'system-ui, Segoe UI, sans-serif' }}>
@@ -144,18 +168,18 @@ export default function AdminDashboard() {
 
       {/* KPI row */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <KpiCard i={1} dark={dark} accent={G} icon={<UsersIcon />} label="إجمالي السائقين" value={totalDrivers} delta={stats?.date ?? ''} deltaColor={textSec} />
-        <KpiCard i={2} dark={dark} accent={B} icon={<CircleCheckIcon />} label="حاضر اليوم" value={presentToday} delta={`${presentPct}% معدل الحضور`} deltaColor={G} />
-        <KpiCard i={3} dark={dark} accent={R} icon={<CircleXIcon />} label="غائب اليوم" value={absentToday} delta={`${100 - presentPct}% نسبة الغياب`} deltaColor={R} />
+        <KpiCard i={1} dark={dark} accent={G} icon={<UsersIcon />} label="إجمالي السائقين" value={totalDrivers} delta={'إجمالي المسجلين'} deltaColor={textSec} />
+        <KpiCard i={2} dark={dark} accent={B} icon={<CircleCheckIcon />} label={'حاضر - ' + rangeLabel} value={presentToday} delta={`${presentPct}% من ${totalDrivers}`} deltaColor={G} />
+        <KpiCard i={3} dark={dark} accent={R} icon={<CircleXIcon />} label={'غائب - ' + rangeLabel} value={absentToday} delta={`${100 - presentPct}% من ${totalDrivers}`} deltaColor={R} />
       </div>
 
-      {/* 2x2 Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      {/* 2x2 Grid — key forces re-mount + animation on filter change */}
+      <div key={filterKey} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
 
         {/* Card 1: Calendar Heatmap */}
         <AnimatedCard i={4} style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>خريطة الحرارة الشهرية</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>خريطة الحرارة — {rangeLabel}</span>
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{presentPct}% حضور</span>
           </div>
           <CalendarHeatmap presentPct={presentPct} onHover={setTt} dark={dark} />
@@ -197,7 +221,7 @@ export default function AdminDashboard() {
         {/* Card 3: Trend Line */}
         <AnimatedCard i={6} style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>المتجه اليومي — 14 يوم</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>المتجه اليومي — {chartDays} يوم</span>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: textSec }}><span style={{ width: 10, height: 3, borderRadius: 2, background: G, display: 'inline-block' }} /> حاضر</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: textSec }}><span style={{ width: 10, height: 3, borderRadius: 2, background: R, display: 'inline-block' }} /> غائب</span>
@@ -214,7 +238,7 @@ export default function AdminDashboard() {
         <AnimatedCard i={7} style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>تفاصيل الأداء</span>
-            <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>اليوم</span>
+            <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{rangeLabel}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
             {perfCols.map((col, i) => (
@@ -227,17 +251,6 @@ export default function AdminDashboard() {
           </div>
         </AnimatedCard>
       </div>
-
-      <style>{`
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-select:hover, button:hover { opacity: 0.8; }
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: ${dark ? 'invert(0.8)' : 'none'};
-}
-      `}</style>
     </div>
   );
 }

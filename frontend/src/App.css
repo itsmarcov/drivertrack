@@ -1897,3 +1897,11 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   .ios-grid.two-col { flex-direction: column; }
   .ios-grid.three-col { flex-direction: column; }
 }
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-slide-in {
+  animation: fadeSlideIn 0.45s ease both;
+}

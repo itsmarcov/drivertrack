@@ -12,6 +12,7 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const today = todayStr(new Date());
   const isOps = req.user.role === 'ops';
   const stationId = isOps ? req.user.station_id : null;
+  const days = Math.min(Math.max(parseInt(req.query.days) || 14, 1), 30);
 
   const [attendanceToday] = await queryAll(
     `SELECT COUNT(*) as count FROM attendance a
@@ -33,8 +34,8 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
     stationId ? [stationId] : []
   );
 
-  const last14Days = [];
-  for (let i = 13; i >= 0; i--) {
+  const lastNDays = [];
+  for (let i = days - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const ds = todayStr(d);
@@ -51,7 +52,7 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
        WHERE a.absence_date = '${ds}'`,
       stationId ? [stationId] : []
     );
-    last14Days.push({
+    lastNDays.push({
       date: ds,
       attendance: parseInt(att.count),
       absences: parseInt(abs.count),
@@ -108,7 +109,7 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
     attendance_today: parseInt(attendanceToday.count),
     absence_today: parseInt(absToday.count),
     total_drivers: parseInt(totalDrivers.count),
-    attendance_over_time: last14Days,
+    attendance_over_time: lastNDays,
     peak_scan_hours: peakHours.map(h => ({ hour: h.hour + ':00', count: parseInt(h.count) })),
     stations_most_absences: stationsMostAbsences.map(s => ({ id: s.id, name: s.name, count: parseInt(s.count) })),
     stations_best_attendance: stationsBestAttendance.map(s => ({
