@@ -12,9 +12,9 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const isOps = req.user.role === 'ops';
   const stationId = isOps ? req.user.station_id : null;
 
-  const from = req.query.from || todayStr(new Date());
-  const to = req.query.to || from;
+  const to = req.query.to || todayStr(new Date());
   const days = Math.min(Math.max(parseInt(req.query.days) || 14, 1), 30);
+  const from = req.query.from || (days > 1 ? todayStr(new Date(new Date(to).getTime() - (days - 1) * 86400000)) : to);
 
   const sf = (sql) => {
     if (!stationId) return sql;
