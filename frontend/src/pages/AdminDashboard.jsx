@@ -102,23 +102,23 @@ export default function AdminDashboard() {
   };
 
   const isToday = range === 'today';
-  const totalDrivers = stats?.total_drivers ?? analytics?.total_drivers ?? 0;
-  const presentToday = analytics?.attendance_today ?? stats?.present_today ?? 0;
-  const absentToday = analytics?.absence_today ?? (totalDrivers - presentToday);
+  const totalDrivers = Number(stats?.total_drivers ?? analytics?.total_drivers ?? 0) || 0;
+  const presentToday = Number(analytics?.attendance_today ?? stats?.present_today ?? 0) || 0;
+  const absentToday = Math.max(Number(analytics?.absence_today) || 0, totalDrivers - presentToday);
   const presentPct = totalDrivers > 0 ? Math.round((presentToday / totalDrivers) * 100) : 0;
-  const lateToday = stats?.late_today ?? 0;
+  const lateToday = Number(stats?.late_today) || 0;
 
   const attOverTime = analytics?.attendance_over_time ?? [];
-  const chartData = attOverTime.length > 0 ? attOverTime.map((d, i) => ({
-    day: i, present: d.attendance, absent: d.absences,
-  })) : [];
+  const chartData = attOverTime.map((d, i) => ({
+    day: i, present: Number(d.attendance) || 0, absent: Number(d.absences) || 0,
+  }));
 
   const chartDays = chartData.length;
   const lastIdx = chartData.length - 1;
   const perfCols = [
     { val: analytics?.stations_best_attendance?.[0]?.on_time != null ? analytics.stations_best_attendance[0].on_time + '/' + analytics.stations_best_attendance[0].total : '—', label: 'أفضل محطة التزام', delta: analytics?.stations_best_attendance?.[0]?.name ?? '—', color: G },
     { val: analytics?.peak_scan_hours?.[0]?.hour ?? '—', label: 'ذروة المسح', delta: analytics?.peak_scan_hours?.[0]?.count != null ? analytics.peak_scan_hours[0].count + ' مسح' : '—', color: A },
-    { val: chartData[lastIdx]?.present != null ? chartData[lastIdx].present : '—', label: range === 'today' ? 'حضور اليوم' : 'آخر يوم في الفترة', delta: chartData[Math.max(lastIdx - 1, 0)]?.present != null ? 'قبل: ' + chartData[Math.max(lastIdx - 1, 0)].present : '—', color: B },
+    { val: lastIdx >= 0 && chartData[lastIdx]?.present > 0 ? chartData[lastIdx].present : '—', label: range === 'today' ? 'حضور اليوم' : 'آخر يوم في الفترة', delta: lastIdx > 0 && chartData[lastIdx - 1]?.present > 0 ? 'قبل: ' + chartData[lastIdx - 1].present : '—', color: B },
   ];
 
   if (loading) return <LoadingScreen message="جاري تحميل لوحة التحكم..." />;
