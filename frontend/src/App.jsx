@@ -15,7 +15,7 @@ import StationsManagement from './pages/StationsManagement';
 import PenaltiesManagement from './pages/PenaltiesManagement';
 import SettingsManagement from './pages/SettingsManagement';
 import AbsencesManagement from './pages/AbsencesManagement';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
+
 
 function HomeRedirect() {
   const { user } = useAuth();
@@ -53,7 +53,7 @@ export default function App() {
           <Route path="/admin/penalties" element={<ProtectedRoute roles={['admin', 'ops']}><PenaltiesManagement /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><SettingsManagement /></ProtectedRoute>} />
           <Route path="/admin/absences" element={<ProtectedRoute roles={['admin', 'ops']}><AbsencesManagement /></ProtectedRoute>} />
-          <Route path="/admin/analytics" element={<ProtectedRoute roles={['admin', 'ops']}><AnalyticsDashboard /></ProtectedRoute>} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
