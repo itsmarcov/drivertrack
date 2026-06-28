@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { drivers, stations } from '../api';
+import DriverProfile from './DriverProfile';
 
 function DriverForm({ driver, onSave, onCancel }) {
   const [stationList, setStationList] = useState([]);
@@ -111,6 +112,7 @@ export default function DriversManagement() {
   const [search, setSearch] = useState('');
   const [filterStation, setFilterStation] = useState('');
   const [filterShift, setFilterShift] = useState('');
+  const [selectedDriver, setSelectedDriver] = useState(null);
 
   const loadDrivers = async (station, shift, srch) => {
     try {
@@ -261,7 +263,7 @@ export default function DriversManagement() {
             <tbody>
               {filtered.map((d) => (
                 <tr key={d.id}>
-                  <td><strong>{d.full_name}</strong></td>
+                  <td><strong style={{ cursor: 'pointer', color: '#E53935' }} onClick={() => setSelectedDriver(d)}>{d.full_name}</strong></td>
                   <td>{d.username}</td>
                   <td>{d.phone || '—'}</td>
                   <td>{d.vehicle_type || '—'}</td>
@@ -288,6 +290,14 @@ export default function DriversManagement() {
       {user.role === 'ops' && (
         <div className="alert alert-info" style={{ marginTop: '1rem' }}>
           يمكنك إضافة سائقين جدد عبر زر "إضافة سائق" أعلاه. للإدارة الكاملة، تواصل مع مدير النظام.
+        </div>
+      )}
+
+      {selectedDriver && (
+        <div className="modal-overlay" onClick={() => setSelectedDriver(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <DriverProfile driverId={selectedDriver.id} onClose={() => setSelectedDriver(null)} />
+          </div>
         </div>
       )}
     </div>

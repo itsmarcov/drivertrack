@@ -285,8 +285,9 @@ router.get('/export', authenticate, authorize('admin', 'ops'), async (req, res) 
   res.end();
 });
 
-router.get('/my/profile', authenticate, authorize('driver'), async (req, res) => {
-  const id = req.user.id;
+router.get('/my/profile', authenticate, authorize('admin', 'ops', 'driver'), async (req, res) => {
+  const id = req.user.role === 'driver' ? req.user.id : parseInt(req.query.driver_id);
+  if (!id) return res.status(400).json({ error: 'driver_id is required' });
 
   const totalAtt = await queryOne('SELECT COUNT(*) as count FROM attendance WHERE driver_id = $1', [id]);
   const totalPen = await queryOne('SELECT COUNT(*) as count, COALESCE(SUM(amount),0) as total FROM penalties WHERE driver_id = $1', [id]);
