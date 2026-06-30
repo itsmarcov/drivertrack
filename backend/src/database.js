@@ -44,6 +44,11 @@ async function initDatabase() {
       created_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(driver_id, attendance_date)
     )`);
+    await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS proof_file VARCHAR(255)");
+    await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS note TEXT");
+    await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS admin_note TEXT");
+    await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS reviewed_by INTEGER REFERENCES users(id)");
+    await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP");
   } catch {}
   return pool;
 }
