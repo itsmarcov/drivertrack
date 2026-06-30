@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { justifications } from '../api';
 
+const STAT_CARDS = [
+  { key: 'pendingCount', label: 'قيد المراجعة', icon: '\u23F3', cls: 'jstat-pending' },
+  { key: 'approvedCount', label: 'مقبول', icon: '\u2713', cls: 'jstat-approved' },
+  { key: 'rejectedCount', label: 'مرفوض', icon: '\u2717', cls: 'jstat-rejected' },
+  { key: 'totalCount', label: 'المجموع', icon: '\u2211', cls: 'jstat-total' },
+];
+
 export default function JustificationsReview() {
   const [list, setList] = useState([]);
   const [stats, setStats] = useState(null);
@@ -55,6 +62,8 @@ export default function JustificationsReview() {
     finally { setActionLoading(null); }
   };
 
+  const [proofBlob, setProofBlob] = useState(null);
+
   const viewProof = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -63,8 +72,16 @@ export default function JustificationsReview() {
       });
       if (!res.ok) throw new Error('فشل تحميل الملف');
       const blob = await res.blob();
-      setProofUrl(URL.createObjectURL(blob));
+      const url = URL.createObjectURL(blob);
+      setProofUrl(url);
+      setProofBlob(blob);
     } catch (e) { setError(e.message); }
+  };
+
+  const closeProof = () => {
+    if (proofUrl) { URL.revokeObjectURL(proofUrl); }
+    setProofUrl(null);
+    setProofBlob(null);
   };
 
   const reasonLabel = (r) => {
@@ -78,47 +95,51 @@ export default function JustificationsReview() {
     return <span className="badge badge-warning">قيد المراجعة</span>;
   };
 
+  const isPdf = proofBlob?.type?.includes('pdf');
+
   if (loading && list.length === 0) return <div className="loading">جاري التحميل...</div>;
 
   return (
-    <div>
+    <div className="fade-slide-in">
       <h2 style={{ marginBottom: '1rem' }}>المبررات</h2>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       {stats && (
-        <div className="stats-row" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-          <div className="stat-card" style={{ background: '#fff3e0', flex: 1, minWidth: 120, padding: '0.75rem', borderRadius: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#e65100' }}>{stats.pendingCount}</div>
-            <div style={{ fontSize: '0.8rem', color: '#666' }}>قيد المراجعة</div>
-          </div>
-          <div className="stat-card" style={{ background: '#e8f5e9', flex: 1, minWidth: 120, padding: '0.75rem', borderRadius: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#2e7d32' }}>{stats.approvedCount}</div>
-            <div style={{ fontSize: '0.8rem', color: '#666' }}>مقبول</div>
-          </div>
-          <div className="stat-card" style={{ background: '#fbe9e7', flex: 1, minWidth: 120, padding: '0.75rem', borderRadius: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#c62828' }}>{stats.rejectedCount}</div>
-            <div style={{ fontSize: '0.8rem', color: '#666' }}>مرفوض</div>
-          </div>
-          <div className="stat-card" style={{ background: '#e3f2fd', flex: 1, minWidth: 120, padding: '0.75rem', borderRadius: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1565c0' }}>{stats.totalCount}</div>
-            <div style={{ fontSize: '0.8rem', color: '#666' }}>المجموع</div>
-          </div>
+        <div className="jstat-row fade-slide-in">
+          {STAT_CARDS.map((c, i) => (
+            <div key={c.key} className={'jstat-card card-hover ' + c.cls} style={{ animationDelay: `${0.05 + i * 0.07}s` }}>
+              <div className="jstat-icon">{c.icon}</div>
+              <div>
+                <div className="jstat-num">{Number(stats[c.key]) || 0}</div>
+                <div className="jstat-label">{c.label}</div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      <div style={{ marginBottom: '1rem' }}>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="form-input" style={{ width: 200 }}>
-          <option value="">جميع المبررات</option>
-          <option value="pending">قيد المراجعة</option>
-          <option value="approved">مقبولة</option>
-          <option value="rejected">مرفوضة</option>
-        </select>
+      <div className="nx-filter">
+        <div className="form-group">
+          <label className="form-label" style={{ fontSize: '0.8rem' }}>تصفية حسب الحالة</label>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="form-input">
+            <option value="">جميع المبررات</option>
+            <option value="pending">قيد المراجعة</option>
+            <option value="approved">مقبولة</option>
+            <option value="rejected">مرفوضة</option>
+          </select>
+        </div>
       </div>
 
-      {list.length === 0 && !loading && <p>لا توجد مبررات</p>}
+      {list.length === 0 && !loading && (
+        <div className="nx-empty">
+          <div className="nx-empty-icon">📋</div>
+          <h3>لا توجد مبررات</h3>
+          <p>لم يتم تقديم أي مبررات بعد</p>
+        </div>
+      )}
 
-      <div className="table-responsive">
+      <div className="table-responsive fade-slide-in" style={{ animationDelay: '0.1s' }}>
         <table className="table">
           <thead>
             <tr>
@@ -132,15 +153,21 @@ export default function JustificationsReview() {
             </tr>
           </thead>
           <tbody>
-            {list.map((j) => (
-              <tr key={j.id}>
-                <td>{j.driver_name}<br /><small style={{ color: '#999' }}>{j.phone}</small></td>
+            {list.map((j, idx) => (
+              <tr key={j.id} className="nx-table-row" style={{ animationDelay: `${0.15 + idx * 0.04}s` }}>
+                <td>
+                  <div style={{ fontWeight: 600 }}>{j.driver_name}</div>
+                  <small style={{ color: 'var(--nx-text-muted)', fontSize: '0.75rem' }}>{j.phone}</small>
+                </td>
                 <td>{j.attendance_date}</td>
-                <td>{reasonLabel(j.reason)}{j.note && <br />}<small>{j.note}</small></td>
-                <td>{j.admin_note || '—'}</td>
+                <td>
+                  {reasonLabel(j.reason)}
+                  {j.note && <><br /><small style={{ color: 'var(--nx-text-secondary)', fontSize: '0.75rem' }}>{j.note}</small></>}
+                </td>
+                <td style={{ color: 'var(--nx-text-secondary)', fontSize: '0.8rem' }}>{j.admin_note || '—'}</td>
                 <td>
                   {j.proof_file ? (
-                    <button onClick={() => viewProof(j.id)} className="btn btn-sm" style={{ background: 'none', border: 'none', color: '#E53935', cursor: 'pointer', textDecoration: 'underline' }}>
+                    <button onClick={() => viewProof(j.id)} className="btn btn-ghost btn-sm">
                       عرض الملف
                     </button>
                   ) : '—'}
@@ -148,23 +175,23 @@ export default function JustificationsReview() {
                 <td>{statusBadge(j.status)}</td>
                 <td>
                   {j.status === 'pending' && (
-                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <div className="jaction-group">
                       <button onClick={() => handleApprove(j.id)} disabled={actionLoading === j.id}
-                        className="btn btn-sm" style={{ background: '#2e7d32', color: '#fff', border: 'none', borderRadius: 4, padding: '0.25rem 0.5rem', cursor: 'pointer' }}>
+                        className="btn btn-sm jaction-approve">
                         {actionLoading === j.id ? '...' : 'قبول'}
                       </button>
                       <button onClick={() => { setShowReject(showReject === j.id ? null : j.id); setRejectNote(''); }}
-                        className="btn btn-sm" style={{ background: '#c62828', color: '#fff', border: 'none', borderRadius: 4, padding: '0.25rem 0.5rem', cursor: 'pointer' }}>
+                        className="btn btn-sm jaction-reject">
                         رفض
                       </button>
                     </div>
                   )}
                   {showReject === j.id && (
-                    <div style={{ marginTop: '0.5rem' }}>
+                    <div className="jaction-reject-box fade-slide-in">
                       <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
-                        placeholder="سبب الرفض..." rows={2} className="form-input" style={{ fontSize: '0.8rem', marginBottom: '0.25rem' }} />
+                        placeholder="سبب الرفض..." rows={2} className="form-input" style={{ fontSize: '0.8rem', marginBottom: '0.35rem' }} />
                       <button onClick={() => handleReject(j.id)} disabled={actionLoading === j.id}
-                        className="btn btn-sm" style={{ background: '#c62828', color: '#fff', border: 'none', borderRadius: 4, padding: '0.25rem 0.5rem', cursor: 'pointer' }}>
+                        className="btn btn-sm jaction-reject-confirm">
                         {actionLoading === j.id ? '...' : 'تأكيد الرفض'}
                       </button>
                     </div>
@@ -177,14 +204,16 @@ export default function JustificationsReview() {
       </div>
 
       {proofUrl && (
-        <div className="modal-overlay" onClick={() => { setProofUrl(null); URL.revokeObjectURL(proofUrl); }}>
-          <div className="modal-content" style={{ maxWidth: 600, maxHeight: '80vh', overflow: 'auto', position: 'relative' }} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => { setProofUrl(null); URL.revokeObjectURL(proofUrl); }}
-              style={{ position: 'absolute', top: 8, right: 12, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#333', zIndex: 10 }}>✕</button>
-            {proofUrl.endsWith('.pdf') ? (
-              <iframe src={proofUrl} style={{ width: '100%', height: 500, border: 'none' }} title="Proof" />
+        <div className="modal-overlay" onClick={closeProof}>
+          <div className="modal" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>الملف المرفق</h3>
+              <button className="modal-close" onClick={closeProof}>✕</button>
+            </div>
+            {isPdf ? (
+              <iframe src={proofUrl} style={{ width: '100%', height: 500, border: 'none', borderRadius: 'var(--nx-radius-sm)' }} title="Proof" />
             ) : (
-              <img src={proofUrl} alt="proof" style={{ width: '100%' }} />
+              <img src={proofUrl} alt="proof" style={{ width: '100%', borderRadius: 'var(--nx-radius-sm)' }} />
             )}
           </div>
         </div>

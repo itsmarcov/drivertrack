@@ -82,7 +82,7 @@ export default function JustificationTab() {
   };
 
   return (
-    <div>
+    <div className="fade-slide-in">
       <div className="justify-today-banner">
         <strong>تقديم مبرر لليوم</strong>
       </div>
@@ -90,48 +90,50 @@ export default function JustificationTab() {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
-      <form onSubmit={handleSubmit} className="justify-form">
-        <label className="form-label">السبب</label>
-        <div className="reason-chips">
-          {reasons.map((r) => (
-            <button type="button" key={r.value}
-              className={'reason-chip' + (reason === r.value ? ' active' : '')}
-              onClick={() => { setReason(r.value); setError(''); }}>
-              {r.label}
-            </button>
-          ))}
-        </div>
+      <div className="justify-form-card">
+        <form onSubmit={handleSubmit} className="justify-form">
+          <label className="form-label">السبب</label>
+          <div className="reason-chips">
+            {reasons.map((r) => (
+              <button type="button" key={r.value}
+                className={'reason-chip' + (reason === r.value ? ' active' : '')}
+                onClick={() => { setReason(r.value); setError(''); }}>
+                {r.label}
+              </button>
+            ))}
+          </div>
 
-        {reason === 'other' && (
+          {reason === 'other' && (
+            <div className="form-group">
+              <label className="form-label">ملاحظة</label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)}
+                placeholder="اكتب سبب التبرير..." rows={3} className="form-input" />
+            </div>
+          )}
+
           <div className="form-group">
-            <label className="form-label">ملاحظة</label>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)}
-              placeholder="اكتب سبب التبرير..." rows={3} className="form-input" />
+            <label className="form-label">إرفاق ملف (صور، PDF، DOC — 3MB حد أقصى)</label>
+            <div className={'proof-upload-box' + (file ? ' has-file' : '')} onClick={() => fileRef.current?.click()}>
+              {preview ? <img src={preview} alt="preview" className="proof-preview" /> : <span>اضغط لاختيار ملف</span>}
+              {file && !preview && <span className="file-name">{file.name}</span>}
+            </div>
+            <input type="file" ref={fileRef} onChange={handleFile} accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx" hidden />
           </div>
-        )}
 
-        <div className="form-group">
-          <label className="form-label">إرفاق ملف (صور، PDF، DOC — 3MB حد أقصى)</label>
-          <div className="proof-upload-box" onClick={() => fileRef.current?.click()}>
-            {preview ? <img src={preview} alt="preview" className="proof-preview" /> : <span>اضغط لاختيار ملف</span>}
-            {file && !preview && <span className="file-name">{file.name}</span>}
-          </div>
-          <input type="file" ref={fileRef} onChange={handleFile} accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx" hidden />
-        </div>
-
-        <button type="submit" className="btn btn-primary btn-block" disabled={submitting || !reason}>
-          {submitting ? 'جاري الإرسال...' : 'إرسال المبرر'}
-        </button>
-      </form>
+          <button type="submit" className="btn btn-primary btn-block" disabled={submitting || !reason}>
+            {submitting ? 'جاري الإرسال...' : 'إرسال المبرر'}
+          </button>
+        </form>
+      </div>
 
       {history.length > 0 && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <h4 style={{ marginBottom: '0.75rem' }}>المبررات السابقة</h4>
-          {history.map((j) => (
-            <div key={j.id} className="dhi-item">
-              <div className="dhi-info">
-                <span className="dhi-date">{j.attendance_date}</span>
-                <span className="dhi-shift" style={{ marginRight: '0.5rem' }}>{reasonLabel(j.reason)}</span>
+        <div className="fade-slide-in" style={{ animationDelay: '0.15s' }}>
+          <h4 style={{ marginBottom: '0.85rem', fontSize: '0.95rem', color: 'var(--nx-text-secondary)' }}>المبررات السابقة</h4>
+          {history.map((j, i) => (
+            <div key={j.id} className="justify-history-card" style={{ animationDelay: `${0.2 + i * 0.06}s` }}>
+              <div className="justify-history-left">
+                <span className="justify-history-date">{j.attendance_date}</span>
+                <span className="justify-history-reason">{reasonLabel(j.reason)}</span>
               </div>
               <div>{statusBadge(j.status)}</div>
             </div>
