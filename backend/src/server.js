@@ -63,6 +63,24 @@ function getLocalIP() {
 
 async function seedInitialData() {
   const bcrypt = require('bcryptjs');
+
+  const deleteUser = async (username) => {
+    const user = await queryOne('SELECT id FROM users WHERE username = $1', [username]);
+    if (user) {
+      await run('DELETE FROM penalties WHERE driver_id = $1', [user.id]);
+      await run('DELETE FROM attendance WHERE driver_id = $1', [user.id]);
+      await run('DELETE FROM attendance WHERE scanned_by = $1', [user.id]);
+      await run('DELETE FROM absences WHERE driver_id = $1', [user.id]);
+      await run('DELETE FROM justifications WHERE driver_id = $1', [user.id]);
+      await run('DELETE FROM users WHERE id = $1', [user.id]);
+      console.log('  \u2713 Default user removed: ' + username);
+    }
+  };
+
+  await deleteUser('ops1');
+  await deleteUser('driver1');
+  await deleteUser('driver2');
+
   const admin = await queryOne("SELECT id FROM users WHERE username = 'admin'");
   if (!admin) {
     const hash = bcrypt.hashSync('Admin@123', 10);
@@ -70,26 +88,13 @@ async function seedInitialData() {
       ['admin', hash, 'System Administrator', 'admin@drivertrack.com']);
     console.log('  \u2713 Default admin created (username: admin, password: Admin@123)');
   }
-  const ops = await queryOne("SELECT id FROM users WHERE username = 'ops1'");
-  if (!ops) {
-    const hash = bcrypt.hashSync('Ops@123', 10);
-    await run(`INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, 'ops', $3, $4)`,
-      ['ops1', hash, 'Operations Agent', 'ops@drivertrack.com']);
-    console.log('  \u2713 Default OPS agent created (username: ops1, password: Ops@123)');
-  }
-  const driver1 = await queryOne("SELECT id FROM users WHERE username = 'driver1'");
-  if (!driver1) {
-    const hash = bcrypt.hashSync('Driver@123', 10);
-    await run(`INSERT INTO users (username, password_hash, role, full_name, email, phone, vehicle_type, license_plate) VALUES ($1, $2, 'driver', $3, $4, $5, $6, $7)`,
-      ['driver1', hash, 'Ahmed Ali', 'ahmed@example.com', '0501234567', 'Motorcycle', 'ABC-123']);
-    console.log('  \u2713 Default driver created (username: driver1, password: Driver@123)');
-  }
-  const driver2 = await queryOne("SELECT id FROM users WHERE username = 'driver2'");
-  if (!driver2) {
-    const hash = bcrypt.hashSync('Driver@123', 10);
-    await run(`INSERT INTO users (username, password_hash, role, full_name, email, phone, vehicle_type, license_plate) VALUES ($1, $2, 'driver', $3, $4, $5, $6, $7)`,
-      ['driver2', hash, 'Sara Khalid', 'sara@example.com', '0559876543', 'Car', 'XYZ-789']);
-    console.log('  \u2713 Default driver created (username: driver2, password: Driver@123)');
+
+  const newAdmin = await queryOne("SELECT id FROM users WHERE username = 'kebaili'");
+  if (!newAdmin) {
+    const hash = bcrypt.hashSync('Hanane2026@', 10);
+    await run(`INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, 'admin', $3, $4)`,
+      ['kebaili', hash, 'KEBAILI HANANE', 'kebaili@drivertrack.com']);
+    console.log('  \u2713 Admin KEBAILI HANANE created (username: kebaili)');
   }
 }
 
