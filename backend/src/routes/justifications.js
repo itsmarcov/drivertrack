@@ -61,7 +61,7 @@ router.post('/', authenticate, authorize('driver'), (req, res, next) => {
     res.status(201).json(justification);
   } catch (err) {
     console.error('Justification submit error:', err);
-    res.status(500).json({ error: 'فشل إرسال المبرر' });
+    res.status(500).json({ error: 'فشل إرسال المبرر: ' + err.message });
   }
 });
 
