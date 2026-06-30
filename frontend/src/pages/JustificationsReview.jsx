@@ -70,7 +70,10 @@ export default function JustificationsReview() {
       const res = await fetch(justifications.proofUrl(id), {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('فشل تحميل الملف');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'فشل تحميل الملف');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       setProofUrl(url);
