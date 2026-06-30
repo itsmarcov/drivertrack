@@ -30,6 +30,20 @@ async function initDatabase() {
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0");
     await pool.query("ALTER TABLE penalties ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'");
     await pool.query("ALTER TABLE penalties ADD COLUMN IF NOT EXISTS admin_note TEXT");
+    await pool.query(`CREATE TABLE IF NOT EXISTS justifications (
+      id SERIAL PRIMARY KEY,
+      driver_id INTEGER NOT NULL REFERENCES users(id),
+      attendance_date VARCHAR(20) NOT NULL,
+      reason VARCHAR(50) NOT NULL,
+      note TEXT,
+      proof_file VARCHAR(255),
+      status VARCHAR(20) DEFAULT 'pending',
+      admin_note TEXT,
+      reviewed_by INTEGER REFERENCES users(id),
+      reviewed_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(driver_id, attendance_date)
+    )`);
   } catch {}
   return pool;
 }
