@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { queryOne } = require('../database');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -10,10 +11,19 @@ function authenticate(req, res, next) {
   try {
     const token = header.split(' ')[1];
     req.user = jwt.verify(token, JWT_SECRET);
-    next();
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired token.' });
   }
+  queryOne('SELECT token_version FROM users WHERE id = $1 AND is_active = 1', [req.user.id])
+    .then((user) => {
+      if (!user || (user.token_version || 0) !== (req.user.token_version || 0)) {
+        return res.status(403).json({ error: 'Session expired. Please login again.' });
+      }
+      next();
+    })
+    .catch(() => {
+      return res.status(500).json({ error: 'Server error.' });
+    });
 }
 
 function authorize(...roles) {

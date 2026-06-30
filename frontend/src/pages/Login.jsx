@@ -54,22 +54,6 @@ export default function Login() {
             {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
           </button>
         </form>
-        <div className="login-divider">بيانات تجريبية</div>
-        <div className="login-hint">
-          <p>حسابات الاختبار:</p>
-          <div className="login-hint-item">
-            <span className="login-hint-dot admin"></span>
-            <span>admin / Admin@123</span>
-          </div>
-          <div className="login-hint-item">
-            <span className="login-hint-dot ops"></span>
-            <span>ops1 / Ops@123</span>
-          </div>
-          <div className="login-hint-item">
-            <span className="login-hint-dot driver"></span>
-            <span>driver1 / Driver@123</span>
-          </div>
-        </div>
       </div>
     </div>
   );

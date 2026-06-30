@@ -28,8 +28,9 @@ router.post('/login', loginLimiter, async (req, res) => {
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     return res.status(401).json({ error: 'Invalid username or password.' });
   }
+  const token_version = user.token_version || 0;
   const token = jwt.sign(
-    { id: user.id, username: user.username, role: user.role, full_name: user.full_name, station_id: user.station_id },
+    { id: user.id, username: user.username, role: user.role, full_name: user.full_name, station_id: user.station_id, token_version },
     JWT_SECRET,
     { expiresIn: '365d' }
   );
@@ -151,7 +152,11 @@ router.put('/profile', authenticate, async (req, res) => {
   if (full_name !== undefined) { updates.push(`full_name = $${p++}`); params.push(full_name); }
   if (email !== undefined) { updates.push(`email = $${p++}`); params.push(email || null); }
   if (phone !== undefined) { updates.push(`phone = $${p++}`); params.push(phone || null); }
-  if (new_password) { updates.push(`password_hash = $${p++}`); params.push(bcrypt.hashSync(new_password, 10)); }
+  if (new_password) {
+    updates.push(`password_hash = $${p++}`);
+    params.push(bcrypt.hashSync(new_password, 10));
+    updates.push('token_version = COALESCE(token_version, 0) + 1');
+  }
   if (updates.length > 0) {
     updates.push('updated_at = NOW()');
     params.push(req.user.id);
