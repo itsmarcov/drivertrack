@@ -139,6 +139,8 @@ export const justifications = {
   },
   review: (id, data) => request(`/justifications/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) }),
   proofUrl: (id) => `/api/justifications/${id}/proof`,
+  downloadUrl: (id) => `/api/justifications/${id}/proof/download`,
+  remove: (id) => request(`/justifications/${id}`, { method: 'DELETE' }),
   stats: () => request('/justifications/stats'),
 };
 

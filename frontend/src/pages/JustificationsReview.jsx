@@ -87,6 +87,38 @@ export default function JustificationsReview() {
     setProofBlob(null);
   };
 
+  const handleDownload = async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(justifications.downloadUrl(id), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'فشل التحميل');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'proof';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) { setError(e.message); }
+  };
+
+  const handleDelete = async (id, driverName) => {
+    if (!window.confirm(`هل أنت متأكد من حذف مبرر ${driverName}؟`)) return;
+    setActionLoading(id);
+    try {
+      await justifications.remove(id);
+      fetchAll();
+    } catch (e) { setError(e.message); }
+    finally { setActionLoading(null); }
+  };
+
   const reasonLabel = (r) => {
     const map = { sick: 'مرض', en_panne: 'عطل في المركبة', other: 'أخرى' };
     return map[r] || r;
@@ -170,25 +202,36 @@ export default function JustificationsReview() {
                 <td style={{ color: 'var(--nx-text-secondary)', fontSize: '0.8rem' }}>{j.admin_note || '—'}</td>
                 <td>
                   {j.proof_file ? (
-                    <button onClick={() => viewProof(j.id)} className="btn btn-ghost btn-sm">
-                      عرض الملف
-                    </button>
+                    <div className="jaction-group" style={{ flexDirection: 'column', gap: '0.25rem' }}>
+                      <button onClick={() => viewProof(j.id)} className="btn btn-ghost btn-sm">
+                        عرض الملف
+                      </button>
+                      <button onClick={() => handleDownload(j.id)} className="btn btn-sm" style={{ background: 'var(--nx-bg-glass)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)' }}>
+                        تحميل
+                      </button>
+                    </div>
                   ) : '—'}
                 </td>
                 <td>{statusBadge(j.status)}</td>
                 <td>
-                  {j.status === 'pending' && (
-                    <div className="jaction-group">
-                      <button onClick={() => handleApprove(j.id)} disabled={actionLoading === j.id}
-                        className="btn btn-sm jaction-approve">
-                        {actionLoading === j.id ? '...' : 'قبول'}
-                      </button>
-                      <button onClick={() => { setShowReject(showReject === j.id ? null : j.id); setRejectNote(''); }}
-                        className="btn btn-sm jaction-reject">
-                        رفض
-                      </button>
-                    </div>
-                  )}
+                  <div className="jaction-group" style={{ flexWrap: 'wrap' }}>
+                    {j.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleApprove(j.id)} disabled={actionLoading === j.id}
+                          className="btn btn-sm jaction-approve">
+                          {actionLoading === j.id ? '...' : 'قبول'}
+                        </button>
+                        <button onClick={() => { setShowReject(showReject === j.id ? null : j.id); setRejectNote(''); }}
+                          className="btn btn-sm jaction-reject">
+                          رفض
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => handleDelete(j.id, j.driver_name)} disabled={actionLoading === j.id}
+                      className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--nx-border)', color: 'var(--nx-text-muted)', fontSize: '0.75rem' }}>
+                      حذف
+                    </button>
+                  </div>
                   {showReject === j.id && (
                     <div className="jaction-reject-box fade-slide-in">
                       <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}

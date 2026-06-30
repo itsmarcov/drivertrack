@@ -133,6 +133,45 @@ router.patch('/:id/review', authenticate, authorize('admin'), async (req, res) =
   }
 });
 
+router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    const justification = await queryOne('SELECT * FROM justifications WHERE id = $1', [req.params.id]);
+    if (!justification) return res.status(404).json({ error: 'المبرر غير موجود' });
+
+    if (justification.proof_file) {
+      const filePath = path.join(uploadDir, justification.proof_file);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    await run('DELETE FROM justifications WHERE id = $1', [req.params.id]);
+    res.json({ message: 'تم حذف المبرر' });
+  } catch (err) {
+    console.error('Delete justification error:', err);
+    res.status(500).json({ error: 'فشل حذف المبرر' });
+  }
+});
+
+router.get('/:id/proof/download', authenticate, async (req, res) => {
+  try {
+    const justification = await queryOne('SELECT * FROM justifications WHERE id = $1', [req.params.id]);
+    if (!justification) return res.status(404).json({ error: 'المبرر غير موجود' });
+    if (!justification.proof_file) return res.status(404).json({ error: 'لا يوجد ملف مرفق' });
+
+    const isOwner = justification.driver_id === req.user.id;
+    const isAdmin = ['admin', 'ops'].includes(req.user.role);
+    if (!isOwner && !isAdmin) return res.status(403).json({ error: 'غير مصرح لك' });
+
+    const filePath = path.join(uploadDir, justification.proof_file);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'الملف غير موجود على الخادم' });
+    }
+    res.download(filePath);
+  } catch (err) {
+    console.error('Proof download error:', err);
+    res.status(500).json({ error: 'فشل تحميل الملف' });
+  }
+});
+
 router.get('/:id/proof', authenticate, async (req, res) => {
   try {
     const justification = await queryOne('SELECT * FROM justifications WHERE id = $1', [req.params.id]);
