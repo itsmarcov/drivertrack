@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { attendance } from '../api';
+import { attendance, justifications } from '../api';
 import { useState, useEffect, useRef } from 'react';
 
 function initials(name) {
@@ -18,6 +18,7 @@ export default function Navbar() {
   const [lastY, setLastY] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [lateDrivers, setLateDrivers] = useState([]);
+  const [pendingJust, setPendingJust] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
   const notifRef = useRef(null);
   const profileRef = useRef(null);
@@ -38,9 +39,14 @@ export default function Navbar() {
     const fetchLate = () => {
       attendance.late().then(setLateDrivers).catch(() => {});
     };
+    const fetchPending = () => {
+      justifications.stats().then((s) => setPendingJust(s.pendingCount || 0)).catch(() => {});
+    };
     fetchLate();
+    fetchPending();
     const iv = setInterval(fetchLate, 30000);
-    return () => clearInterval(iv);
+    const iv2 = setInterval(fetchPending, 30000);
+    return () => { clearInterval(iv); clearInterval(iv2); };
   }, [user]);
 
   useEffect(() => {
@@ -80,6 +86,11 @@ export default function Navbar() {
           </Link>
           <Link to="/admin/penalties" className={`nav-link ${isActive('/admin/penalties')}`}>الغرامات</Link>
           <Link to="/admin/absences" className={`nav-link ${isActive('/admin/absences')}`}>الغيابات</Link>
+
+          <Link to="/admin/justifications" className={`nav-link nav-link-just ${isActive('/admin/justifications')}`}>
+            المبررات
+            {pendingJust > 0 && <span className="nav-notif-badge nav-just-badge">{pendingJust}</span>}
+          </Link>
 
           {user.role === 'admin' && (
             <>

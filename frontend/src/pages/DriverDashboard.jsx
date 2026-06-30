@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import DriverProfile from './DriverProfile';
+import JustificationTab from './JustificationTab';
 import { useAuth } from '../context/AuthContext';
 import { qr, attendance } from '../api';
 
@@ -98,6 +99,7 @@ export default function DriverDashboard() {
         <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
         <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف الشخصي</button>
         <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
+        <button className={`driver-tab ${activeTab === 'justifications' ? 'active' : ''}`} onClick={() => setActiveTab('justifications')}>المبررات</button>
       </div>
 
       {activeTab === 'qr' && (
@@ -144,6 +146,8 @@ export default function DriverDashboard() {
           )}
         </div>
       )}
+
+      {activeTab === 'justifications' && <JustificationTab />}
     </div>
   );
 }

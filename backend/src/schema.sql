@@ -66,6 +66,21 @@ CREATE TABLE IF NOT EXISTS absences (
   UNIQUE(driver_id, absence_date)
 );
 
+CREATE TABLE IF NOT EXISTS justifications (
+  id SERIAL PRIMARY KEY,
+  driver_id INTEGER NOT NULL REFERENCES users(id),
+  attendance_date VARCHAR(20) NOT NULL,
+  reason VARCHAR(50) NOT NULL,
+  note TEXT,
+  proof_file VARCHAR(255),
+  status VARCHAR(20) DEFAULT 'pending',
+  admin_note TEXT,
+  reviewed_by INTEGER REFERENCES users(id),
+  reviewed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(driver_id, attendance_date)
+);
+
 CREATE INDEX IF NOT EXISTS idx_attendance_driver ON attendance(driver_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(scan_date);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);

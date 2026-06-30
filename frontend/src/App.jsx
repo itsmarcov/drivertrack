@@ -16,6 +16,7 @@ import PenaltiesManagement from './pages/PenaltiesManagement';
 import SettingsManagement from './pages/SettingsManagement';
 import AbsencesManagement from './pages/AbsencesManagement';
 import ProfileSettings from './pages/ProfileSettings';
+import JustificationsReview from './pages/JustificationsReview';
 
 
 function HomeRedirect() {
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/admin/penalties" element={<ProtectedRoute roles={['admin', 'ops']}><PenaltiesManagement /></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><SettingsManagement /></ProtectedRoute>} />
           <Route path="/admin/absences" element={<ProtectedRoute roles={['admin', 'ops']}><AbsencesManagement /></ProtectedRoute>} />
+          <Route path="/admin/justifications" element={<ProtectedRoute roles={['admin']}><JustificationsReview /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

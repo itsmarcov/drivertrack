@@ -18,6 +18,7 @@ const penaltyRoutes = require('./routes/penalties');
 const settingsRoutes = require('./routes/settings');
 const absenceRoutes = require('./routes/absences');
 const analyticsRoutes = require('./routes/analytics');
+const justificationRoutes = require('./routes/justifications');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +36,7 @@ app.use('/api/penalties', penaltyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/absences', absenceRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/justifications', justificationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -102,6 +104,10 @@ async function start() {
   console.log('\n\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557');
   console.log('\u2551        DriverTRACK - Backend Server      \u2551');
   console.log('\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d');
+
+  const fs = require('fs');
+  const uploadDir = path.join(__dirname, '..', 'uploads', 'justifications');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
   await initDatabase();
   await seedInitialData();

@@ -2135,3 +2135,96 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .dark .card-hover:hover {
   box-shadow: 0 8px 28px rgba(0,0,0,0.35);
 }
+
+.reason-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.reason-chip {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.reason-chip.active {
+  background: #E53935;
+  color: #fff;
+  border-color: #E53935;
+}
+.reason-chip:hover:not(.active) {
+  border-color: #E53935;
+}
+.proof-upload-box {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  color: #888;
+  transition: border-color 0.2s;
+  margin-bottom: 12px;
+}
+.proof-upload-box:hover {
+  border-color: #E53935;
+}
+.proof-preview {
+  max-height: 150px;
+  border-radius: 4px;
+}
+.file-name {
+  display: block;
+  margin-top: 4px;
+  color: #333;
+  font-size: 13px;
+}
+.justify-form {
+  margin-bottom: 16px;
+}
+.justify-today-banner {
+  padding: 12px 16px;
+  background: #fff3e0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.dark .justify-today-banner {
+  background: #3e2723;
+  color: #ffcc80;
+}
+.dark .reason-chip {
+  background: #333;
+  color: #eee;
+  border-color: #555;
+}
+.dark .reason-chip.active {
+  background: #E53935;
+  border-color: #E53935;
+}
+.dark .proof-upload-box {
+  border-color: #555;
+  color: #aaa;
+}
+.dark .proof-upload-box:hover {
+  border-color: #E53935;
+}
+.dark .file-name {
+  color: #ddd;
+}
+.nav-link-just {
+  position: relative;
+}
+.nav-just-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 10px;
+  padding: 0 4px;
+}

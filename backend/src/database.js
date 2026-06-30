@@ -28,6 +28,8 @@ async function initDatabase() {
     await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS station_id INTEGER REFERENCES stations(id)');
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS shift VARCHAR(20) DEFAULT 'morning'");
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0");
+    await pool.query("ALTER TABLE penalties ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'");
+    await pool.query("ALTER TABLE penalties ADD COLUMN IF NOT EXISTS admin_note TEXT");
   } catch {}
   return pool;
 }

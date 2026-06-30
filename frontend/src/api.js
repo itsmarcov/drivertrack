@@ -10,6 +10,16 @@ async function request(endpoint, options = {}) {
   return data;
 }
 
+async function requestFormData(endpoint, formData) {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', headers, body: formData });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
 export const auth = {
   login: (username, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
@@ -118,6 +128,18 @@ export const absences = {
     return res.blob();
   },
   deleteByDate: (date) => request(`/absences/${date}`, { method: 'DELETE' }),
+};
+
+export const justifications = {
+  submit: (formData) => requestFormData('/justifications', formData),
+  my: () => request('/justifications/my'),
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/justifications${qs ? '?' + qs : ''}`);
+  },
+  review: (id, data) => request(`/justifications/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) }),
+  proofUrl: (id) => `/api/justifications/${id}/proof`,
+  stats: () => request('/justifications/stats'),
 };
 
 export const analytics = {
