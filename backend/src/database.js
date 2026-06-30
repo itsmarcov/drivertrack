@@ -49,6 +49,7 @@ async function initDatabase() {
     await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS admin_note TEXT");
     await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS reviewed_by INTEGER REFERENCES users(id)");
     await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP");
+    await pool.query("ALTER TABLE justifications DROP CONSTRAINT IF EXISTS justifications_reason_check");
   } catch {}
   return pool;
 }
