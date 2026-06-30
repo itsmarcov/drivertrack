@@ -4,6 +4,12 @@ import { useTheme } from '../context/ThemeContext';
 import { attendance } from '../api';
 import { useState, useEffect, useRef } from 'react';
 
+function initials(name) {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+}
+
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { dark, toggle } = useTheme();
@@ -12,7 +18,9 @@ export default function Navbar() {
   const [lastY, setLastY] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [lateDrivers, setLateDrivers] = useState([]);
+  const [profileOpen, setProfileOpen] = useState(false);
   const notifRef = useRef(null);
+  const profileRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -38,6 +46,7 @@ export default function Navbar() {
   useEffect(() => {
     const handleClick = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -52,6 +61,7 @@ export default function Navbar() {
   };
 
   const handleLogout = () => { logout(); };
+  const inits = initials(user.full_name);
 
   return (
     <nav className={`navbar${hidden ? ' navbar-hidden' : ''}`}>
@@ -117,12 +127,31 @@ export default function Navbar() {
               </div>
             )}
           </div>
-          <div className="nav-user">
-            <span className={`nav-user-role role-${user.role}`}>{user.role === 'admin' ? 'مدير' : 'عمليات'}</span>
-            <span className="nav-user-name">{user.full_name}</span>
-            <button onClick={handleLogout} className="nav-user-logout" title="خروج">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <div ref={profileRef} className="nav-profile-wrapper">
+            <button onClick={() => setProfileOpen(!profileOpen)} className="nav-profile-btn" title={user.full_name}>
+              <span className="nav-profile-avatar">{inits}</span>
             </button>
+            {profileOpen && (
+              <div className="nav-profile-dropdown">
+                <div className="nav-profile-header">
+                  <div className="nav-profile-header-avatar">{inits}</div>
+                  <div className="nav-profile-header-info">
+                    <div className="nav-profile-header-name">{user.full_name}</div>
+                    <div className="nav-profile-header-role">{user.role === 'admin' ? 'مدير' : 'مشغل'}</div>
+                  </div>
+                </div>
+                <div className="nav-profile-body">
+                  <Link to="/admin/settings" className="nav-profile-item" onClick={() => setProfileOpen(false)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z"/></svg>
+                    <span>الإعدادات</span>
+                  </Link>
+                  <button onClick={handleLogout} className="nav-profile-item nav-profile-logout">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span>تسجيل خروج</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <button onClick={toggle} className="theme-toggle" title={dark ? 'الوضع النهاري' : 'الوضع الليلي'}>
             <svg className="theme-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
