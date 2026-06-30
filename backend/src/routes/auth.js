@@ -130,4 +130,40 @@ router.delete('/ops/:id', authenticate, authorize('admin'), async (req, res) => 
   res.json({ message: 'OPS user deleted successfully.' });
 });
 
+router.put('/profile', authenticate, async (req, res) => {
+  const { full_name, email, phone, current_password, new_password } = req.body;
+  if (!full_name && email === undefined && phone === undefined && !current_password) {
+    return res.status(400).json({ error: 'No fields to update.' });
+  }
+  if (new_password && !current_password) {
+    return res.status(400).json({ error: 'Current password is required to set a new password.' });
+  }
+  const user = await queryOne('SELECT * FROM users WHERE id = $1', [req.user.id]);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+  if (current_password) {
+    if (!bcrypt.compareSync(current_password, user.password_hash)) {
+      return res.status(401).json({ error: 'Current password is incorrect.' });
+    }
+  }
+  const updates = [];
+  const params = [];
+  let p = 1;
+  if (full_name !== undefined) { updates.push(`full_name = $${p++}`); params.push(full_name); }
+  if (email !== undefined) { updates.push(`email = $${p++}`); params.push(email || null); }
+  if (phone !== undefined) { updates.push(`phone = $${p++}`); params.push(phone || null); }
+  if (new_password) { updates.push(`password_hash = $${p++}`); params.push(bcrypt.hashSync(new_password, 10)); }
+  if (updates.length > 0) {
+    updates.push('updated_at = NOW()');
+    params.push(req.user.id);
+    await run(`UPDATE users SET ${updates.join(', ')} WHERE id = $${p}`, params);
+  }
+  const updated = await queryOne(
+    `SELECT u.id, u.username, u.role, u.full_name, u.email, u.phone, u.vehicle_type, u.license_plate,
+            u.station_id, u.is_active, u.created_at, s.name as station_name
+     FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = $1`,
+    [req.user.id]
+  );
+  res.json(updated);
+});
+
 module.exports = router;

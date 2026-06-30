@@ -22,6 +22,7 @@ export const auth = {
   listOps: () => request('/auth/ops'),
   updateOps: (id, data) => request(`/auth/ops/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteOps: (id) => request(`/auth/ops/${id}`, { method: 'DELETE' }),
+  updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 export const drivers = {
