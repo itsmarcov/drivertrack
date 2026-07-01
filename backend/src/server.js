@@ -11,7 +11,7 @@ const { initDatabase, queryAll, queryOne, run } = require('./database');
 
 const authRoutes = require('./routes/auth');
 const driverRoutes = require('./routes/drivers');
-const qrRoutes = require('./routes/qr');
+const { router: qrRoutes } = require('./routes/qr');
 const attendanceRoutes = require('./routes/attendance');
 const stationRoutes = require('./routes/stations');
 const penaltyRoutes = require('./routes/penalties');

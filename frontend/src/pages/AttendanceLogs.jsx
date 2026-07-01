@@ -10,6 +10,7 @@ function todayStr() {
 
 export default function AttendanceLogs() {
   const { user } = useAuth();
+  const canManual = ['admin', 'super_admin'].includes(user.role);
   const [records, setRecords] = useState([]);
   const [driverList, setDriverList] = useState([]);
   const [stationList, setStationList] = useState([]);
@@ -18,6 +19,11 @@ export default function AttendanceLogs() {
   const [filterDriver, setFilterDriver] = useState('');
   const [filterStation, setFilterStation] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [showManual, setShowManual] = useState(false);
+  const [manualDriver, setManualDriver] = useState('');
+  const [manualSubmitting, setManualSubmitting] = useState(false);
+  const [manualError, setManualError] = useState('');
+  const [manualSuccess, setManualSuccess] = useState('');
 
   const loadData = async (date, driver, station) => {
     try {
@@ -25,7 +31,7 @@ export default function AttendanceLogs() {
       const params = {};
       if (date) params.date = date;
       if (driver) params.driver_id = driver;
-      if (station && ['admin', 'super_admin'].includes(user.role)) params.station_id = station;
+      if (station && canManual) params.station_id = station;
       const data = await attendance.list(params);
       setRecords(data);
     } catch (err) {
@@ -38,7 +44,7 @@ export default function AttendanceLogs() {
   useEffect(() => {
     loadData(filterDate, filterDriver, filterStation);
     drivers.list().then(setDriverList).catch(() => {});
-    if (['admin', 'super_admin'].includes(user.role)) {
+    if (canManual) {
       stationsApi.list().then(setStationList).catch(() => {});
     }
   }, []);
@@ -49,7 +55,7 @@ export default function AttendanceLogs() {
       const params = {};
       if (filterDate) params.date = filterDate;
       if (filterDriver) params.driver_id = filterDriver;
-      if (filterStation && ['admin', 'super_admin'].includes(user.role)) params.station_id = filterStation;
+      if (filterStation && canManual) params.station_id = filterStation;
       const blob = await attendance.exportExcel(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -66,6 +72,24 @@ export default function AttendanceLogs() {
     }
   };
 
+  const handleManualSubmit = async () => {
+    if (!manualDriver) { setManualError('الرجاء اختيار سائق'); return; }
+    setManualSubmitting(true);
+    setManualError('');
+    setManualSuccess('');
+    try {
+      const res = await attendance.manualAttend(parseInt(manualDriver));
+      setManualSuccess(res.message || 'تم تسجيل الحضور بنجاح');
+      setManualDriver('');
+      setTimeout(() => setShowManual(false), 1200);
+      loadData(filterDate, filterDriver, filterStation);
+    } catch (err) {
+      setManualError(err.message);
+    } finally {
+      setManualSubmitting(false);
+    }
+  };
+
   const isDriver = user.role === 'driver';
 
   if (isDriver) {
@@ -79,12 +103,47 @@ export default function AttendanceLogs() {
           <h2>سجلات الحضور</h2>
           <p>{records.length} تسجيل في {filterDate}</p>
         </div>
-        <div className="page-header-actions">
+        <div className="page-header-actions" style={{ gap: '0.5rem' }}>
+          {canManual && (
+            <button className="btn btn-primary" onClick={() => { setManualError(''); setManualSuccess(''); setShowManual(true); }}>
+              + تسجيل يدوي
+            </button>
+          )}
           <button className="btn btn-outline" onClick={handleExport} disabled={exporting}>
             {exporting ? 'جاري...' : 'تصدير Excel'}
           </button>
         </div>
       </div>
+
+      {showManual && (
+        <div className="modal-overlay" onClick={() => setShowManual(false)}>
+          <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>تسجيل حضور يدوي</h3>
+              <button className="modal-close" onClick={() => setShowManual(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ paddingTop: 0 }}>
+              {manualError && <div className="alert alert-error" style={{ marginBottom: '0.75rem' }}>{manualError}</div>}
+              {manualSuccess && <div className="alert alert-success" style={{ marginBottom: '0.75rem' }}>{manualSuccess}</div>}
+              <div className="form-group">
+                <label>اختر السائق</label>
+                <select value={manualDriver} onChange={(e) => setManualDriver(e.target.value)} className="form-input">
+                  <option value="">-- اختر سائق --</option>
+                  {driverList.filter((d) => d.is_active).map((d) => (
+                    <option key={d.id} value={d.id}>{d.full_name} ({d.license_plate || d.username})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-actions" style={{ marginTop: '1rem' }}>
+                <button className="btn btn-primary" onClick={handleManualSubmit} disabled={manualSubmitting || !manualDriver}>
+                  {manualSubmitting ? 'جاري...' : 'تأكيد التسجيل'}
+                </button>
+                <button className="btn btn-outline" onClick={() => setShowManual(false)}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
         <div className="form-row">
@@ -101,7 +160,7 @@ export default function AttendanceLogs() {
               ))}
             </select>
           </div>
-          {['admin', 'super_admin'].includes(user.role) && (
+          {canManual && (
             <div className="form-group">
               <label>المحطة</label>
               <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadData(filterDate, filterDriver, e.target.value); }}>
@@ -130,7 +189,8 @@ export default function AttendanceLogs() {
                 <th>السائق</th>
                 <th>التاريخ</th>
                 <th>الوقت</th>
-                <th>مسح بواسطة</th>
+                <th>بواسطة</th>
+                <th>طريقة التسجيل</th>
                 <th>رقم الهاتف</th>
                 <th>اللوحة</th>
                 <th>الحالة</th>
@@ -144,9 +204,10 @@ export default function AttendanceLogs() {
                   <td>{r.scan_date}</td>
                   <td>{r.scan_time}</td>
                   <td>{r.scanned_by_name}</td>
+                  <td>{r.source === 'manual' ? <span className="badge badge-info">يدوي</span> : <span className="badge" style={{ background: 'var(--nx-bg-glass)', color: 'var(--nx-text-secondary)', border: '1px solid var(--nx-border)' }}>QR</span>}</td>
                   <td className="text-sm">{r.driver_phone || '—'}</td>
                   <td className="text-sm">{r.license_plate || '—'}</td>
-                  <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>
+                  <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                 </tr>
               ))}
             </tbody>
@@ -189,7 +250,8 @@ function DriverAttendanceView() {
               <tr>
                 <th>التاريخ</th>
                 <th>الوقت</th>
-                <th>مسح بواسطة</th>
+                <th>بواسطة</th>
+                <th>طريقة التسجيل</th>
                 <th>الحالة</th>
               </tr>
             </thead>
@@ -199,7 +261,8 @@ function DriverAttendanceView() {
                   <td><strong>{r.scan_date}</strong></td>
                   <td>{r.scan_time}</td>
                   <td>{r.scanned_by_name}</td>
-                  <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق ✓</span> : <span className="badge badge-danger">غير موثق</span>}</td>
+                  <td>{r.source === 'manual' ? <span className="badge badge-info">يدوي</span> : <span className="badge" style={{ background: 'var(--nx-bg-glass)', color: 'var(--nx-text-secondary)', border: '1px solid var(--nx-border)' }}>QR</span>}</td>
+                  <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                 </tr>
               ))}
             </tbody>

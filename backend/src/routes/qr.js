@@ -91,7 +91,8 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
   const late = time > cutoffs.late_cutoff ? 1 : 0;
 
   const result = await run(
-    'INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late, lat, lng) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+    `INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late, lat, lng, source)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'qr')`,
     [driverId, req.user.id, today, time, signature, late, lat || null, lng || null]
   );
 
@@ -120,4 +121,4 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
   });
 });
 
-module.exports = router;
+module.exports = { router, getShiftCutoffs };

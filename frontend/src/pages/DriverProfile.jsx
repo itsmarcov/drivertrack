@@ -161,7 +161,7 @@ export default function DriverProfile({ driverId, onClose }) {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 500, color: '#111' }}>{r.scan_date}</div>
-                    <div style={{ fontSize: 10, color: '#888', marginTop: 1 }}>{r.scan_time} · {r.scanned_by_name}</div>
+                    <div style={{ fontSize: 10, color: '#888', marginTop: 1 }}>{r.scan_time} · {r.scanned_by_name} {r.source === 'manual' ? '· يدوي' : ''}</div>
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 600, color: badge.color, background: badge.bg, padding: '2px 8px', borderRadius: 6 }}>{badge.text}</span>
                 </div>

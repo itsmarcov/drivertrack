@@ -65,6 +65,7 @@ export const attendance = {
   },
   stats: () => request('/attendance/stats'),
   late: () => request('/attendance/late'),
+  manualAttend: (driver_id) => request('/attendance/manual', { method: 'POST', body: JSON.stringify({ driver_id }) }),
   exportExcel: async (params = {}) => {
     const token = localStorage.getItem('token');
     const qs = new URLSearchParams(params).toString();
