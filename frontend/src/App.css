@@ -355,7 +355,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.4);
-  z-index: 98;
+  z-index: 200;
   animation: fadeIn 0.2s ease;
 }
 
@@ -368,7 +368,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   max-width: 80vw;
   background: var(--nx-bg);
   border-left: 1px solid var(--nx-border);
-  z-index: 99;
+  z-index: 201;
+  box-shadow: -4px 0 24px rgba(0,0,0,0.12);
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-y: auto;
