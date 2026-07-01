@@ -53,6 +53,8 @@ async function initDatabase() {
     await pool.query("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check");
     await pool.query("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK(role IN ('super_admin', 'admin', 'ops', 'driver'))");
     await pool.query("ALTER TABLE attendance ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'qr'");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1");
+    await pool.query("UPDATE users SET is_active = 1 WHERE is_active IS NULL");
   } catch {}
   return pool;
 }

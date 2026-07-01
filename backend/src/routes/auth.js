@@ -35,7 +35,12 @@ router.post('/login', loginLimiter, async (req, res) => {
     `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.username = $1 AND u.is_active = 1`,
     [username]
   );
-  if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+  if (!user) {
+    console.log(`Login failed: user "${username}" not found or inactive`);
+    return res.status(401).json({ error: 'Invalid username or password.' });
+  }
+  if (!bcrypt.compareSync(password, user.password_hash)) {
+    console.log(`Login failed: wrong password for user "${username}"`);
     return res.status(401).json({ error: 'Invalid username or password.' });
   }
   const token_version = user.token_version || 0;
