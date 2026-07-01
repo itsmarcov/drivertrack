@@ -32,10 +32,15 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
   const lookup = username.trim();
-  const baseJoin = `FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE LOWER($1) = `;
-  const user = await queryOne(`SELECT u.*, s.name as station_name ${baseJoin}LOWER(TRIM(u.username)) AND u.is_active = 1`, [lookup])
-    || await queryOne(`SELECT u.*, s.name as station_name ${baseJoin}LOWER(TRIM(u.email)) AND u.is_active = 1`, [lookup])
-    || await queryOne(`SELECT u.*, s.name as station_name ${baseJoin}LOWER(TRIM(u.phone)) AND u.is_active = 1`, [lookup]);
+  const candidates = await queryAll(
+    `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id
+     WHERE u.is_active = 1 AND (LOWER(TRIM(u.username)) = LOWER($1) OR LOWER(TRIM(u.email)) = LOWER($1) OR LOWER(TRIM(u.phone)) = LOWER($1))`,
+    [lookup]
+  );
+  const user = candidates.find(u => bcrypt.compareSync(password, u.password_hash));
+  if (!user && candidates.length > 0) {
+    console.log(`Login failed: wrong password for "${username}" — found ${candidates.length} match(es):`, candidates.map(u => `id=${u.id} username="${u.username}" email="${u.email}"`).join('; '));
+  }
   if (!user) {
     const inactiveUser = await queryOne(
       'SELECT id, is_active FROM users WHERE LOWER($1) IN (LOWER(TRIM(username)), LOWER(TRIM(email)), LOWER(TRIM(phone)))', [lookup]
@@ -45,10 +50,6 @@ router.post('/login', loginLimiter, async (req, res) => {
     } else {
       console.log(`Login failed: user "${username}" not found in database`);
     }
-    return res.status(401).json({ error: 'Invalid username or password.' });
-  }
-  if (!bcrypt.compareSync(password, user.password_hash)) {
-    console.log(`Login failed: wrong password for "${username}" — matched user id=${user.id} username="${user.username}" email="${user.email}" phone="${user.phone}"`);
     return res.status(401).json({ error: 'Invalid username or password.' });
   }
   const token_version = user.token_version || 0;
