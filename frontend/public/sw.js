@@ -1,5 +1,5 @@
-const CACHE = 'drivertrack-v3';
-const ASSET_CACHE = 'drivertrack-assets-v3';
+const CACHE = 'drivertrack-v4';
+const ASSET_CACHE = 'drivertrack-assets-v4';
 const DB_NAME = 'scan-queue';
 const STORE_NAME = 'pending-scans';
 const DB_VERSION = 1;
@@ -103,6 +103,22 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.url.includes('/api/')) return;
 
+  // HTML navigations — network-first so redeploy always serves fresh index.html
+  if (event.request.mode === 'navigate' ||
+      (event.request.method === 'GET' && event.request.headers.get('Accept')?.includes('text/html'))) {
+    event.respondWith(
+      fetch(event.request, { signal: AbortSignal.timeout(8000) })
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images, fonts) — cache-first for speed
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request).then((response) => {
