@@ -13,8 +13,7 @@ export function AuthProvider({ children }) {
     if (token) {
       const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15000);
       auth.me()
-        .then(u => { clearTimeout(timeout); if (!cancelled) { if (u) setUser(u); else setLoading(false); } })
-        .catch(() => { clearTimeout(timeout); if (!cancelled) { localStorage.removeItem('token'); setLoading(false); } })
+        .then(u => { clearTimeout(timeout); if (!cancelled) { if (u) setUser(u); } })
         .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
     } else {
       setLoading(false);

@@ -26,8 +26,20 @@ export const auth = {
   register: (data) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   me: async () => {
-    try { return await request('/auth/me'); }
-    catch (e) { if (e.message === 'Failed to fetch' || e.name === 'TypeError') return null; throw e; }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('token');
+        return null;
+      }
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
   },
   listOps: () => request('/auth/ops'),
   updateOps: (id, data) => request(`/auth/ops/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
