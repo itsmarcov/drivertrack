@@ -1954,13 +1954,22 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   .nx-search { max-width: 100%; }
 }
 
+@media (max-width: 768px) {
+  .table-container { overflow-x: auto; }
+  .table { min-width: 600px; }
+}
+
 @media (max-width: 480px) {
-  .nx-stats { grid-template-columns: 1fr 1fr; }
-  .modal { padding: 1.25rem; }
+  .nx-stats { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .modal { padding: 1.25rem; margin: 0.5rem; }
+  .modal .form-row { grid-template-columns: 1fr; }
   .scan-page { margin: 1rem auto; }
   .driver-username { display: none; }
   .nav-logout-label { display: none; }
   .driver-logout-btn { font-size: 0.65rem; padding: 0.3rem 0.6rem; }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .page-header-content h2 { font-size: 1.1rem; }
+  .admin-dash .page-header { flex-direction: row; align-items: flex-end; }
 }
 
 /* ════════════════════════════════════════════════
@@ -2424,4 +2433,52 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   height: 16px;
   font-size: 10px;
   padding: 0 4px;
+}
+
+/* ════════════════════════════════════════════════
+   ADMIN DASHBOARD — Responsive
+   ════════════════════════════════════════════════ */
+.admin-dash {
+  padding: 28px 32px;
+  min-height: 100vh;
+}
+.admin-dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.admin-dash-perf {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.dash-donut-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.dash-donut-wrap {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .admin-dash { padding: 20px 16px; }
+  .admin-dash-grid { grid-template-columns: 1fr; }
+  .dash-donut-row { flex-direction: column; align-items: stretch; }
+  .dash-donut-wrap { align-self: center; }
+}
+@media (max-width: 600px) {
+  .admin-dash { padding: 14px 10px; }
+  .admin-dash-perf { grid-template-columns: 1fr; }
+  .admin-dash-perf > div {
+    border-right: none !important;
+    padding: 8px 0 !important;
+  }
+  .admin-dash-perf > div + div {
+    border-top: 0.5px solid var(--nx-border);
+  }
 }

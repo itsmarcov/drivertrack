@@ -142,7 +142,7 @@ export default function AdminDashboard() {
   const rangeLabel = rangeOptions.find(o => o.value === range)?.label ?? 'اليوم';
 
   return (
-    <div dir="rtl" style={{ background: bg, minHeight: '100vh', padding: '28px 32px', fontFamily: 'system-ui, Segoe UI, sans-serif' }}>
+    <div dir="rtl" className="admin-dash" style={{ background: bg, fontFamily: 'system-ui, Segoe UI, sans-serif' }}>
 
       {/* Top bar */}
       <AnimatedCard i={0} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
@@ -182,7 +182,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* 2x2 Grid — key forces re-mount + animation on filter change */}
-      <div key={filterKey} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <div key={filterKey} className="admin-dash-grid">
 
         {/* Card 1: Calendar Heatmap */}
         <AnimatedCard i={4} className="card-hover" style={{ background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
@@ -205,8 +205,8 @@ export default function AdminDashboard() {
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{presentPct}% حضور</span>
           </div>
           <SegmentedBar pct={[presentPct, Math.max(Math.round((lateToday / (totalDrivers || 1)) * 100), 0), Math.max(100 - presentPct - Math.round((lateToday / (totalDrivers || 1)) * 100), 0)]} colors={[G, A, R]} bg={segmentBg} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
-            <div style={{ position: 'relative', width: 150, height: 150, flexShrink: 0 }}>
+          <div className="dash-donut-row">
+            <div className="dash-donut-wrap">
               <DonutChart values={[Math.max(presentToday, 0), Math.max(lateToday, 0), Math.max(absentToday, 0)]} colors={[G, A, R]} donutBg={svgDonutBg} />
               <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', pointerEvents: 'none' }}>
                 <div style={{ fontSize: 18, fontWeight: 700, color: textPri }}>{presentToday}</div>
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
             <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>تفاصيل الأداء</span>
             <span style={{ background: badgeBg, color: badgeText, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>{rangeLabel}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr' }}>
+          <div className="admin-dash-perf">
             {perfCols.map((col, i) => (
               <div key={col.label} style={{ borderRight: i < 2 ? '0.5px solid ' + cardBorder : 'none', padding: '0 12px', textAlign: 'center' }}>
                 <div style={{ fontSize: 20, fontWeight: 500, color: textPri }}>{col.val}</div>
