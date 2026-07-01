@@ -32,6 +32,13 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  message: { error: 'محاولات تسجيل كثيرة جداً. حاول مرة أخرى بعد ساعة.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -86,7 +93,6 @@ router.post('/login', loginLimiter, async (req, res) => {
   setTokenCookie(res, token);
 
   res.json({
-    token,
     user: {
       id: user.id,
       username: user.username,
@@ -101,15 +107,32 @@ router.post('/login', loginLimiter, async (req, res) => {
   });
 });
 
-router.post('/logout', (req, res) => {
+router.post('/logout', async (req, res) => {
+  try {
+    const cookies = (req.headers.cookie || '').split(';').map(c => c.trim()).filter(Boolean).reduce((acc, c) => {
+      const idx = c.indexOf('=');
+      acc[c.slice(0, idx)] = c.slice(idx + 1);
+      return acc;
+    }, {});
+    const token = cookies.token;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.id) {
+        await run('UPDATE users SET token_version = COALESCE(token_version, 0) + 1 WHERE id = $1', [decoded.id]);
+      }
+    }
+  } catch {}
   res.cookie('token', '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 0, path: '/' });
   res.json({ message: 'Logged out.' });
 });
 
-router.post('/register', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+router.post('/register', authenticate, authorize('admin', 'super_admin'), registerLimiter, async (req, res) => {
   const { username, password, full_name, role, email, phone, station_id } = req.body;
   if (!username || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Username, password, full name, and role are required.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
   }
   if (!['admin', 'ops'].includes(role)) {
     return res.status(400).json({ error: 'You can only create admin or ops accounts.' });
@@ -120,14 +143,22 @@ router.post('/register', authenticate, authorize('admin', 'super_admin'), async 
   }
   const existing = await queryOne('SELECT id FROM users WHERE username = $1', [username]);
   if (existing) return res.status(409).json({ error: 'Username already exists.' });
+  if (email) {
+    const emailDup = await queryOne('SELECT id FROM users WHERE email = $1 AND email IS NOT NULL', [email]);
+    if (emailDup) return res.status(409).json({ error: 'Email already in use.' });
+  }
+  if (phone) {
+    const phoneDup = await queryOne('SELECT id FROM users WHERE phone = $1 AND phone IS NOT NULL', [phone]);
+    if (phoneDup) return res.status(409).json({ error: 'Phone already in use.' });
+  }
   const hash = bcrypt.hashSync(password, 10);
   const result = await run(
-    'INSERT INTO users (username, password_hash, role, full_name, email, phone, station_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+    'INSERT INTO users (username, password_hash, role, full_name, email, phone, station_id) VALUES ($1, $2, $3, $4, $5, $6, $7)',
     [username, hash, role, full_name, email || null, phone || null, station_id || null]
   );
   const user = await queryOne(
     'SELECT id, username, role, full_name, email, phone, station_id, created_at FROM users WHERE id = $1',
-    [result.rows[0].id]
+    [result.lastInsertRowid]
   );
   res.status(201).json(user);
 });
@@ -165,7 +196,10 @@ router.put('/ops/:id', authenticate, authorize('admin', 'super_admin'), async (r
   if (phone !== undefined) { updates.push(`phone = $${p++}`); params.push(phone); }
   if (station_id !== undefined) { updates.push(`station_id = $${p++}`); params.push(station_id || null); }
   if (is_active !== undefined) { updates.push(`is_active = $${p++}`); params.push(is_active); }
-  if (password) { updates.push(`password_hash = $${p++}`); params.push(bcrypt.hashSync(password, 10)); }
+  if (password) {
+    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    updates.push(`password_hash = $${p++}`); params.push(bcrypt.hashSync(password, 10));
+  }
   if (updates.length > 0) {
     updates.push(`updated_at = NOW()`);
     params.push(id);
@@ -215,6 +249,9 @@ router.put('/profile', authenticate, async (req, res) => {
   }
   if (new_password && !current_password) {
     return res.status(400).json({ error: 'Current password is required to set a new password.' });
+  }
+  if (new_password && new_password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
   }
   const user = await queryOne('SELECT * FROM users WHERE id = $1', [req.user.id]);
   if (!user) return res.status(404).json({ error: 'User not found.' });

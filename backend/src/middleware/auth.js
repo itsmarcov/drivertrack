@@ -14,7 +14,7 @@ function parseCookies(req) {
   );
 }
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   let token = null;
   const header = req.headers.authorization;
   if (header && header.startsWith('Bearer ')) {
@@ -31,16 +31,15 @@ function authenticate(req, res, next) {
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired token.' });
   }
-  queryOne('SELECT token_version FROM users WHERE id = $1 AND is_active::text = \'1\'', [req.user.id])
-    .then((user) => {
-      if (!user || (user.token_version || 0) !== (req.user.token_version || 0)) {
-        return res.status(403).json({ error: 'Session expired. Please login again.' });
-      }
-      next();
-    })
-    .catch(() => {
-      return res.status(500).json({ error: 'Server error.' });
-    });
+  try {
+    const dbUser = await queryOne('SELECT token_version FROM users WHERE id = $1 AND is_active::text = \'1\'', [req.user.id]);
+    if (!dbUser || (dbUser.token_version || 0) !== (req.user.token_version || 0)) {
+      return res.status(403).json({ error: 'Session expired. Please login again.' });
+    }
+    next();
+  } catch {
+    return res.status(500).json({ error: 'Server error.' });
+  }
 }
 
 function authorize(...roles) {

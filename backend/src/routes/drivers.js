@@ -55,6 +55,9 @@ router.post('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   if (!username || !password || !full_name) {
     return res.status(400).json({ error: 'Username, password, and full name are required.' });
   }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
   let driverStationId = station_id || null;
   if (req.user.role === 'ops') {
     driverStationId = req.user.station_id;
@@ -97,10 +100,11 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   if (is_active !== undefined) { updates.push(`is_active = $${paramIndex++}`); params.push(is_active); }
   if (shift !== undefined) { updates.push(`shift = $${paramIndex++}`); params.push(shift); }
   if (password) {
+    if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     const hash = bcrypt.hashSync(password, 10);
-    console.log(`Updating password for driver ${id}: hash prefix = ${hash.substring(0, 20)}...`);
     updates.push(`password_hash = $${paramIndex++}`);
     params.push(hash);
+    updates.push(`token_version = COALESCE(token_version, 0) + 1`);
   }
 
   if (updates.length > 0) {

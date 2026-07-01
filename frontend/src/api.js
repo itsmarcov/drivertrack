@@ -2,15 +2,43 @@ const API_BASE = '/api';
 
 async function request(endpoint, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'same-origin' });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'same-origin' });
+  } catch {
+    throw new Error('تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت.');
+  }
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('خطأ في استجابة الخادم. حاول مرة أخرى.');
+  }
+  if (res.status === 403 && data.error === 'Session expired. Please login again.') {
+    window.location.href = '/login';
+    throw new Error('انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+  }
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
 
 async function requestFormData(endpoint, formData) {
-  const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', body: formData, credentials: 'same-origin' });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', body: formData, credentials: 'same-origin' });
+  } catch {
+    throw new Error('تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت.');
+  }
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('خطأ في استجابة الخادم. حاول مرة أخرى.');
+  }
+  if (res.status === 403 && data.error === 'Session expired. Please login again.') {
+    window.location.href = '/login';
+    throw new Error('انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+  }
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
