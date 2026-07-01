@@ -17,7 +17,7 @@ function verifyRecaptcha(token) {
     }, res => {
       let d = '';
       res.on('data', c => d += c);
-      res.on('end', () => { try { const j = JSON.parse(d); resolve(j.success && j.score >= 0.5); } catch { resolve(true); } });
+      res.on('end', () => { try { const j = JSON.parse(d); resolve(j.success); } catch { resolve(true); } });
     });
     req.on('error', () => resolve(true));
     req.write(postData);

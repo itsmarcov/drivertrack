@@ -20,38 +20,40 @@ export default function Login() {
     }
   }, [user, navigate]);
 
+  const widgetId = useRef(null);
+
   useEffect(() => {
     fetch('/api/config/public').then(r => r.json()).then(cfg => {
       const key = cfg.recaptcha_site_key;
       if (!key) { recaptchaReady.current = true; return; }
       siteKey.current = key;
+      window.recaptchaCallback = () => {
+        widgetId.current = window.grecaptcha.render('recaptcha-widget', { sitekey: key });
+        recaptchaReady.current = true;
+      };
       const s = document.createElement('script');
-      s.src = `https://www.google.com/recaptcha/api.js?render=${key}`;
+      s.src = `https://www.google.com/recaptcha/api.js?onload=recaptchaCallback&render=explicit&hl=ar`;
       s.async = true;
-      s.onload = () => recaptchaReady.current = true;
+      s.defer = true;
       document.head.appendChild(s);
     }).catch(() => recaptchaReady.current = true);
   }, []);
 
-  function getRecaptchaToken() {
-    return new Promise(resolve => {
-      if (!siteKey.current || !window.grecaptcha) return resolve('');
-      window.grecaptcha.ready(() => {
-        window.grecaptcha.execute(siteKey.current, { action: 'login' }).then(resolve);
-      });
-    });
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const token = widgetId.current != null ? window.grecaptcha?.getResponse(widgetId.current) : '';
+    if (siteKey.current && (!token || token === '')) {
+      setError('يرجى تأكيد أنك لست روبوتاً.');
+      return;
+    }
     setLoading(true);
     try {
-      const recaptcha_token = await getRecaptchaToken();
-      const data = await login(username, password, recaptcha_token);
+      const data = await login(username, password, token || '');
       const target = data.user.role === 'driver' ? '/driver' : '/admin';
       navigate(target, { replace: true });
     } catch (err) {
+      if (widgetId.current != null) window.grecaptcha?.reset(widgetId.current);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -85,6 +87,7 @@ export default function Login() {
               </button>
             </div>
           </div>
+          <div id="recaptcha-widget" style={{ display: siteKey.current ? 'flex' : 'none', justifyContent: 'center', margin: '12px 0' }}></div>
           <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
             {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
           </button>
