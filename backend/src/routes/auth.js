@@ -32,11 +32,18 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
   const user = await queryOne(
-    `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.username = $1 AND u.is_active = 1`,
+    `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE LOWER(u.username) = LOWER($1) AND u.is_active = 1`,
     [username]
   );
   if (!user) {
-    console.log(`Login failed: user "${username}" not found or inactive`);
+    const inactiveUser = await queryOne(
+      'SELECT id, is_active FROM users WHERE LOWER(username) = LOWER($1)', [username]
+    );
+    if (inactiveUser) {
+      console.log(`Login failed: user "${username}" found but is_active = ${inactiveUser.is_active}`);
+    } else {
+      console.log(`Login failed: user "${username}" not found in database`);
+    }
     return res.status(401).json({ error: 'Invalid username or password.' });
   }
   if (!bcrypt.compareSync(password, user.password_hash)) {
