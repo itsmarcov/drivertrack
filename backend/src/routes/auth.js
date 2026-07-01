@@ -16,6 +16,16 @@ const loginLimiter = rateLimit({
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 
+function setTokenCookie(res, token) {
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 365 * 24 * 60 * 60 * 1000,
+    path: '/',
+  });
+}
+
 router.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -34,6 +44,9 @@ router.post('/login', loginLimiter, async (req, res) => {
     JWT_SECRET,
     { expiresIn: '365d' }
   );
+
+  setTokenCookie(res, token);
+
   res.json({
     token,
     user: {
@@ -48,6 +61,11 @@ router.post('/login', loginLimiter, async (req, res) => {
       station_id: user.station_id,
     },
   });
+});
+
+router.post('/logout', (req, res) => {
+  res.cookie('token', '', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 0, path: '/' });
+  res.json({ message: 'Logged out.' });
 });
 
 router.post('/register', authenticate, authorize('admin', 'super_admin'), async (req, res) => {

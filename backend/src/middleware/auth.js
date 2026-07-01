@@ -3,13 +3,30 @@ const { queryOne } = require('../database');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+function parseCookies(req) {
+  const cookie = req.headers.cookie;
+  if (!cookie) return {};
+  return Object.fromEntries(
+    cookie.split(';').map(c => c.trim()).filter(Boolean).map(c => {
+      const idx = c.indexOf('=');
+      return [c.slice(0, idx), decodeURIComponent(c.slice(idx + 1))];
+    })
+  );
+}
+
 function authenticate(req, res, next) {
+  let token = null;
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  if (header && header.startsWith('Bearer ')) {
+    token = header.split(' ')[1];
+  } else {
+    const cookies = parseCookies(req);
+    token = cookies.token;
+  }
+  if (!token) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
   try {
-    const token = header.split(' ')[1];
     req.user = jwt.verify(token, JWT_SECRET);
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired token.' });

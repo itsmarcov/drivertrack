@@ -24,8 +24,31 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+app.set('trust proxy', 1);
+
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(self), camera=(), microphone=()');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+  next();
+});
+
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://drivertrack-qlsq.onrender.com', 'capacitor://localhost', 'http://localhost']
+    : ['http://localhost:5173', 'http://localhost:5000'],
+  credentials: true,
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/drivers', driverRoutes);
@@ -44,6 +67,9 @@ app.get('/api/health', (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err?.message || err);
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'حجم الطلب كبير جداً.' });
+  }
   res.status(err?.status || 500).json({ error: err?.message || 'Internal server error.' });
 });
 

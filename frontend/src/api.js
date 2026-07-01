@@ -1,20 +1,15 @@
 const API_BASE = '/api';
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'same-origin' });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
 }
 
 async function requestFormData(endpoint, formData) {
-  const token = localStorage.getItem('token');
-  const headers = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', headers, body: formData });
+  const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST', body: formData, credentials: 'same-origin' });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Request failed');
   return data;
@@ -23,18 +18,13 @@ async function requestFormData(endpoint, formData) {
 export const auth = {
   login: (username, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
   register: (data) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   me: async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 401 || res.status === 403) {
-        localStorage.removeItem('token');
-        return null;
-      }
+      const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) return null;
       if (!res.ok) return null;
       return await res.json();
     } catch {
@@ -79,11 +69,8 @@ export const attendance = {
   late: () => request('/attendance/late'),
   manualAttend: (driver_id) => request('/attendance/manual', { method: 'POST', body: JSON.stringify({ driver_id }) }),
   exportExcel: async (params = {}) => {
-    const token = localStorage.getItem('token');
     const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`/api/attendance/export${qs ? '?' + qs : ''}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(`/api/attendance/export${qs ? '?' + qs : ''}`, { credentials: 'same-origin' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.error || 'Failed to export attendance');
@@ -107,10 +94,7 @@ export const penalties = {
   my: () => request('/penalties/my'),
   stats: () => request('/penalties/stats'),
   report: async (id) => {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`/api/penalties/${id}/report`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(`/api/penalties/${id}/report`, { credentials: 'same-origin' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.error || 'Failed to generate report');
@@ -131,11 +115,8 @@ export const absences = {
   },
   mark: (date) => request('/absences/mark', { method: 'POST', body: JSON.stringify({ date }) }),
   exportExcel: async (params = {}) => {
-    const token = localStorage.getItem('token');
     const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`/api/absences/export${qs ? '?' + qs : ''}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await fetch(`/api/absences/export${qs ? '?' + qs : ''}`, { credentials: 'same-origin' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.error || 'Failed to export absences');

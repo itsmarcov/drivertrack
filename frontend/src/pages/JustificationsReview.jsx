@@ -66,10 +66,7 @@ export default function JustificationsReview() {
 
   const viewProof = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(justifications.proofUrl(id), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(justifications.proofUrl(id), { credentials: 'same-origin' });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'فشل تحميل الملف');
@@ -89,10 +86,7 @@ export default function JustificationsReview() {
 
   const handleDownload = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(justifications.downloadUrl(id), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(justifications.downloadUrl(id), { credentials: 'same-origin' });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || 'فشل التحميل');

@@ -9,27 +9,21 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    const token = localStorage.getItem('token');
-    if (token) {
-      const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15000);
-      auth.me()
-        .then(u => { clearTimeout(timeout); if (!cancelled) { if (u) setUser(u); } })
-        .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
-    } else {
-      setLoading(false);
-    }
+    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15000);
+    auth.me()
+      .then(u => { clearTimeout(timeout); if (!cancelled && u) setUser(u); })
+      .finally(() => { clearTimeout(timeout); if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
 
   const login = async (username, password) => {
     const data = await auth.login(username, password);
-    localStorage.setItem('token', data.token);
     setUser(data.user);
     return data;
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    auth.logout().catch(() => {});
     setUser(null);
   };
 
