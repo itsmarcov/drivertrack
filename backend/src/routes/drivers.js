@@ -96,7 +96,12 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   if (station_id !== undefined) { updates.push(`station_id = $${paramIndex++}`); params.push(station_id); }
   if (is_active !== undefined) { updates.push(`is_active = $${paramIndex++}`); params.push(is_active); }
   if (shift !== undefined) { updates.push(`shift = $${paramIndex++}`); params.push(shift); }
-  if (password) { updates.push(`password_hash = $${paramIndex++}`); params.push(bcrypt.hashSync(password, 10)); }
+  if (password) {
+    const hash = bcrypt.hashSync(password, 10);
+    console.log(`Updating password for driver ${id}: hash prefix = ${hash.substring(0, 20)}...`);
+    updates.push(`password_hash = $${paramIndex++}`);
+    params.push(hash);
+  }
 
   if (updates.length > 0) {
     updates.push(`updated_at = NOW()`);

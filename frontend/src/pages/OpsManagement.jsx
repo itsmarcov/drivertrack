@@ -38,7 +38,7 @@ export default function OpsManagement() {
     const payload = { ...form, station_id: form.station_id ? parseInt(form.station_id) : null };
     try {
       if (editing) {
-        const { username, password, role, ...rest } = payload;
+        const { username, role, ...rest } = payload;
         if (!rest.password) delete rest.password;
         await auth.updateOps(editing.id, rest);
         setSuccess(`تم تحديث حساب "${form.full_name}" بنجاح`);

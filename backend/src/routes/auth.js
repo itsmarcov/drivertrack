@@ -128,7 +128,7 @@ router.get('/ops', authenticate, authorize('admin', 'super_admin'), async (req, 
 
 router.put('/ops/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const { id } = req.params;
-  const { full_name, email, phone, station_id, is_active } = req.body;
+  const { full_name, email, phone, station_id, is_active, password } = req.body;
   const ops = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'ops'", [id]);
   if (!ops) return res.status(404).json({ error: 'OPS user not found.' });
   const updates = [];
@@ -139,6 +139,7 @@ router.put('/ops/:id', authenticate, authorize('admin', 'super_admin'), async (r
   if (phone !== undefined) { updates.push(`phone = $${p++}`); params.push(phone); }
   if (station_id !== undefined) { updates.push(`station_id = $${p++}`); params.push(station_id || null); }
   if (is_active !== undefined) { updates.push(`is_active = $${p++}`); params.push(is_active); }
+  if (password) { updates.push(`password_hash = $${p++}`); params.push(bcrypt.hashSync(password, 10)); }
   if (updates.length > 0) {
     updates.push(`updated_at = NOW()`);
     params.push(id);
