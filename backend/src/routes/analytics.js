@@ -32,7 +32,7 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   );
 
   const [totalDrivers] = await queryAll(
-    `SELECT COUNT(*) as count FROM users WHERE role = 'driver' AND is_active = 1${stationId ? ' AND station_id = ' + stationId : ''}`
+    `SELECT COUNT(*) as count FROM users WHERE role = 'driver' AND is_active::text = '1'${stationId ? ' AND station_id = ' + stationId : ''}`
   );
 
   // day-by-day trend for the requested days going backward from `to`

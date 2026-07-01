@@ -103,7 +103,7 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
 
-  let driverWhere = "role = 'driver' AND is_active = 1";
+  let driverWhere = "role = 'driver' AND is_active::text = '1'";
   let attWhere = 'scan_date = $1';
   const attParams = [dateStr];
   let attLateWhere = 'scan_date = $1 AND is_late = 1';

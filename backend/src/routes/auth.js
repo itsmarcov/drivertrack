@@ -58,7 +58,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   const lookup = username.trim();
   const candidates = await queryAll(
     `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id
-     WHERE u.is_active = 1 AND (LOWER(TRIM(u.username)) = LOWER($1) OR LOWER(TRIM(u.email)) = LOWER($1) OR LOWER(TRIM(u.phone)) = LOWER($1))`,
+     WHERE u.is_active::text = '1' AND (LOWER(TRIM(u.username)) = LOWER($1) OR LOWER(TRIM(u.email)) = LOWER($1) OR LOWER(TRIM(u.phone)) = LOWER($1))`,
     [lookup]
   );
   const user = candidates.find(u => bcrypt.compareSync(password, u.password_hash));
@@ -70,7 +70,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       'SELECT id, is_active FROM users WHERE LOWER($1) IN (LOWER(TRIM(username)), LOWER(TRIM(email)), LOWER(TRIM(phone)))', [lookup]
     );
     if (inactiveUser) {
-      console.log(`Login failed: user "${username}" found but is_active = ${inactiveUser.is_active}`);
+      console.log(`Login failed: user "${username}" matched lookup but password wrong or is_active = ${inactiveUser.is_active}`);
     } else {
       console.log(`Login failed: user "${username}" not found in database`);
     }
@@ -122,12 +122,12 @@ router.post('/register', authenticate, authorize('admin', 'super_admin'), async 
   if (existing) return res.status(409).json({ error: 'Username already exists.' });
   const hash = bcrypt.hashSync(password, 10);
   const result = await run(
-    'INSERT INTO users (username, password_hash, role, full_name, email, phone, station_id) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    'INSERT INTO users (username, password_hash, role, full_name, email, phone, station_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
     [username, hash, role, full_name, email || null, phone || null, station_id || null]
   );
   const user = await queryOne(
     'SELECT id, username, role, full_name, email, phone, station_id, created_at FROM users WHERE id = $1',
-    [result.lastInsertRowid]
+    [result.rows[0].id]
   );
   res.status(201).json(user);
 });

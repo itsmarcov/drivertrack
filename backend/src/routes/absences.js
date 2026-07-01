@@ -47,7 +47,7 @@ router.post('/mark', authenticate, authorize('admin', 'ops'), async (req, res) =
   const morningAbsent = config.morning_absent_cutoff || '12:30:00';
   const eveningAbsent = config.evening_absent_cutoff || '17:30:00';
 
-  let driverWhere = "role = 'driver' AND is_active = 1";
+  let driverWhere = "role = 'driver' AND is_active::text = '1'";
   const driverParams = [];
   let paramIdx = 1;
   if (req.user.role === 'ops') {

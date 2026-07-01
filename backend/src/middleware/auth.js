@@ -31,7 +31,7 @@ function authenticate(req, res, next) {
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired token.' });
   }
-  queryOne('SELECT token_version FROM users WHERE id = $1 AND is_active = 1', [req.user.id])
+  queryOne('SELECT token_version FROM users WHERE id = $1 AND is_active::text = \'1\'', [req.user.id])
     .then((user) => {
       if (!user || (user.token_version || 0) !== (req.user.token_version || 0)) {
         return res.status(403).json({ error: 'Session expired. Please login again.' });
