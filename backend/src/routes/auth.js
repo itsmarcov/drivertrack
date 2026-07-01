@@ -31,13 +31,13 @@ router.post('/login', loginLimiter, async (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
-  const user = await queryOne(
-    `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE (LOWER(u.username) = LOWER($1) OR LOWER(u.email) = LOWER($1) OR LOWER(u.phone) = LOWER($1)) AND u.is_active = 1`,
-    [username]
-  );
+  const baseJoin = `FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE LOWER($1) = `;
+  const user = await queryOne(`SELECT u.*, s.name as station_name ${baseJoin}LOWER(u.username) AND u.is_active = 1`, [username])
+    || await queryOne(`SELECT u.*, s.name as station_name ${baseJoin}LOWER(u.email) AND u.is_active = 1`, [username])
+    || await queryOne(`SELECT u.*, s.name as station_name ${baseJoin}LOWER(u.phone) AND u.is_active = 1`, [username]);
   if (!user) {
     const inactiveUser = await queryOne(
-      'SELECT id, is_active FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1) OR LOWER(phone) = LOWER($1))', [username]
+      'SELECT id, is_active FROM users WHERE LOWER($1) IN (LOWER(username), LOWER(email), LOWER(phone))', [username]
     );
     if (inactiveUser) {
       console.log(`Login failed: user "${username}" found but is_active = ${inactiveUser.is_active}`);
