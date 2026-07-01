@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
-  const login = async (username, password) => {
-    const data = await auth.login(username, password);
+  const login = async (username, password, recaptcha_token) => {
+    const data = await auth.login(username, password, recaptcha_token);
     setUser(data.user);
     return data;
   };

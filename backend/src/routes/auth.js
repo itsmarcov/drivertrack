@@ -1,9 +1,29 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const https = require('https');
 const rateLimit = require('express-rate-limit');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+
+function verifyRecaptcha(token) {
+  return new Promise(resolve => {
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
+    if (!secret || !token) return resolve(true);
+    const postData = `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`;
+    const req = https.request({
+      hostname: 'www.google.com', path: '/recaptcha/api/siteverify', method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postData) },
+    }, res => {
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { const j = JSON.parse(d); resolve(j.success && j.score >= 0.5); } catch { resolve(true); } });
+    });
+    req.on('error', () => resolve(true));
+    req.write(postData);
+    req.end();
+  });
+}
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -30,6 +50,10 @@ router.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
+  }
+  const recaptchaOk = await verifyRecaptcha(req.body.recaptcha_token);
+  if (!recaptchaOk) {
+    return res.status(400).json({ error: 'فشل التحقق الأمني. حاول مرة أخرى.' });
   }
   const lookup = username.trim();
   const candidates = await queryAll(

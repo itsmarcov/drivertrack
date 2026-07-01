@@ -16,8 +16,8 @@ async function requestFormData(endpoint, formData) {
 }
 
 export const auth = {
-  login: (username, password) =>
-    request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  login: (username, password, recaptcha_token) =>
+    request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password, recaptcha_token }) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   register: (data) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(data) }),

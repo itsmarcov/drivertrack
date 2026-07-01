@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,6 +8,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const recaptchaReady = useRef(false);
+  const siteKey = useRef('');
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
@@ -18,12 +20,35 @@ export default function Login() {
     }
   }, [user, navigate]);
 
+  useEffect(() => {
+    fetch('/api/config/public').then(r => r.json()).then(cfg => {
+      const key = cfg.recaptcha_site_key;
+      if (!key) { recaptchaReady.current = true; return; }
+      siteKey.current = key;
+      const s = document.createElement('script');
+      s.src = `https://www.google.com/recaptcha/api.js?render=${key}`;
+      s.async = true;
+      s.onload = () => recaptchaReady.current = true;
+      document.head.appendChild(s);
+    }).catch(() => recaptchaReady.current = true);
+  }, []);
+
+  function getRecaptchaToken() {
+    return new Promise(resolve => {
+      if (!siteKey.current || !window.grecaptcha) return resolve('');
+      window.grecaptcha.ready(() => {
+        window.grecaptcha.execute(siteKey.current, { action: 'login' }).then(resolve);
+      });
+    });
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const data = await login(username, password);
+      const recaptcha_token = await getRecaptchaToken();
+      const data = await login(username, password, recaptcha_token);
       const target = data.user.role === 'driver' ? '/driver' : '/admin';
       navigate(target, { replace: true });
     } catch (err) {

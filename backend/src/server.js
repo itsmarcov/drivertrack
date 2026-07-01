@@ -65,6 +65,10 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/api/config/public', (req, res) => {
+  res.json({ recaptcha_site_key: process.env.RECAPTCHA_SITE_KEY || '' });
+});
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err?.message || err);
   if (err.type === 'entity.too.large') {
