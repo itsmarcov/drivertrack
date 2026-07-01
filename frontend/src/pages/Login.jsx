@@ -44,8 +44,8 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           {error && <div className="alert alert-error">✕ {error}</div>}
           <div className="form-group">
-            <label>اسم المستخدم</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="أدخل اسم المستخدم" required dir="auto" />
+            <label>اسم المستخدم / البريد / الهاتف</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="أدخل اسم المستخدم أو البريد أو الهاتف" required dir="auto" />
           </div>
           <div className="form-group">
             <label>كلمة المرور</label>

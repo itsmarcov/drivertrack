@@ -32,12 +32,12 @@ router.post('/login', loginLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
   const user = await queryOne(
-    `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE LOWER(u.username) = LOWER($1) AND u.is_active = 1`,
+    `SELECT u.*, s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE (LOWER(u.username) = LOWER($1) OR LOWER(u.email) = LOWER($1) OR LOWER(u.phone) = LOWER($1)) AND u.is_active = 1`,
     [username]
   );
   if (!user) {
     const inactiveUser = await queryOne(
-      'SELECT id, is_active FROM users WHERE LOWER(username) = LOWER($1)', [username]
+      'SELECT id, is_active FROM users WHERE (LOWER(username) = LOWER($1) OR LOWER(email) = LOWER($1) OR LOWER(phone) = LOWER($1))', [username]
     );
     if (inactiveUser) {
       console.log(`Login failed: user "${username}" found but is_active = ${inactiveUser.is_active}`);
