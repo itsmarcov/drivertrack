@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(100) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  role VARCHAR(20) NOT NULL CHECK(role IN ('admin', 'ops', 'driver')),
+  role VARCHAR(20) NOT NULL CHECK(role IN ('super_admin', 'admin', 'ops', 'driver')),
   full_name VARCHAR(255) NOT NULL,
   email VARCHAR(255),
   phone VARCHAR(50),

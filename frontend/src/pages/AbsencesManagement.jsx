@@ -25,7 +25,7 @@ export default function AbsencesManagement() {
       const params = {};
       if (date) { params.date_from = date; params.date_to = date; }
       if (shift) params.shift = shift;
-      if (station && user.role === 'admin') params.station_id = station;
+      if (station && ['admin', 'super_admin'].includes(user.role)) params.station_id = station;
       const data = await absences.list(params);
       setAbsenceList(data);
     } catch (err) {
@@ -37,7 +37,7 @@ export default function AbsencesManagement() {
 
   useEffect(() => {
     loadAbsences(filterDate, filterShift, filterStation);
-    if (user.role === 'admin') {
+    if (['admin', 'super_admin'].includes(user.role)) {
       stationsApi.list().then(setStationList).catch(() => {});
     }
   }, []);
@@ -62,7 +62,7 @@ export default function AbsencesManagement() {
       const params = {};
       if (filterDate) { params.date_from = filterDate; params.date_to = filterDate; }
       if (filterShift) params.shift = filterShift;
-      if (filterStation && user.role === 'admin') params.station_id = filterStation;
+      if (filterStation && ['admin', 'super_admin'].includes(user.role)) params.station_id = filterStation;
       const blob = await absences.exportExcel(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -143,7 +143,7 @@ export default function AbsencesManagement() {
               <option value="evening">مسائية</option>
             </select>
           </div>
-          {user.role === 'admin' && (
+          {['admin', 'super_admin'].includes(user.role) && (
             <div className="form-group">
               <label>المحطة</label>
               <select value={filterStation} onChange={(e) => handleStationChange(e.target.value)}>
@@ -154,7 +154,7 @@ export default function AbsencesManagement() {
               </select>
             </div>
           )}
-          {user.role === 'admin' && (
+          {['admin', 'super_admin'].includes(user.role) && (
             <div className="form-group" style={{ alignSelf: 'flex-end' }}>
               <button className="btn btn-danger" onClick={handleDeleteDate}>حذف غيابات هذا اليوم</button>
             </div>

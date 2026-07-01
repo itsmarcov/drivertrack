@@ -23,7 +23,7 @@ export default function PenaltiesManagement() {
       setLoading(true);
       const params = {};
       if (date) params.date = date;
-      if (station && user.role === 'admin') params.station_id = station;
+      if (station && ['admin', 'super_admin'].includes(user.role)) params.station_id = station;
       const data = await penalties.list(params);
       setList(data);
     } catch (err) { setError(err.message); }
@@ -32,7 +32,7 @@ export default function PenaltiesManagement() {
 
   useEffect(() => {
     load(filterDate, filterStation);
-    if (user.role === 'admin') {
+    if (['admin', 'super_admin'].includes(user.role)) {
       stationsApi.list().then(setStationList).catch(() => {});
     }
   }, []);
@@ -80,7 +80,7 @@ export default function PenaltiesManagement() {
             <label>التاريخ</label>
             <input type="date" value={filterDate} onChange={(e) => handleDateChange(e.target.value)} />
           </div>
-          {user.role === 'admin' && (
+          {['admin', 'super_admin'].includes(user.role) && (
             <div className="form-group">
               <label>المحطة</label>
               <select value={filterStation} onChange={(e) => handleStationChange(e.target.value)}>

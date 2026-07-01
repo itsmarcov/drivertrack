@@ -92,7 +92,7 @@ export default function Navbar() {
             {pendingJust > 0 && <span className="nav-notif-badge nav-just-badge">{pendingJust}</span>}
           </Link>
 
-          {user.role === 'admin' && (
+          {(user.role === 'admin' || user.role === 'super_admin') && (
             <>
               <Link to="/admin/settings" className={`nav-link ${isActive('/admin/settings')}`}>الإعدادات</Link>
               <Link to="/admin/ops" className={`nav-link ${isActive('/admin/ops')}`}>المشغلين</Link>
@@ -148,7 +148,7 @@ export default function Navbar() {
                   <div className="nav-profile-header-avatar">{inits}</div>
                   <div className="nav-profile-header-info">
                     <div className="nav-profile-header-name">{user.full_name}</div>
-                    <div className="nav-profile-header-role">{user.role === 'admin' ? 'مدير' : 'مشغل'}</div>
+                    <div className="nav-profile-header-role">{user.role === 'super_admin' ? 'مدير عام' : user.role === 'admin' ? 'مدير' : 'مشغل'}</div>
                   </div>
                 </div>
                 <div className="nav-profile-body">

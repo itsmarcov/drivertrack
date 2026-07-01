@@ -98,6 +98,22 @@ async function seedInitialData() {
       ['kebaili', hash, 'KEBAILI HANANE', 'kebaili@drivertrack.com']);
     console.log('  \u2713 Admin KEBAILI HANANE created (username: kebaili)');
   }
+
+  const mounir = await queryOne("SELECT id FROM users WHERE username = 'mounir'");
+  if (!mounir) {
+    const hash = bcrypt.hashSync('Mounir2026@', 10);
+    await run(`INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, 'super_admin', $3, $4)`,
+      ['mounir', hash, 'Mounir Rassoul', 'mounir@drivertrack.com']);
+    console.log('  \u2713 Super Admin Mounir Rassoul created (username: mounir)');
+  }
+
+  const ghazi = await queryOne("SELECT id FROM users WHERE username = 'ghazi'");
+  if (!ghazi) {
+    const hash = bcrypt.hashSync('Ghazi2026@', 10);
+    await run(`INSERT INTO users (username, password_hash, role, full_name, email) VALUES ($1, $2, 'super_admin', $3, $4)`,
+      ['ghazi', hash, 'GHAZI IMAD SA', 'ghazi@drivertrack.com']);
+    console.log('  \u2713 Super Admin GHAZI IMAD SA created (username: ghazi)');
+  }
 }
 
 async function start() {

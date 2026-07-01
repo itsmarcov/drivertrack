@@ -46,17 +46,17 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/driver" element={<ProtectedRoute roles={['driver']}><DriverDashboard /></ProtectedRoute>} />
           <Route path="/driver/attendance" element={<ProtectedRoute roles={['driver']}><AttendanceLogs /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute roles={['admin', 'ops']}><AdminDashboard /></ProtectedRoute>} />
-          <Route path="/admin/drivers" element={<ProtectedRoute roles={['admin', 'ops']}><DriversManagement /></ProtectedRoute>} />
-          <Route path="/admin/ops" element={<ProtectedRoute roles={['admin']}><OpsManagement /></ProtectedRoute>} />
-          <Route path="/admin/attendance" element={<ProtectedRoute roles={['admin', 'ops']}><AttendanceLogs /></ProtectedRoute>} />
-          <Route path="/admin/scan" element={<ProtectedRoute roles={['admin', 'ops']}><ScanQR /></ProtectedRoute>} />
-          <Route path="/admin/stations" element={<ProtectedRoute roles={['admin']}><StationsManagement /></ProtectedRoute>} />
-          <Route path="/admin/profile" element={<ProtectedRoute roles={['admin', 'ops']}><ProfileSettings /></ProtectedRoute>} />
-          <Route path="/admin/penalties" element={<ProtectedRoute roles={['admin', 'ops']}><PenaltiesManagement /></ProtectedRoute>} />
-          <Route path="/admin/settings" element={<ProtectedRoute roles={['admin']}><SettingsManagement /></ProtectedRoute>} />
-          <Route path="/admin/absences" element={<ProtectedRoute roles={['admin', 'ops']}><AbsencesManagement /></ProtectedRoute>} />
-          <Route path="/admin/justifications" element={<ProtectedRoute roles={['admin']}><JustificationsReview /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/drivers" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><DriversManagement /></ProtectedRoute>} />
+          <Route path="/admin/ops" element={<ProtectedRoute roles={['admin', 'super_admin']}><OpsManagement /></ProtectedRoute>} />
+          <Route path="/admin/attendance" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AttendanceLogs /></ProtectedRoute>} />
+          <Route path="/admin/scan" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><ScanQR /></ProtectedRoute>} />
+          <Route path="/admin/stations" element={<ProtectedRoute roles={['admin', 'super_admin']}><StationsManagement /></ProtectedRoute>} />
+          <Route path="/admin/profile" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><ProfileSettings /></ProtectedRoute>} />
+          <Route path="/admin/penalties" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><PenaltiesManagement /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute roles={['admin', 'super_admin']}><SettingsManagement /></ProtectedRoute>} />
+          <Route path="/admin/absences" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AbsencesManagement /></ProtectedRoute>} />
+          <Route path="/admin/justifications" element={<ProtectedRoute roles={['admin', 'super_admin']}><JustificationsReview /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

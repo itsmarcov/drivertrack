@@ -25,7 +25,7 @@ export default function AttendanceLogs() {
       const params = {};
       if (date) params.date = date;
       if (driver) params.driver_id = driver;
-      if (station && user.role === 'admin') params.station_id = station;
+      if (station && ['admin', 'super_admin'].includes(user.role)) params.station_id = station;
       const data = await attendance.list(params);
       setRecords(data);
     } catch (err) {
@@ -38,7 +38,7 @@ export default function AttendanceLogs() {
   useEffect(() => {
     loadData(filterDate, filterDriver, filterStation);
     drivers.list().then(setDriverList).catch(() => {});
-    if (user.role === 'admin') {
+    if (['admin', 'super_admin'].includes(user.role)) {
       stationsApi.list().then(setStationList).catch(() => {});
     }
   }, []);
@@ -49,7 +49,7 @@ export default function AttendanceLogs() {
       const params = {};
       if (filterDate) params.date = filterDate;
       if (filterDriver) params.driver_id = filterDriver;
-      if (filterStation && user.role === 'admin') params.station_id = filterStation;
+      if (filterStation && ['admin', 'super_admin'].includes(user.role)) params.station_id = filterStation;
       const blob = await attendance.exportExcel(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -101,7 +101,7 @@ export default function AttendanceLogs() {
               ))}
             </select>
           </div>
-          {user.role === 'admin' && (
+          {['admin', 'super_admin'].includes(user.role) && (
             <div className="form-group">
               <label>المحطة</label>
               <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadData(filterDate, filterDriver, e.target.value); }}>

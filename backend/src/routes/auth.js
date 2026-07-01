@@ -50,13 +50,13 @@ router.post('/login', loginLimiter, async (req, res) => {
   });
 });
 
-router.post('/register', authenticate, authorize('admin'), async (req, res) => {
+router.post('/register', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const { username, password, full_name, role, email, phone, station_id } = req.body;
   if (!username || !password || !full_name || !role) {
     return res.status(400).json({ error: 'Username, password, full name, and role are required.' });
   }
   if (!['admin', 'ops'].includes(role)) {
-    return res.status(400).json({ error: 'Admin can only create admin or ops accounts.' });
+    return res.status(400).json({ error: 'You can only create admin or ops accounts.' });
   }
   if (station_id) {
     const station = await queryOne('SELECT id FROM stations WHERE id = $1', [station_id]);
@@ -87,7 +87,7 @@ router.get('/me', authenticate, async (req, res) => {
   res.json(user);
 });
 
-router.get('/ops', authenticate, authorize('admin'), async (req, res) => {
+router.get('/ops', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const opsList = await queryAll(
     `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.station_id, u.is_active, u.created_at,
             s.name as station_name
@@ -96,7 +96,7 @@ router.get('/ops', authenticate, authorize('admin'), async (req, res) => {
   res.json(opsList);
 });
 
-router.put('/ops/:id', authenticate, authorize('admin'), async (req, res) => {
+router.put('/ops/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const { id } = req.params;
   const { full_name, email, phone, station_id, is_active } = req.body;
   const ops = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'ops'", [id]);
@@ -122,13 +122,33 @@ router.put('/ops/:id', authenticate, authorize('admin'), async (req, res) => {
   res.json(updated);
 });
 
-router.delete('/ops/:id', authenticate, authorize('admin'), async (req, res) => {
+router.delete('/ops/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const { id } = req.params;
   const ops = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'ops'", [id]);
   if (!ops) return res.status(404).json({ error: 'OPS user not found.' });
   await run('UPDATE attendance SET scanned_by = $1 WHERE scanned_by = $2', [req.user.id, id]);
   const result = await run('DELETE FROM users WHERE id = $1', [id]);
   res.json({ message: 'OPS user deleted successfully.' });
+});
+
+router.get('/admins', authenticate, authorize('super_admin'), async (req, res) => {
+  const admins = await queryAll(
+    `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.is_active, u.created_at
+     FROM users u WHERE u.role = 'admin' ORDER BY u.full_name ASC`
+  );
+  res.json(admins);
+});
+
+router.delete('/admins/:id', authenticate, authorize('super_admin'), async (req, res) => {
+  const { id } = req.params;
+  const admin = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'admin'", [id]);
+  if (!admin) return res.status(404).json({ error: 'Admin user not found.' });
+  await run('DELETE FROM penalties WHERE driver_id = $1', [id]);
+  await run('DELETE FROM attendance WHERE driver_id = $1 OR scanned_by = $1', [id, id]);
+  await run('DELETE FROM absences WHERE driver_id = $1', [id]);
+  await run('DELETE FROM justifications WHERE driver_id = $1', [id]);
+  await run('DELETE FROM users WHERE id = $1', [id]);
+  res.json({ message: 'Admin user deleted.' });
 });
 
 router.put('/profile', authenticate, async (req, res) => {

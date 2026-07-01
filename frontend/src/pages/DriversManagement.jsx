@@ -9,7 +9,7 @@ function DriverForm({ driver, onSave, onCancel }) {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user.role === 'admin') stations.list().then(setStationList).catch(() => {});
+    if (['admin', 'super_admin'].includes(user.role)) stations.list().then(setStationList).catch(() => {});
   }, []);
 
   const [form, setForm] = useState({
@@ -73,7 +73,7 @@ function DriverForm({ driver, onSave, onCancel }) {
               <input name="license_plate" value={form.license_plate} onChange={handleChange} />
             </div>
           </div>
-          {user.role === 'admin' && (
+          {['admin', 'super_admin'].includes(user.role) && (
             <div className="form-group">
               <label>المحطة</label>
               <select name="station_id" value={form.station_id} onChange={handleChange}>
@@ -101,8 +101,8 @@ function DriverForm({ driver, onSave, onCancel }) {
 
 export default function DriversManagement() {
   const { user } = useAuth();
-  const isAdmin = user.role === 'admin';
-  const canAdd = user.role === 'admin' || user.role === 'ops';
+  const isAdmin = ['admin', 'super_admin'].includes(user.role);
+  const canAdd = ['admin', 'super_admin'].includes(user.role) || user.role === 'ops';
   const [driverList, setDriverList] = useState([]);
   const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +123,7 @@ export default function DriversManagement() {
     try {
       setLoading(true);
       const params = {};
-      if (station && user.role === 'admin') params.station_id = station;
+      if (station && ['admin', 'super_admin'].includes(user.role)) params.station_id = station;
       if (shift) params.shift = shift;
       if (srch) params.search = srch;
       const data = await drivers.list(params);
