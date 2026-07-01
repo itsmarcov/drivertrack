@@ -1050,7 +1050,16 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 /* ════════════════════════════════════════════════
    PAGE LAYOUT
    ════════════════════════════════════════════════ */
-.page { animation: nx-fade-in 0.3s ease-out; }
+.page {
+  animation: nx-fade-in 0.3s ease-out;
+  padding: 1.5rem 2rem;
+}
+@media (max-width: 768px) {
+  .page { padding: 1rem 1rem 5rem; }
+}
+@media (max-width: 480px) {
+  .page { padding: 0.75rem 0.75rem 5rem; }
+}
 .page-header {
   margin-bottom: 2rem;
   display: flex;
@@ -1075,6 +1084,26 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+/* ════════════════════════════════════════════════
+   CARD — generic glass card for filters/settings
+   ════════════════════════════════════════════════ */
+.card {
+  background: var(--nx-bg-glass-strong);
+  backdrop-filter: var(--nx-blur);
+  -webkit-backdrop-filter: var(--nx-blur);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-lg);
+  box-shadow: var(--nx-shadow-glass);
+}
+
+/* ════════════════════════════════════════════════
+   TABLE-RESPONSIVE — horizontal scroll wrapper
+   ════════════════════════════════════════════════ */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ════════════════════════════════════════════════
@@ -1955,8 +1984,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 }
 
 @media (max-width: 768px) {
-  .table-container { overflow-x: auto; }
-  .table { min-width: 600px; }
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 
 @media (max-width: 480px) {

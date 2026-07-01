@@ -400,14 +400,14 @@ function CalendarHeatmap({ data, range, presentPct, onHover, dark, totalDrivers 
 }
 
 function LineChart14({ data, colors, keys, gridColor, textColor, tooltipBg }) {
-  const W = 500, H = 160, PT = 8, PB = 20, PL = 6, PR = 6;
+  const W = 500, H = 140, PT = 8, PB = 20, PL = 6, PR = 6;
   const cw = W - PL - PR, ch = H - PT - PB;
   const max = Math.max(...data.flatMap(d => keys.map(k => d[k])), 1);
   const xs = (i) => PL + (i / Math.max(data.length - 1, 1)) * cw;
   const ys = (v) => PT + ch - (v / max) * ch;
   return (
     <div style={{ width: '100%', overflowX: 'auto' }}>
-      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', minWidth: W }}>
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', width: '100%' }}>
         {[0, 0.25, 0.5, 0.75, 1].map((f, i) => {
           const y = PT + ch - f * ch;
           return <line key={i} x1={PL} y1={y} x2={PL + cw} y2={y} stroke={gridColor} strokeWidth="1" />;

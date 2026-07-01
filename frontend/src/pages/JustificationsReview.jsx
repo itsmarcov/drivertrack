@@ -129,8 +129,7 @@ export default function JustificationsReview() {
   if (loading && list.length === 0) return <div className="loading">جاري التحميل...</div>;
 
   return (
-    <div className="fade-slide-in">
-      <h2 style={{ marginBottom: '1rem' }}>المبررات</h2>
+    <div className="page fade-slide-in">
 
       {error && <div className="alert alert-error">{error}</div>}
 
@@ -168,7 +167,7 @@ export default function JustificationsReview() {
         </div>
       )}
 
-      <div className="table-responsive fade-slide-in" style={{ animationDelay: '0.1s' }}>
+      <div className="table-container table-responsive fade-slide-in" style={{ animationDelay: '0.1s' }}>
         <table className="table">
           <thead>
             <tr>
@@ -251,7 +250,7 @@ export default function JustificationsReview() {
               <button className="modal-close" onClick={closeProof}>✕</button>
             </div>
             {isPdf ? (
-              <iframe src={proofUrl} style={{ width: '100%', height: 500, border: 'none', borderRadius: 'var(--nx-radius-sm)' }} title="Proof" />
+              <iframe src={proofUrl} style={{ width: '100%', height: 'min(500px, 70vh)', border: 'none', borderRadius: 'var(--nx-radius-sm)' }} title="Proof" />
             ) : (
               <img src={proofUrl} alt="proof" style={{ width: '100%', borderRadius: 'var(--nx-radius-sm)' }} />
             )}
