@@ -39,13 +39,13 @@ export default function Navbar() {
     const fetchLate = () => {
       attendance.late().then(setLateDrivers).catch(() => {});
     };
-    const fetchPending = () => {
+    const fetchPending = (user.role === 'admin' || user.role === 'super_admin') ? () => {
       justifications.stats().then((s) => setPendingJust(s.pendingCount || 0)).catch(() => {});
-    };
+    } : null;
     fetchLate();
-    fetchPending();
+    if (fetchPending) fetchPending();
     const iv = setInterval(fetchLate, 30000);
-    const iv2 = setInterval(fetchPending, 30000);
+    const iv2 = fetchPending ? setInterval(fetchPending, 30000) : null;
     return () => { clearInterval(iv); clearInterval(iv2); };
   }, [user]);
 
@@ -87,10 +87,12 @@ export default function Navbar() {
           <Link to="/admin/penalties" className={`nav-link ${isActive('/admin/penalties')}`}>الغرامات</Link>
           <Link to="/admin/absences" className={`nav-link ${isActive('/admin/absences')}`}>الغيابات</Link>
 
-          <Link to="/admin/justifications" className={`nav-link nav-link-just ${isActive('/admin/justifications')}`}>
-            المبررات
-            {pendingJust > 0 && <span className="nav-notif-badge nav-just-badge">{pendingJust}</span>}
-          </Link>
+          {(user.role === 'admin' || user.role === 'super_admin') && (
+            <Link to="/admin/justifications" className={`nav-link nav-link-just ${isActive('/admin/justifications')}`}>
+              المبررات
+              {pendingJust > 0 && <span className="nav-notif-badge nav-just-badge">{pendingJust}</span>}
+            </Link>
+          )}
 
           {(user.role === 'admin' || user.role === 'super_admin') && (
             <>
