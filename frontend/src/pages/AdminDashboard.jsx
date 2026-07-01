@@ -53,15 +53,17 @@ export default function AdminDashboard() {
     const isToday = Object.keys(params).length === 0;
     try {
       if (isToday) {
-        const [a, s] = await Promise.all([analyticsApi.get({}), attendance.stats()]);
-        if (!mounted.current) return;
-        setAnalytics(a);
-        setStats(s);
+        const a = await analyticsApi.get({});
+        if (mounted.current) setAnalytics(a);
       } else {
         const a = await analyticsApi.get(params);
-        if (!mounted.current) return;
-        setAnalytics(a);
-        setStats(null);
+        if (mounted.current) { setAnalytics(a); setStats(null); }
+      }
+    } catch {}
+    try {
+      if (isToday) {
+        const s = await attendance.stats();
+        if (mounted.current) setStats(s);
       }
     } catch {}
   }, [getParams]);

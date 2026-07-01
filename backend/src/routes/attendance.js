@@ -107,10 +107,9 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
   let attWhere = 'scan_date = $1';
   const attParams = [dateStr];
   let attLateWhere = 'scan_date = $1 AND is_late = 1';
-  let paramIdx = 2;
 
   if (req.user.role === 'ops' && req.user.station_id) {
-    driverWhere += ` AND station_id = $${paramIdx}`;
+    driverWhere += ` AND station_id = $1`;
     attWhere += ` AND u.station_id = $${paramIdx}`;
     attLateWhere += ` AND u.station_id = $${paramIdx}`;
     const sid = [req.user.station_id];
