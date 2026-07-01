@@ -9,6 +9,8 @@ export default function ScanQR() {
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState(false);
   const [location, setLocation] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
   const inputRef = useRef(null);
   const beepRef = useRef(null);
 
@@ -31,6 +33,30 @@ export default function ScanQR() {
       inputRef.current?.focus();
     }
   }, [processing, result, error]);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      const handler = (event) => {
+        if (event.data?.type === 'SCAN_QUEUE_STATUS') {
+          setPendingCount(event.data.count || 0);
+          setSyncing(event.data.syncing || false);
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handler);
+      navigator.serviceWorker.ready.then((reg) => reg.active?.postMessage({ type: 'GET_QUEUE_STATUS' }));
+      return () => navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  }, []);
+
+  useEffect(() => {
+    const goOnline = () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then((reg) => reg.active?.postMessage({ type: 'SYNC_SCANS' }));
+      }
+    };
+    window.addEventListener('online', goOnline);
+    return () => window.removeEventListener('online', goOnline);
+  }, []);
 
   const playBeep = (type) => {
     try {
@@ -89,6 +115,17 @@ export default function ScanQR() {
 
   return (
     <div className="scan-page">
+      {pendingCount > 0 && (
+        <div className={`scan-queue-banner ${syncing ? 'syncing' : ''}`}>
+          <div className="scan-queue-banner-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+          </div>
+          <span>{syncing ? `${pendingCount} مسحات في الانتظار، جاري المزامنة...` : `${pendingCount} مسحات في الانتظار`}</span>
+        </div>
+      )}
+
       <div className="scan-hero">
         <div className="scan-hero-icon">📋</div>
         <h2>مسح رمز QR</h2>
@@ -129,7 +166,7 @@ export default function ScanQR() {
         </div>
       )}
 
-      {result && (
+      {result && !result.queued && (
         <div className="scan-result-card">
           <div className={`scan-result-header ${result.record.is_late ? 'late' : ''}`}>
             <div className={`scan-result-header-icon ${result.record.is_late ? 'warning' : 'success'}`}>{result.record.is_late ? '⚠' : '✓'}</div>
@@ -167,6 +204,26 @@ export default function ScanQR() {
                 <span className="result-value text-sm" style={{ direction: 'ltr' }}>{result.record.lat}, {result.record.lng}</span>
               </div>
             )}
+          </div>
+          <button className="btn btn-outline scan-another" onClick={() => { setResult(null); setError(''); inputRef.current?.focus(); }}>
+            مسح آخر +
+          </button>
+        </div>
+      )}
+
+      {result?.queued && (
+        <div className="scan-result-card">
+          <div className="scan-result-header">
+            <div className="scan-result-header-icon" style={{ background: '#F59E0B20', color: '#F59E0B' }}>⏳</div>
+            <div>
+              <h4>تم حفظ المسح محلياً</h4>
+              <p>سيتم إرساله تلقائياً عند استعادة الاتصال</p>
+            </div>
+          </div>
+          <div className="result-details" style={{ padding: '0.5rem 1rem 1rem' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--nx-text-secondary)', textAlign: 'center' }}>
+              المسح في قائمة الانتظار برقم <strong>{pendingCount}</strong>
+            </p>
           </div>
           <button className="btn btn-outline scan-another" onClick={() => { setResult(null); setError(''); inputRef.current?.focus(); }}>
             مسح آخر +
