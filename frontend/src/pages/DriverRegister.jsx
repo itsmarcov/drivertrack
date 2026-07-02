@@ -48,7 +48,7 @@ export default function DriverRegister() {
             <label>الاسم الكامل *</label>
             <input name="full_name" value={form.full_name} onChange={handleChange} placeholder="الاسم واللقب" required dir="auto" />
           </div>
-          <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="form-row">
             <div className="form-group">
               <label>البريد الإلكتروني</label>
               <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="example@mail.com" dir="auto" />
@@ -58,7 +58,7 @@ export default function DriverRegister() {
               <input name="phone" value={form.phone} onChange={handleChange} placeholder="05XX XX XX XX" dir="auto" />
             </div>
           </div>
-          <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="form-row">
             <div className="form-group">
               <label>نوع المركبة</label>
               <input name="vehicle_type" value={form.vehicle_type} onChange={handleChange} placeholder="سيارة / شاحنة..." dir="auto" />
