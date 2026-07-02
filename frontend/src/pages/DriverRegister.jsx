@@ -48,25 +48,21 @@ export default function DriverRegister() {
             <label>الاسم الكامل *</label>
             <input name="full_name" value={form.full_name} onChange={handleChange} placeholder="الاسم واللقب" required dir="auto" />
           </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>البريد الإلكتروني</label>
-              <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="example@mail.com" dir="auto" />
-            </div>
-            <div className="form-group">
-              <label>رقم الهاتف</label>
-              <input name="phone" value={form.phone} onChange={handleChange} placeholder="05XX XX XX XX" dir="auto" />
-            </div>
+          <div className="form-group">
+            <label>البريد الإلكتروني</label>
+            <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="example@mail.com" dir="auto" />
           </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>نوع المركبة</label>
-              <input name="vehicle_type" value={form.vehicle_type} onChange={handleChange} placeholder="سيارة / شاحنة..." dir="auto" />
-            </div>
-            <div className="form-group">
-              <label>رقم اللوحة</label>
-              <input name="license_plate" value={form.license_plate} onChange={handleChange} placeholder="لوحة المركبة" dir="auto" />
-            </div>
+          <div className="form-group">
+            <label>رقم الهاتف</label>
+            <input name="phone" value={form.phone} onChange={handleChange} placeholder="05XX XX XX XX" dir="auto" />
+          </div>
+          <div className="form-group">
+            <label>نوع المركبة</label>
+            <input name="vehicle_type" value={form.vehicle_type} onChange={handleChange} placeholder="سيارة / شاحنة..." dir="auto" />
+          </div>
+          <div className="form-group">
+            <label>رقم اللوحة</label>
+            <input name="license_plate" value={form.license_plate} onChange={handleChange} placeholder="لوحة المركبة" dir="auto" />
           </div>
           <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading || !!success}>
             {loading ? 'جاري التسجيل...' : 'تسجيل'}
