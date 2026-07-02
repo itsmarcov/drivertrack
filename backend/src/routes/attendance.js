@@ -7,35 +7,28 @@ const { getShiftCutoffs } = require('./qr');
 const router = express.Router();
 
 router.post('/mark-late', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  const { driver_id, reason } = req.body;
-  if (!driver_id) return res.status(400).json({ error: 'driver_id مطلوب' });
+  const { attendance_id, reason } = req.body;
+  if (!attendance_id) return res.status(400).json({ error: 'attendance_id مطلوب' });
   if (!reason || !reason.trim()) return res.status(400).json({ error: 'السبب مطلوب' });
 
-  const driver = await queryOne("SELECT id, full_name, is_active, shift FROM users WHERE id = $1 AND role = 'driver'", [driver_id]);
-  if (!driver) return res.status(404).json({ error: 'السائق غير موجود' });
-  if (!driver.is_active) return res.status(400).json({ error: 'حساب السائق غير نشط' });
-
-  const today = new Date();
-  const dateStr = today.getFullYear() + '-' +
-    String(today.getMonth() + 1).padStart(2, '0') + '-' +
-    String(today.getDate()).padStart(2, '0');
-  const time = String(today.getHours()).padStart(2, '0') + ':' +
-               String(today.getMinutes()).padStart(2, '0') + ':' +
-               String(today.getSeconds()).padStart(2, '0');
-
-  const existing = await queryOne('SELECT id FROM attendance WHERE driver_id = $1 AND scan_date = $2', [driver_id, dateStr]);
-  if (existing) return res.status(409).json({ error: 'تم تسجيل حضور هذا السائق اليوم بالفعل' });
-
-  const result = await run(
-    `INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late, source, late_reason)
-     VALUES ($1, $2, $3, $4, $5, 1, 'admin_late', $6)`,
-    [driver_id, req.user.id, dateStr, time, 'admin_late', reason.trim()]
+  const att = await queryOne(
+    `SELECT a.id, a.driver_id, a.is_late, a.scan_date, u.full_name as driver_name
+     FROM attendance a JOIN users u ON a.driver_id = u.id WHERE a.id = $1`,
+    [attendance_id]
   );
+  if (!att) return res.status(404).json({ error: 'تسجيل الحضور غير موجود' });
+  if (att.is_late) return res.status(400).json({ error: 'هذا السائق مسجل كمتأخر بالفعل' });
 
-  const penResult = await run(
-    "INSERT INTO penalties (driver_id, attendance_id, penalty_date, reason, amount) VALUES ($1, $2, $3, $4, $5)",
-    [driver_id, result.lastInsertRowid, dateStr, `تأخر بتسجيل المدير: ${reason.trim()}`, 150]
-  );
+  await run('UPDATE attendance SET is_late = 1, late_reason = $1, source = CASE WHEN source = \'qr\' THEN \'qr\' ELSE source END WHERE id = $2',
+    [reason.trim(), attendance_id]);
+
+  const existingPenalty = await queryOne('SELECT id FROM penalties WHERE attendance_id = $1', [attendance_id]);
+  if (!existingPenalty) {
+    await run(
+      "INSERT INTO penalties (driver_id, attendance_id, penalty_date, reason, amount) VALUES ($1, $2, $3, $4, $5)",
+      [att.driver_id, attendance_id, att.scan_date, `تأخر بتسجيل المدير: ${reason.trim()}`, 150]
+    );
+  }
 
   const record = await queryOne(
     `SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.is_late, a.late_reason, a.source,
@@ -44,12 +37,10 @@ router.post('/mark-late', authenticate, authorize('admin', 'super_admin'), async
      JOIN users u ON a.driver_id = u.id
      JOIN users s ON a.scanned_by = s.id
      WHERE a.id = $1`,
-    [result.lastInsertRowid]
+    [attendance_id]
   );
 
-  const penalty = await queryOne('SELECT * FROM penalties WHERE id = $1', [penResult.lastInsertRowid]);
-
-  res.status(201).json({ message: `تم تسجيل تأخير ${driver.full_name}`, record, penalty });
+  res.json({ message: `تم تسجيل تأخير ${att.driver_name}`, record });
 });
 
 router.post('/manual', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
