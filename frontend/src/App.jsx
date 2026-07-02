@@ -17,6 +17,8 @@ import SettingsManagement from './pages/SettingsManagement';
 import AbsencesManagement from './pages/AbsencesManagement';
 import ProfileSettings from './pages/ProfileSettings';
 import JustificationsReview from './pages/JustificationsReview';
+import DriverRegister from './pages/DriverRegister';
+import PendingDrivers from './pages/PendingDrivers';
 
 
 function HomeRedirect() {
@@ -44,6 +46,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<DriverRegister />} />
+          <Route path="/admin/pending-drivers" element={<ProtectedRoute roles={['admin', 'super_admin']}><PendingDrivers /></ProtectedRoute>} />
           <Route path="/driver" element={<ProtectedRoute roles={['driver']}><DriverDashboard /></ProtectedRoute>} />
           <Route path="/driver/attendance" element={<ProtectedRoute roles={['driver']}><AttendanceLogs /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />

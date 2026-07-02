@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { attendance, justifications } from '../api';
+import { attendance, justifications, auth } from '../api';
 import { useState, useEffect, useRef } from 'react';
 
 function initials(name) {
@@ -19,6 +19,7 @@ export default function Navbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [lateDrivers, setLateDrivers] = useState([]);
   const [pendingJust, setPendingJust] = useState(0);
+  const [pendingDrivers, setPendingDrivers] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const notifRef = useRef(null);
@@ -44,11 +45,16 @@ export default function Navbar() {
     const fetchPending = (user.role === 'admin' || user.role === 'super_admin') ? () => {
       justifications.stats().then((s) => setPendingJust(s.pendingCount || 0)).catch(() => {});
     } : null;
+    const fetchPendingDrivers = (user.role === 'admin' || user.role === 'super_admin') ? () => {
+      auth.pendingDrivers().then((list) => setPendingDrivers(list.length)).catch(() => {});
+    } : null;
     fetchLate();
     if (fetchPending) fetchPending();
+    if (fetchPendingDrivers) fetchPendingDrivers();
     const iv = setInterval(fetchLate, 30000);
     const iv2 = fetchPending ? setInterval(fetchPending, 30000) : null;
-    return () => { clearInterval(iv); clearInterval(iv2); };
+    const iv3 = fetchPendingDrivers ? setInterval(fetchPendingDrivers, 60000) : null;
+    return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
   }, [user]);
 
   useEffect(() => {
@@ -87,6 +93,12 @@ export default function Navbar() {
         <Link to="/admin/justifications" className={`nav-link nav-link-just ${isActive('/admin/justifications')}`} onClick={onClick}>
           المبررات
           {pendingJust > 0 && <span className="nav-notif-badge nav-just-badge">{pendingJust}</span>}
+        </Link>
+      )}
+      {(user.role === 'admin' || user.role === 'super_admin') && (
+        <Link to="/admin/pending-drivers" className={`nav-link nav-link-just ${isActive('/admin/pending-drivers')}`} onClick={onClick}>
+          تسجيلات جديدة
+          {pendingDrivers > 0 && <span className="nav-notif-badge nav-just-badge">{pendingDrivers}</span>}
         </Link>
       )}
 

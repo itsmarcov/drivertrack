@@ -63,8 +63,12 @@ export const auth = {
   updateOps: (id, data) => request(`/auth/ops/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteOps: (id) => request(`/auth/ops/${id}`, { method: 'DELETE' }),
   listAdmins: () => request('/auth/admins'),
-  deleteAdmin: (id) => request(`/auth/admins/${id}`, { method: 'DELETE' }),
+  deleteAdmin: (id) => request(`/auth/admins/${id}`),
   updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  registerDriver: (data) => request('/auth/register-driver', { method: 'POST', body: JSON.stringify(data) }),
+  pendingDrivers: () => request('/auth/pending-drivers'),
+  approveDriver: (id) => request(`/auth/pending-drivers/${id}/approve`, { method: 'PUT' }),
+  rejectDriver: (id) => request(`/auth/pending-drivers/${id}/reject`, { method: 'DELETE' }),
 };
 
 export const drivers = {

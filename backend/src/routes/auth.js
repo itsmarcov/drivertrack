@@ -285,4 +285,64 @@ router.put('/profile', authenticate, async (req, res) => {
   res.json(updated);
 });
 
+const driverRegisterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'محاولات تسجيل كثيرة جداً. حاول مرة أخرى بعد ساعة.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/register-driver', driverRegisterLimiter, async (req, res) => {
+  const { username, password, full_name, email, phone, vehicle_type, license_plate } = req.body;
+  if (!username || !password || !full_name) {
+    return res.status(400).json({ error: 'Username, password, and full name are required.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
+  const existing = await queryOne('SELECT id FROM users WHERE username = $1', [username]);
+  if (existing) return res.status(409).json({ error: 'Username already exists.' });
+  if (email) {
+    const dup = await queryOne('SELECT id FROM users WHERE email = $1 AND email IS NOT NULL', [email]);
+    if (dup) return res.status(409).json({ error: 'Email already in use.' });
+  }
+  if (phone) {
+    const dup = await queryOne('SELECT id FROM users WHERE phone = $1 AND phone IS NOT NULL', [phone]);
+    if (dup) return res.status(409).json({ error: 'Phone already in use.' });
+  }
+  const hash = bcrypt.hashSync(password, 10);
+  await run(
+    `INSERT INTO users (username, password_hash, role, full_name, email, phone, vehicle_type, license_plate, is_active)
+     VALUES ($1, $2, 'driver', $3, $4, $5, $6, $7, 0)`,
+    [username, hash, full_name, email || null, phone || null, vehicle_type || null, license_plate || null]
+  );
+  res.status(201).json({ message: 'تم إنشاء الحساب. ينتظر الموافقة من المدير.' });
+});
+
+router.get('/pending-drivers', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  const pending = await queryAll(
+    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, created_at
+     FROM users WHERE role = 'driver' AND is_active::text = '0' ORDER BY created_at DESC`
+  );
+  res.json(pending);
+});
+
+router.put('/pending-drivers/:id/approve', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  const { id } = req.params;
+  const driver = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'driver' AND is_active::text = '0'", [id]);
+  if (!driver) return res.status(404).json({ error: 'Pending driver not found.' });
+  await run('UPDATE users SET is_active = 1, updated_at = NOW() WHERE id = $1', [id]);
+  const updated = await queryOne('SELECT id, username, full_name, email, phone, is_active FROM users WHERE id = $1', [id]);
+  res.json({ message: 'Driver approved.', user: updated });
+});
+
+router.delete('/pending-drivers/:id/reject', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  const { id } = req.params;
+  const driver = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'driver' AND is_active::text = '0'", [id]);
+  if (!driver) return res.status(404).json({ error: 'Pending driver not found.' });
+  await run('DELETE FROM users WHERE id = $1 AND role = \'driver\'', [id]);
+  res.json({ message: 'Driver registration rejected and removed.' });
+});
+
 module.exports = router;

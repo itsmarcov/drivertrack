@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -91,6 +91,9 @@ export default function Login() {
           <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading}>
             {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
           </button>
+          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <Link to="/register" style={{ color: 'var(--nx-text-secondary)', fontSize: '0.82rem' }}>ليس لديك حساب؟ تسجيل جديد</Link>
+          </div>
         </form>
       </div>
     </div>
