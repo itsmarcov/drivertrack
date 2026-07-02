@@ -24,6 +24,12 @@ export default function AttendanceLogs() {
   const [manualSubmitting, setManualSubmitting] = useState(false);
   const [manualError, setManualError] = useState('');
   const [manualSuccess, setManualSuccess] = useState('');
+  const [showMarkLate, setShowMarkLate] = useState(false);
+  const [lateDriver, setLateDriver] = useState('');
+  const [lateReason, setLateReason] = useState('');
+  const [lateSubmitting, setLateSubmitting] = useState(false);
+  const [lateError, setLateError] = useState('');
+  const [lateSuccess, setLateSuccess] = useState('');
 
   const loadData = async (date, driver, station) => {
     try {
@@ -90,6 +96,26 @@ export default function AttendanceLogs() {
     }
   };
 
+  const handleMarkLate = async () => {
+    if (!lateDriver) { setLateError('الرجاء اختيار سائق'); return; }
+    if (!lateReason.trim()) { setLateError('الرجاء كتابة سبب التأخير'); return; }
+    setLateSubmitting(true);
+    setLateError('');
+    setLateSuccess('');
+    try {
+      const res = await attendance.markLate({ driver_id: parseInt(lateDriver), reason: lateReason.trim() });
+      setLateSuccess(res.message || 'تم تسجيل التأخير بنجاح');
+      setLateDriver('');
+      setLateReason('');
+      setTimeout(() => setShowMarkLate(false), 1200);
+      loadData(filterDate, filterDriver, filterStation);
+    } catch (err) {
+      setLateError(err.message);
+    } finally {
+      setLateSubmitting(false);
+    }
+  };
+
   const isDriver = user.role === 'driver';
 
   if (isDriver) {
@@ -105,9 +131,14 @@ export default function AttendanceLogs() {
         </div>
         <div className="page-header-actions" style={{ gap: '0.5rem' }}>
           {canManual && (
-            <button className="btn btn-primary" onClick={() => { setManualError(''); setManualSuccess(''); setShowManual(true); }}>
-              + تسجيل يدوي
-            </button>
+            <>
+              <button className="btn btn-primary" onClick={() => { setManualError(''); setManualSuccess(''); setShowManual(true); }}>
+                + تسجيل يدوي
+              </button>
+              <button className="btn btn-primary" style={{ background: '#DC2626' }} onClick={() => { setLateError(''); setLateSuccess(''); setShowMarkLate(true); }}>
+                + تسجيل تأخير
+              </button>
+            </>
           )}
           <button className="btn btn-outline" onClick={handleExport} disabled={exporting}>
             {exporting ? 'جاري...' : 'تصدير Excel'}
@@ -139,6 +170,43 @@ export default function AttendanceLogs() {
                   {manualSubmitting ? 'جاري...' : 'تأكيد التسجيل'}
                 </button>
                 <button className="btn btn-outline" onClick={() => setShowManual(false)}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMarkLate && (
+        <div className="modal-overlay" onClick={() => setShowMarkLate(false)}>
+          <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>تسجيل تأخير</h3>
+              <button className="modal-close" onClick={() => setShowMarkLate(false)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ paddingTop: 0 }}>
+              {lateError && <div className="alert alert-error" style={{ marginBottom: '0.75rem' }}>{lateError}</div>}
+              {lateSuccess && <div className="alert alert-success" style={{ marginBottom: '0.75rem' }}>{lateSuccess}</div>}
+              <div className="form-group">
+                <label>اختر السائق</label>
+                <select value={lateDriver} onChange={(e) => setLateDriver(e.target.value)} className="form-input">
+                  <option value="">-- اختر سائق --</option>
+                  {driverList.filter((d) => d.is_active).map((d) => (
+                    <option key={d.id} value={d.id}>{d.full_name} ({d.license_plate || d.username})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>سبب التأخير</label>
+                <textarea value={lateReason} onChange={(e) => setLateReason(e.target.value)} className="form-input" placeholder="اكتب سبب التأخير..." rows={3} style={{ resize: 'vertical' }} />
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--nx-text-secondary)', marginBottom: '0.75rem' }}>
+                سيتم تسجيل غرامة 150 د.ج تلقائياً
+              </div>
+              <div className="form-actions" style={{ marginTop: '1rem' }}>
+                <button className="btn btn-primary" style={{ background: '#DC2626' }} onClick={handleMarkLate} disabled={lateSubmitting || !lateDriver || !lateReason.trim()}>
+                  {lateSubmitting ? 'جاري...' : 'تأكيد التأخير'}
+                </button>
+                <button className="btn btn-outline" onClick={() => setShowMarkLate(false)}>إلغاء</button>
               </div>
             </div>
           </div>
@@ -193,6 +261,7 @@ export default function AttendanceLogs() {
                 <th>طريقة التسجيل</th>
                 <th>رقم الهاتف</th>
                 <th>اللوحة</th>
+                <th>سبب التأخير</th>
                 <th>الحالة</th>
               </tr>
             </thead>
@@ -204,9 +273,10 @@ export default function AttendanceLogs() {
                   <td>{r.scan_date}</td>
                   <td>{r.scan_time}</td>
                   <td>{r.scanned_by_name}</td>
-                  <td>{r.source === 'manual' ? <span className="badge badge-info">يدوي</span> : <span className="badge" style={{ background: 'var(--nx-bg-glass)', color: 'var(--nx-text-secondary)', border: '1px solid var(--nx-border)' }}>QR</span>}</td>
+                  <td>{r.source === 'manual' ? <span className="badge badge-info">يدوي</span> : r.source === 'admin_late' ? <span className="badge badge-late">تأخير</span> : <span className="badge" style={{ background: 'var(--nx-bg-glass)', color: 'var(--nx-text-secondary)', border: '1px solid var(--nx-border)' }}>QR</span>}</td>
                   <td className="text-sm">{r.driver_phone || '—'}</td>
                   <td className="text-sm">{r.license_plate || '—'}</td>
+                  <td className="text-sm">{r.late_reason || '—'}</td>
                   <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                 </tr>
               ))}
@@ -252,6 +322,7 @@ function DriverAttendanceView() {
                 <th>الوقت</th>
                 <th>بواسطة</th>
                 <th>طريقة التسجيل</th>
+                <th>سبب التأخير</th>
                 <th>الحالة</th>
               </tr>
             </thead>
@@ -261,7 +332,8 @@ function DriverAttendanceView() {
                   <td><strong>{r.scan_date}</strong></td>
                   <td>{r.scan_time}</td>
                   <td>{r.scanned_by_name}</td>
-                  <td>{r.source === 'manual' ? <span className="badge badge-info">يدوي</span> : <span className="badge" style={{ background: 'var(--nx-bg-glass)', color: 'var(--nx-text-secondary)', border: '1px solid var(--nx-border)' }}>QR</span>}</td>
+                  <td>{r.source === 'manual' ? <span className="badge badge-info">يدوي</span> : r.source === 'admin_late' ? <span className="badge badge-late">تأخير</span> : <span className="badge" style={{ background: 'var(--nx-bg-glass)', color: 'var(--nx-text-secondary)', border: '1px solid var(--nx-border)' }}>QR</span>}</td>
+                  <td className="text-sm">{r.late_reason || '—'}</td>
                   <td>{r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}</td>
                 </tr>
               ))}

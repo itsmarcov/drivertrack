@@ -100,6 +100,7 @@ export const attendance = {
   stats: () => request('/attendance/stats'),
   late: () => request('/attendance/late'),
   manualAttend: (driver_id) => request('/attendance/manual', { method: 'POST', body: JSON.stringify({ driver_id }) }),
+  markLate: (data) => request('/attendance/mark-late', { method: 'POST', body: JSON.stringify(data) }),
   exportExcel: async (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     const res = await fetch(`/api/attendance/export${qs ? '?' + qs : ''}`, { credentials: 'same-origin' });

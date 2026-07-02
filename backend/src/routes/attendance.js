@@ -6,6 +6,52 @@ const { getShiftCutoffs } = require('./qr');
 
 const router = express.Router();
 
+router.post('/mark-late', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  const { driver_id, reason } = req.body;
+  if (!driver_id) return res.status(400).json({ error: 'driver_id مطلوب' });
+  if (!reason || !reason.trim()) return res.status(400).json({ error: 'السبب مطلوب' });
+
+  const driver = await queryOne("SELECT id, full_name, is_active, shift FROM users WHERE id = $1 AND role = 'driver'", [driver_id]);
+  if (!driver) return res.status(404).json({ error: 'السائق غير موجود' });
+  if (!driver.is_active) return res.status(400).json({ error: 'حساب السائق غير نشط' });
+
+  const today = new Date();
+  const dateStr = today.getFullYear() + '-' +
+    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+    String(today.getDate()).padStart(2, '0');
+  const time = String(today.getHours()).padStart(2, '0') + ':' +
+               String(today.getMinutes()).padStart(2, '0') + ':' +
+               String(today.getSeconds()).padStart(2, '0');
+
+  const existing = await queryOne('SELECT id FROM attendance WHERE driver_id = $1 AND scan_date = $2', [driver_id, dateStr]);
+  if (existing) return res.status(409).json({ error: 'تم تسجيل حضور هذا السائق اليوم بالفعل' });
+
+  const result = await run(
+    `INSERT INTO attendance (driver_id, scanned_by, scan_date, scan_time, qr_signature, is_late, source, late_reason)
+     VALUES ($1, $2, $3, $4, $5, 1, 'admin_late', $6)`,
+    [driver_id, req.user.id, dateStr, time, 'admin_late', reason.trim()]
+  );
+
+  const penResult = await run(
+    "INSERT INTO penalties (driver_id, attendance_id, penalty_date, reason, amount) VALUES ($1, $2, $3, $4, $5)",
+    [driver_id, result.lastInsertRowid, dateStr, `تأخر بتسجيل المدير: ${reason.trim()}`, 150]
+  );
+
+  const record = await queryOne(
+    `SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.is_late, a.late_reason, a.source,
+            u.full_name as driver_name, s.full_name as scanned_by_name
+     FROM attendance a
+     JOIN users u ON a.driver_id = u.id
+     JOIN users s ON a.scanned_by = s.id
+     WHERE a.id = $1`,
+    [result.lastInsertRowid]
+  );
+
+  const penalty = await queryOne('SELECT * FROM penalties WHERE id = $1', [penResult.lastInsertRowid]);
+
+  res.status(201).json({ message: `تم تسجيل تأخير ${driver.full_name}`, record, penalty });
+});
+
 router.post('/manual', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const { driver_id } = req.body;
   if (!driver_id) return res.status(400).json({ error: 'driver_id مطلوب' });
@@ -59,7 +105,7 @@ router.post('/manual', authenticate, authorize('admin', 'super_admin'), async (r
 router.get('/', authenticate, authorize('admin', 'ops', 'super_admin'), async (req, res) => {
   const { date, driver_id, station_id } = req.query;
   let sql = `
-    SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, a.source, a.created_at,
+    SELECT a.id, a.driver_id, a.scanned_by, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, a.source, a.created_at, a.late_reason,
            u.full_name as driver_name, u.phone as driver_phone, u.license_plate, u.station_id,
            s.full_name as scanned_by_name
     FROM attendance a
@@ -85,7 +131,7 @@ router.get('/', authenticate, authorize('admin', 'ops', 'super_admin'), async (r
 
 router.get('/my', authenticate, authorize('driver'), async (req, res) => {
   const records = await queryAll(
-    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, a.source, a.created_at,
+    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.lat, a.lng, a.source, a.created_at, a.late_reason,
              s.full_name as scanned_by_name
      FROM attendance a
      JOIN users s ON a.scanned_by = s.id
@@ -110,8 +156,8 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
 
   if (req.user.role === 'ops' && req.user.station_id) {
     driverWhere += ` AND station_id = $1`;
-    attWhere += ` AND u.station_id = $${paramIdx}`;
-    attLateWhere += ` AND u.station_id = $${paramIdx}`;
+    attWhere += ` AND u.station_id = $2`;
+    attLateWhere += ` AND u.station_id = $2`;
     const sid = [req.user.station_id];
     const total = await queryOne(`SELECT COUNT(*) as count FROM users WHERE ${driverWhere}`, sid);
     const present = await queryOne(
@@ -155,7 +201,7 @@ router.get('/late', authenticate, authorize('admin', 'ops'), async (req, res) =>
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
 
-  let sql = `SELECT a.id, a.driver_id, a.scan_time, a.created_at,
+  let sql = `SELECT a.id, a.driver_id, a.scan_time, a.created_at, a.late_reason,
                     u.full_name as driver_name, u.phone, u.vehicle_type, u.license_plate,
                     s.full_name as scanned_by_name
              FROM attendance a
@@ -180,7 +226,7 @@ router.get('/late/export', authenticate, authorize('admin', 'ops'), async (req, 
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0'));
 
-  let sql = `SELECT a.id, a.driver_id, a.scan_time, a.created_at,
+  let sql = `SELECT a.id, a.driver_id, a.scan_time, a.created_at, a.late_reason,
                     u.full_name as driver_name, u.phone, u.vehicle_type, u.license_plate, u.username,
                     s.full_name as scanned_by_name, st.name as station_name
              FROM attendance a
@@ -250,7 +296,7 @@ router.get('/late/export', authenticate, authorize('admin', 'ops'), async (req, 
 
 router.get('/export', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id } = req.query;
-  let sql = `SELECT a.id, a.scan_date, a.scan_time, a.is_late, a.verified,
+  let sql = `SELECT a.id, a.scan_date, a.scan_time, a.is_late, a.verified, a.late_reason,
                     u.full_name as driver_name, u.username, u.phone as driver_phone, u.vehicle_type, u.license_plate,
                     st.name as station_name, s.full_name as scanned_by_name
              FROM attendance a
@@ -338,7 +384,7 @@ router.get('/my/profile', authenticate, authorize('admin', 'ops', 'driver'), asy
     `SELECT COUNT(*) as count FROM absences WHERE driver_id = $1 AND absence_date::date >= CURRENT_DATE - INTERVAL '30 days'`, [id]);
   const dates = await queryAll('SELECT DISTINCT scan_date FROM attendance WHERE driver_id = $1 ORDER BY scan_date DESC', [id]);
   const recent = await queryAll(
-    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.source, a.lat, a.lng, s.full_name as scanned_by_name
+    `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.source, a.lat, a.lng, a.late_reason, s.full_name as scanned_by_name
      FROM attendance a JOIN users s ON a.scanned_by = s.id
      WHERE a.driver_id = $1 ORDER BY a.created_at DESC LIMIT 10`, [id]);
 
