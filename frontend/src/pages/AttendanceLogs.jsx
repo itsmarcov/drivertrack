@@ -24,7 +24,9 @@ export default function AttendanceLogs() {
   const [manualSubmitting, setManualSubmitting] = useState(false);
   const [manualError, setManualError] = useState('');
   const [manualSuccess, setManualSuccess] = useState('');
-  const [lateLoading, setLateLoading] = useState(null);
+  const [lateTarget, setLateTarget] = useState(null);
+  const [lateReason, setLateReason] = useState('');
+  const [lateSubmitting, setLateSubmitting] = useState(false);
 
   const loadData = async (date, driver, station) => {
     try {
@@ -91,17 +93,18 @@ export default function AttendanceLogs() {
     }
   };
 
-  const handleMarkLate = async (attendanceId, driverName) => {
-    const reason = prompt(`سبب تأخير ${driverName}:`);
-    if (!reason || !reason.trim()) return;
-    setLateLoading(attendanceId);
+  const handleMarkLate = async () => {
+    if (!lateTarget || !lateReason.trim()) return;
+    setLateSubmitting(true);
     try {
-      await attendance.markLate({ attendance_id: attendanceId, reason: reason.trim() });
+      await attendance.markLate({ attendance_id: lateTarget.id, reason: lateReason.trim() });
+      setLateTarget(null);
+      setLateReason('');
       loadData(filterDate, filterDriver, filterStation);
     } catch (err) {
       alert(err.message);
     } finally {
-      setLateLoading(null);
+      setLateSubmitting(false);
     }
   };
 
@@ -154,6 +157,32 @@ export default function AttendanceLogs() {
                   {manualSubmitting ? 'جاري...' : 'تأكيد التسجيل'}
                 </button>
                 <button className="btn btn-outline" onClick={() => setShowManual(false)}>إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {lateTarget && (
+        <div className="modal-overlay" onClick={() => { setLateTarget(null); setLateReason(''); }}>
+          <div className="modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>تسجيل تأخير: {lateTarget.name}</h3>
+              <button className="modal-close" onClick={() => { setLateTarget(null); setLateReason(''); }}>✕</button>
+            </div>
+            <div className="modal-body" style={{ paddingTop: 0 }}>
+              <div className="form-group">
+                <label>سبب التأخير</label>
+                <textarea value={lateReason} onChange={(e) => setLateReason(e.target.value)} className="form-input" placeholder="اكتب سبب التأخير..." rows={3} style={{ resize: 'vertical' }} />
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--nx-text-secondary)', marginBottom: '0.75rem' }}>
+                سيتم تسجيل غرامة 150 د.ج تلقائياً
+              </div>
+              <div className="form-actions">
+                <button className="btn btn-primary" style={{ background: '#DC2626' }} onClick={handleMarkLate} disabled={lateSubmitting || !lateReason.trim()}>
+                  {lateSubmitting ? 'جاري...' : 'تأكيد التأخير'}
+                </button>
+                <button className="btn btn-outline" onClick={() => { setLateTarget(null); setLateReason(''); }}>إلغاء</button>
               </div>
             </div>
           </div>
@@ -227,8 +256,8 @@ export default function AttendanceLogs() {
                   <td>
                     {r.is_late ? <span className="badge badge-late">متأخر</span> : r.verified ? <span className="badge badge-success">موثق</span> : <span className="badge badge-danger">غير موثق</span>}
                     {canManual && !r.is_late && (
-                      <button onClick={() => handleMarkLate(r.id, r.driver_name)} disabled={lateLoading === r.id} className="btn btn-sm" style={{ marginRight: '0.35rem', background: '#DC2626', color: 'white', border: 'none', fontSize: '0.7rem', padding: '0.15rem 0.4rem' }}>
-                        {lateLoading === r.id ? '...' : 'تأخير'}
+                      <button onClick={() => setLateTarget({ id: r.id, name: r.driver_name })} className="btn btn-sm" style={{ marginRight: '0.35rem', background: '#DC2626', color: 'white', border: 'none', fontSize: '0.7rem', padding: '0.15rem 0.4rem' }}>
+                        تأخير
                       </button>
                     )}
                   </td>
