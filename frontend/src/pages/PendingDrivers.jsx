@@ -51,6 +51,7 @@ export default function PendingDrivers() {
                 <th>اسم المستخدم</th>
                 <th>البريد</th>
                 <th>الهاتف</th>
+                <th>المحطة</th>
                 <th>المركبة</th>
                 <th>اللوحة</th>
                 <th>تاريخ التسجيل</th>
@@ -64,6 +65,7 @@ export default function PendingDrivers() {
                   <td>{d.username}</td>
                   <td>{d.email || '—'}</td>
                   <td>{d.phone || '—'}</td>
+                  <td>{d.station_name || '—'}</td>
                   <td>{d.vehicle_type || '—'}</td>
                   <td>{d.license_plate || '—'}</td>
                   <td style={{ fontSize: '0.8rem', color: 'var(--nx-text-secondary)' }}>{new Date(d.created_at).toLocaleDateString('fr-DZ')}</td>

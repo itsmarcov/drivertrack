@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '../api';
+import { auth, stations } from '../api';
 
 export default function DriverRegister() {
-  const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', phone: '', vehicle_type: '', license_plate: '' });
+  const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', phone: '', vehicle_type: '', license_plate: '', station_id: '' });
+  const [stationList, setStationList] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    stations.listPublic().then(setStationList).catch(() => {});
+  }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -55,6 +60,15 @@ export default function DriverRegister() {
           <div className="form-group">
             <label>رقم الهاتف</label>
             <input name="phone" value={form.phone} onChange={handleChange} placeholder="05XX XX XX XX" dir="auto" />
+          </div>
+          <div className="form-group">
+            <label>المحطة *</label>
+            <select name="station_id" value={form.station_id} onChange={handleChange} required>
+              <option value="">اختر المحطة</option>
+              {stationList.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>نوع المركبة</label>

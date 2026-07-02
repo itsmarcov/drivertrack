@@ -294,7 +294,7 @@ const driverRegisterLimiter = rateLimit({
 });
 
 router.post('/register-driver', driverRegisterLimiter, async (req, res) => {
-  const { username, password, full_name, email, phone, vehicle_type, license_plate } = req.body;
+  const { username, password, full_name, email, phone, vehicle_type, license_plate, station_id } = req.body;
   if (!username || !password || !full_name) {
     return res.status(400).json({ error: 'Username, password, and full name are required.' });
   }
@@ -313,17 +313,18 @@ router.post('/register-driver', driverRegisterLimiter, async (req, res) => {
   }
   const hash = bcrypt.hashSync(password, 10);
   await run(
-    `INSERT INTO users (username, password_hash, role, full_name, email, phone, vehicle_type, license_plate, is_active)
-     VALUES ($1, $2, 'driver', $3, $4, $5, $6, $7, 0)`,
-    [username, hash, full_name, email || null, phone || null, vehicle_type || null, license_plate || null]
+    `INSERT INTO users (username, password_hash, role, full_name, email, phone, vehicle_type, license_plate, station_id, is_active)
+     VALUES ($1, $2, 'driver', $3, $4, $5, $6, $7, $8, 0)`,
+    [username, hash, full_name, email || null, phone || null, vehicle_type || null, license_plate || null, station_id || null]
   );
   res.status(201).json({ message: 'تم إنشاء الحساب. ينتظر الموافقة من المدير.' });
 });
 
 router.get('/pending-drivers', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const pending = await queryAll(
-    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, created_at
-     FROM users WHERE role = 'driver' AND is_active::text = '0' ORDER BY created_at DESC`
+    `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.vehicle_type, u.license_plate, u.station_id, u.created_at, s.name as station_name
+     FROM users u LEFT JOIN stations s ON u.station_id = s.id
+     WHERE u.role = 'driver' AND u.is_active::text = '0' ORDER BY u.created_at DESC`
   );
   res.json(pending);
 });

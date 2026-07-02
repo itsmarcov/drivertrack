@@ -113,6 +113,7 @@ export const attendance = {
 
 export const stations = {
   list: () => request('/stations'),
+  listPublic: () => request('/stations/public'),
   create: (data) => request('/stations', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/stations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/stations/${id}`, { method: 'DELETE' }),

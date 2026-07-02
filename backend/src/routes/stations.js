@@ -9,6 +9,11 @@ router.get('/', authenticate, async (req, res) => {
   res.json(stations);
 });
 
+router.get('/public', async (req, res) => {
+  const stations = await queryAll('SELECT id, name FROM stations ORDER BY name ASC');
+  res.json(stations);
+});
+
 router.post('/', authenticate, authorize('admin'), async (req, res) => {
   const { name, code } = req.body;
   if (!name || !code) return res.status(400).json({ error: 'Name and code are required.' });
