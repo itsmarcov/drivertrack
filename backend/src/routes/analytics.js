@@ -144,15 +144,6 @@ router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), 
         String(Math.floor((avgScanSeconds % 3600) / 60)).padStart(2, '0')
       : null;
 
-    const absent = total - present;
-    const rate = total > 0 ? Math.round((present / total) * 100) : 0;
-    const timeScore = avgScanSeconds !== null ? Math.max(0, 1 - (avgScanSeconds - 18000) / 25200) * 100 : 0;
-    const composite = rate * 0.5 + timeScore * 0.5;
-    let rating;
-    if (composite >= 90) rating = 'PERFECT';
-    else if (composite >= 70) rating = 'GOOD';
-    else rating = 'RISKY';
-
     result.push({
       station_id: s.id,
       station_name: s.name,
@@ -165,19 +156,26 @@ router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), 
       avg_scan_time: avgScanTime,
       avg_scan_seconds: avgScanSeconds,
       earliest_scan_time: earliestTime,
-      rating,
     });
   }
 
-  result.sort((a, b) => {
-    const aSec = a.avg_scan_seconds;
-    const bSec = b.avg_scan_seconds;
-    const aTimeScore = aSec !== null ? Math.max(0, 1 - (aSec - 18000) / 25200) * 100 : 0;
-    const bTimeScore = bSec !== null ? Math.max(0, 1 - (bSec - 18000) / 25200) * 100 : 0;
-    const aComposite = a.attendance_rate * 0.5 + aTimeScore * 0.5;
-    const bComposite = b.attendance_rate * 0.5 + bTimeScore * 0.5;
-    return bComposite - aComposite;
-  });
+  const avgSecs = result.map(r => r.avg_scan_seconds).filter(s => s !== null);
+  const minSec = avgSecs.length > 0 ? Math.min(...avgSecs) : null;
+  const maxSec = avgSecs.length > 0 ? Math.max(...avgSecs) : null;
+  const range = minSec !== null && maxSec !== null && maxSec > minSec ? maxSec - minSec : 1;
+
+  for (const r of result) {
+    const tScore = r.avg_scan_seconds !== null
+      ? 100 - ((r.avg_scan_seconds - minSec) / range) * 100
+      : 0;
+    const composite = r.attendance_rate * 0.5 + tScore * 0.5;
+    r.composite_score = Math.round(composite * 10) / 10;
+    if (composite >= 90) r.rating = 'PERFECT';
+    else if (composite >= 70) r.rating = 'GOOD';
+    else r.rating = 'RISKY';
+  }
+
+  result.sort((a, b) => b.composite_score - a.composite_score);
   result.forEach((s, i) => { s.rank = i + 1; });
 
   res.json({ date: dateStr, stations: result });
