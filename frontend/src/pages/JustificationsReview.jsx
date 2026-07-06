@@ -8,10 +8,32 @@ const STAT_CARDS = [
   { key: 'totalCount', label: 'المجموع', icon: '\u2211', cls: 'jstat-total' },
 ];
 
+function groupByDay(items) {
+  const map = {};
+  items.forEach((j) => {
+    const d = j.attendance_date;
+    if (!map[d]) map[d] = [];
+    map[d].push(j);
+  });
+  return Object.entries(map).sort((a, b) => b[0].localeCompare(a[0]));
+}
+
+function reasonLabel(r) {
+  const map = { sick: 'مرض', en_panne: 'عطل في المركبة', other: 'أخرى' };
+  return map[r] || r;
+}
+
+function StatusBadge({ status }) {
+  if (status === 'approved') return <span className="badge badge-success">مقبول</span>;
+  if (status === 'rejected') return <span className="badge badge-danger">مرفوض</span>;
+  return <span className="badge badge-warning">قيد المراجعة</span>;
+}
+
 export default function JustificationsReview() {
   const [list, setList] = useState([]);
   const [stats, setStats] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [archivedFilter, setArchivedFilter] = useState('false');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
@@ -23,8 +45,11 @@ export default function JustificationsReview() {
   const fetchAll = () => {
     setLoading(true);
     setError('');
+    const params = {};
+    if (statusFilter) params.status = statusFilter;
+    params.archived = archivedFilter;
     Promise.all([
-      justifications.list(statusFilter ? { status: statusFilter } : {}),
+      justifications.list(params),
       justifications.stats(),
     ])
       .then(([data, s]) => {
@@ -40,7 +65,7 @@ export default function JustificationsReview() {
     mounted.current = true;
     fetchAll();
     return () => { mounted.current = false; };
-  }, [statusFilter]);
+  }, [statusFilter, archivedFilter]);
 
   const handleApprove = async (id) => {
     setActionLoading(id);
@@ -57,6 +82,24 @@ export default function JustificationsReview() {
       await justifications.review(id, { status: 'rejected', admin_note: rejectNote || null });
       setShowReject(null);
       setRejectNote('');
+      fetchAll();
+    } catch (e) { setError(e.message); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleArchive = async (id) => {
+    setActionLoading(id);
+    try {
+      await justifications.archive(id);
+      fetchAll();
+    } catch (e) { setError(e.message); }
+    finally { setActionLoading(null); }
+  };
+
+  const handleRestore = async (id) => {
+    setActionLoading(id);
+    try {
+      await justifications.restore(id);
       fetchAll();
     } catch (e) { setError(e.message); }
     finally { setActionLoading(null); }
@@ -113,17 +156,7 @@ export default function JustificationsReview() {
     finally { setActionLoading(null); }
   };
 
-  const reasonLabel = (r) => {
-    const map = { sick: 'مرض', en_panne: 'عطل في المركبة', other: 'أخرى' };
-    return map[r] || r;
-  };
-
-  const statusBadge = (s) => {
-    if (s === 'approved') return <span className="badge badge-success">مقبول</span>;
-    if (s === 'rejected') return <span className="badge badge-danger">مرفوض</span>;
-    return <span className="badge badge-warning">قيد المراجعة</span>;
-  };
-
+  const grouped = groupByDay(list);
   const isPdf = proofBlob?.type?.includes('pdf');
 
   if (loading && list.length === 0) return <div className="loading">جاري التحميل...</div>;
@@ -147,99 +180,132 @@ export default function JustificationsReview() {
         </div>
       )}
 
-      <div className="nx-filter">
-        <div className="form-group">
+      <div className="nx-filter" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+        <div className="form-group" style={{ flex: '1 1 160px' }}>
           <label className="form-label" style={{ fontSize: '0.8rem' }}>تصفية حسب الحالة</label>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="form-input">
-            <option value="">جميع المبررات</option>
+            <option value="">جميع الحالات</option>
             <option value="pending">قيد المراجعة</option>
             <option value="approved">مقبولة</option>
             <option value="rejected">مرفوضة</option>
           </select>
         </div>
+        <div className="form-group" style={{ flex: '1 1 140px' }}>
+          <label className="form-label" style={{ fontSize: '0.8rem' }}>الأرشيف</label>
+          <select value={archivedFilter} onChange={(e) => setArchivedFilter(e.target.value)} className="form-input">
+            <option value="false">نشطة</option>
+            <option value="true">مؤرشفة</option>
+            <option value="">الكل</option>
+          </select>
+        </div>
       </div>
 
-      {list.length === 0 && !loading && (
+      {grouped.length === 0 && !loading && (
         <div className="nx-empty">
           <div className="nx-empty-icon">📋</div>
           <h3>لا توجد مبررات</h3>
-          <p>لم يتم تقديم أي مبررات بعد</p>
+          <p>{archivedFilter === 'true' ? 'لا توجد مبررات مؤرشفة' : 'لم يتم تقديم أي مبررات بعد'}</p>
         </div>
       )}
 
-      <div className="table-container table-responsive fade-slide-in" style={{ animationDelay: '0.1s' }}>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>السائق</th>
-              <th>التاريخ</th>
-              <th>السبب</th>
-              <th>ملاحظة</th>
-              <th>الملف</th>
-              <th>الحالة</th>
-              <th>إجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map((j, idx) => (
-              <tr key={j.id} className="nx-table-row" style={{ animationDelay: `${0.15 + idx * 0.04}s` }}>
-                <td>
-                  <div style={{ fontWeight: 600 }}>{j.driver_name}</div>
-                  <small style={{ color: 'var(--nx-text-muted)', fontSize: '0.75rem' }}>{j.phone}</small>
-                </td>
-                <td>{j.attendance_date}</td>
-                <td>
-                  {reasonLabel(j.reason)}
-                  {j.note && <><br /><small style={{ color: 'var(--nx-text-secondary)', fontSize: '0.75rem' }}>{j.note}</small></>}
-                </td>
-                <td style={{ color: 'var(--nx-text-secondary)', fontSize: '0.8rem' }}>{j.admin_note || '—'}</td>
-                <td>
-                  {j.proof_file ? (
-                    <div className="jaction-group" style={{ flexDirection: 'column', gap: '0.25rem' }}>
-                      <button onClick={() => viewProof(j.id)} className="btn btn-ghost btn-sm">
-                        عرض الملف
-                      </button>
-                      <button onClick={() => handleDownload(j.id)} className="btn btn-sm" style={{ background: 'var(--nx-bg-glass)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)' }}>
-                        تحميل
-                      </button>
-                    </div>
-                  ) : '—'}
-                </td>
-                <td>{statusBadge(j.status)}</td>
-                <td>
-                  <div className="jaction-group" style={{ flexWrap: 'wrap' }}>
-                    {j.status === 'pending' && (
-                      <>
-                        <button onClick={() => handleApprove(j.id)} disabled={actionLoading === j.id}
-                          className="btn btn-sm jaction-approve">
-                          {actionLoading === j.id ? '...' : 'قبول'}
-                        </button>
-                        <button onClick={() => { setShowReject(showReject === j.id ? null : j.id); setRejectNote(''); }}
-                          className="btn btn-sm jaction-reject">
-                          رفض
-                        </button>
-                      </>
-                    )}
-                    <button onClick={() => handleDelete(j.id, j.driver_name)} disabled={actionLoading === j.id}
-                      className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--nx-border)', color: 'var(--nx-text-muted)', fontSize: '0.75rem' }}>
-                      حذف
-                    </button>
-                  </div>
-                  {showReject === j.id && (
-                    <div className="jaction-reject-box fade-slide-in">
-                      <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
-                        placeholder="سبب الرفض..." rows={2} className="form-input" style={{ fontSize: '0.8rem', marginBottom: '0.35rem' }} />
-                      <button onClick={() => handleReject(j.id)} disabled={actionLoading === j.id}
-                        className="btn btn-sm jaction-reject-confirm">
-                        {actionLoading === j.id ? '...' : 'تأكيد الرفض'}
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="fade-slide-in" style={{ animationDelay: '0.1s' }}>
+        {grouped.map(([date, items]) => (
+          <div key={date} style={{ marginBottom: 20 }}>
+            <div style={{
+              fontSize: '0.85rem', fontWeight: 700, color: 'var(--nx-text)',
+              padding: '6px 0', marginBottom: 4,
+              borderBottom: '2px solid var(--nx-border)', display: 'flex', alignItems: 'center', gap: 8
+            }}>
+              <span>{date}</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--nx-text-muted)', fontWeight: 400 }}>
+                ({items.length} {items.length === 1 ? 'مبرر' : 'مبررات'})
+              </span>
+            </div>
+            <div className="table-container table-responsive">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>السائق</th>
+                    <th>السبب</th>
+                    <th>ملاحظة</th>
+                    <th>الملف</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((j, idx) => (
+                    <tr key={j.id} className="nx-table-row" style={{ animationDelay: `${0.15 + idx * 0.04}s` }}>
+                      <td>
+                        <div style={{ fontWeight: 600 }}>{j.driver_name}</div>
+                        <small style={{ color: 'var(--nx-text-muted)', fontSize: '0.75rem' }}>{j.phone}</small>
+                      </td>
+                      <td>
+                        {reasonLabel(j.reason)}
+                        {j.note && <><br /><small style={{ color: 'var(--nx-text-secondary)', fontSize: '0.75rem' }}>{j.note}</small></>}
+                      </td>
+                      <td style={{ color: 'var(--nx-text-secondary)', fontSize: '0.8rem' }}>{j.admin_note || '—'}</td>
+                      <td>
+                        {j.proof_file ? (
+                          <div className="jaction-group" style={{ flexDirection: 'column', gap: '0.25rem' }}>
+                            <button onClick={() => viewProof(j.id)} className="btn btn-ghost btn-sm">
+                              عرض الملف
+                            </button>
+                            <button onClick={() => handleDownload(j.id)} className="btn btn-sm" style={{ background: 'var(--nx-bg-glass)', border: '1px solid var(--nx-border)', color: 'var(--nx-text)' }}>
+                              تحميل
+                            </button>
+                          </div>
+                        ) : '—'}
+                      </td>
+                      <td><StatusBadge status={j.status} /></td>
+                      <td>
+                        <div className="jaction-group" style={{ flexWrap: 'wrap' }}>
+                          {j.status === 'pending' && !j.archived_at && (
+                            <>
+                              <button onClick={() => handleApprove(j.id)} disabled={actionLoading === j.id}
+                                className="btn btn-sm jaction-approve">
+                                {actionLoading === j.id ? '...' : 'قبول'}
+                              </button>
+                              <button onClick={() => { setShowReject(showReject === j.id ? null : j.id); setRejectNote(''); }}
+                                className="btn btn-sm jaction-reject">
+                                رفض
+                              </button>
+                            </>
+                          )}
+                          {!j.archived_at ? (
+                            <button onClick={() => handleArchive(j.id)} disabled={actionLoading === j.id}
+                              className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--nx-border)', color: 'var(--nx-text-muted)', fontSize: '0.75rem' }}>
+                              أرشفة
+                            </button>
+                          ) : (
+                            <button onClick={() => handleRestore(j.id)} disabled={actionLoading === j.id}
+                              className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--nx-primary)', color: 'var(--nx-primary)', fontSize: '0.75rem' }}>
+                              استعادة
+                            </button>
+                          )}
+                          <button onClick={() => handleDelete(j.id, j.driver_name)} disabled={actionLoading === j.id}
+                            className="btn btn-sm" style={{ background: 'transparent', border: '1px solid var(--nx-border)', color: 'var(--nx-text-muted)', fontSize: '0.75rem' }}>
+                            حذف
+                          </button>
+                        </div>
+                        {showReject === j.id && (
+                          <div className="jaction-reject-box fade-slide-in">
+                            <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
+                              placeholder="سبب الرفض..." rows={2} className="form-input" style={{ fontSize: '0.8rem', marginBottom: '0.35rem' }} />
+                            <button onClick={() => handleReject(j.id)} disabled={actionLoading === j.id}
+                              className="btn btn-sm jaction-reject-confirm">
+                              {actionLoading === j.id ? '...' : 'تأكيد الرفض'}
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
       </div>
 
       {proofUrl && (

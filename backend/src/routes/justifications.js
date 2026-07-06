@@ -80,22 +80,67 @@ router.get('/my', authenticate, authorize('driver'), async (req, res) => {
   }
 });
 
+async function autoArchive() {
+  await run(
+    `UPDATE justifications SET archived_at = NOW()
+     WHERE archived_at IS NULL
+       AND attendance_date::date < CURRENT_DATE - INTERVAL '10 days'`
+  );
+}
+
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   try {
-    const { status } = req.query;
+    await autoArchive();
+
+    const { status, archived } = req.query;
     let sql = `SELECT j.*, u.full_name as driver_name, u.phone, u.license_plate
-               FROM justifications j JOIN users u ON j.driver_id = u.id`;
+               FROM justifications j JOIN users u ON j.driver_id = u.id
+               WHERE 1=1`;
     const params = [];
+
     if (status) {
-      sql += ' WHERE j.status = $1';
+      sql += ' AND j.status = $' + (params.length + 1);
       params.push(status);
     }
-    sql += ' ORDER BY j.created_at DESC';
+
+    if (archived === 'true') {
+      sql += ' AND j.archived_at IS NOT NULL';
+    } else if (archived === 'false') {
+      sql += ' AND j.archived_at IS NULL';
+    }
+
+    sql += ' ORDER BY j.attendance_date DESC, j.created_at DESC';
     const list = await queryAll(sql, params);
     res.json(list);
   } catch (err) {
     console.error('Justifications list error:', err);
     res.status(500).json({ error: 'فشل تحميل المبررات' });
+  }
+});
+
+router.post('/:id/archive', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    const j = await queryOne('SELECT id, archived_at FROM justifications WHERE id = $1', [req.params.id]);
+    if (!j) return res.status(404).json({ error: 'المبرر غير موجود' });
+    if (j.archived_at) return res.status(400).json({ error: 'المبرر مؤرشف بالفعل' });
+    await run('UPDATE justifications SET archived_at = NOW() WHERE id = $1', [req.params.id]);
+    res.json({ message: 'تم أرشفة المبرر' });
+  } catch (err) {
+    console.error('Archive error:', err);
+    res.status(500).json({ error: 'فشل أرشفة المبرر' });
+  }
+});
+
+router.post('/:id/restore', authenticate, authorize('admin'), async (req, res) => {
+  try {
+    const j = await queryOne('SELECT id, archived_at FROM justifications WHERE id = $1', [req.params.id]);
+    if (!j) return res.status(404).json({ error: 'المبرر غير موجود' });
+    if (!j.archived_at) return res.status(400).json({ error: 'المبرر غير مؤرشف' });
+    await run('UPDATE justifications SET archived_at = NULL WHERE id = $1', [req.params.id]);
+    res.json({ message: 'تم استعادة المبرر من الأرشيف' });
+  } catch (err) {
+    console.error('Restore error:', err);
+    res.status(500).json({ error: 'فشل استعادة المبرر' });
   }
 });
 
@@ -199,9 +244,9 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
   try {
     const stats = await queryOne(
       `SELECT
-        COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending_count,
-        COALESCE(SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END), 0) as approved_count,
-        COALESCE(SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END), 0) as rejected_count,
+        COALESCE(SUM(CASE WHEN status = 'pending' AND archived_at IS NULL THEN 1 ELSE 0 END), 0) as pending_count,
+        COALESCE(SUM(CASE WHEN status = 'approved' AND archived_at IS NULL THEN 1 ELSE 0 END), 0) as approved_count,
+        COALESCE(SUM(CASE WHEN status = 'rejected' AND archived_at IS NULL THEN 1 ELSE 0 END), 0) as rejected_count,
         COUNT(*) as total_count
        FROM justifications`
     );

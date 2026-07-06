@@ -178,6 +178,8 @@ export const justifications = {
   downloadUrl: (id) => `/api/justifications/${id}/proof/download`,
   remove: (id) => request(`/justifications/${id}`, { method: 'DELETE' }),
   stats: () => request('/justifications/stats'),
+  archive: (id) => request(`/justifications/${id}/archive`, { method: 'POST' }),
+  restore: (id) => request(`/justifications/${id}/restore`, { method: 'POST' }),
 };
 
 export const analytics = {

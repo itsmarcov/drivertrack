@@ -56,6 +56,7 @@ async function initDatabase() {
     await pool.query("ALTER TABLE attendance ADD COLUMN IF NOT EXISTS late_reason TEXT");
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1");
     await pool.query("UPDATE users SET is_active = 1 WHERE is_active IS NULL");
+    await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP");
   } catch {}
   return pool;
 }
