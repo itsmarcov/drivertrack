@@ -988,7 +988,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   border-radius: var(--nx-radius-lg);
   box-shadow: var(--nx-shadow-glass);
   border: 1px solid var(--nx-border);
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .table-toolbar {
   display: flex;
