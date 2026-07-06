@@ -144,6 +144,9 @@ router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), 
         String(Math.floor((avgScanSeconds % 3600) / 60)).padStart(2, '0')
       : null;
 
+    const absent = total - present;
+    const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+
     result.push({
       station_id: s.id,
       station_name: s.name,
