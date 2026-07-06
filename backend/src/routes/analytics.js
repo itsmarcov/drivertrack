@@ -161,15 +161,20 @@ router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), 
       absent_today: absent,
       attendance_rate: rate,
       avg_scan_time: avgScanTime,
+      avg_scan_seconds: avgScanSeconds,
       earliest_scan_time: earliestTime,
       rating,
     });
   }
 
   result.sort((a, b) => {
-    const aTime = a.avg_scan_time || '99:99';
-    const bTime = b.avg_scan_time || '99:99';
-    return aTime.localeCompare(bTime);
+    const aSec = a.avg_scan_seconds;
+    const bSec = b.avg_scan_seconds;
+    const aTimeScore = aSec !== null ? Math.max(0, 1 - (aSec - 18000) / 25200) * 100 : 0;
+    const bTimeScore = bSec !== null ? Math.max(0, 1 - (bSec - 18000) / 25200) * 100 : 0;
+    const aComposite = a.attendance_rate * 0.5 + aTimeScore * 0.5;
+    const bComposite = b.attendance_rate * 0.5 + bTimeScore * 0.5;
+    return bComposite - aComposite;
   });
   result.forEach((s, i) => { s.rank = i + 1; });
 
