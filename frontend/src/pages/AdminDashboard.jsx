@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { attendance, analytics as analyticsApi } from '../api';
 import LoadingScreen from '../components/LoadingScreen';
+import OnboardingGuide from '../components/OnboardingGuide';
 
 const G = '#1baf7a', B = '#2a78d6', R = '#e34948', A = '#eda100';
 
@@ -150,6 +151,8 @@ export default function AdminDashboard() {
 
   return (
     <div dir="rtl" className="admin-dash" style={{ background: bg, fontFamily: 'system-ui, Segoe UI, sans-serif' }}>
+
+      {user.role === 'ops' && <OnboardingGuide />}
 
       {/* Top bar */}
       <AnimatedCard i={0} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>

@@ -2689,6 +2689,206 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 }
 
 /* ════════════════════════════════════════════════
+   ONBOARDING GUIDE — First-time OPS walkthrough
+   ════════════════════════════════════════════════ */
+.onboard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: nx-fade-in 0.3s ease-out;
+}
+.onboard-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 2.5rem 2rem 1.5rem;
+  border-radius: var(--nx-radius-xl);
+  text-align: center;
+  position: relative;
+  background: var(--nx-bg-glass-strong);
+  backdrop-filter: var(--nx-blur-strong);
+  -webkit-backdrop-filter: var(--nx-blur-strong);
+  border: 1px solid var(--nx-glass-border);
+  box-shadow: var(--nx-shadow-liquid-strong);
+}
+.onboard-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-xl);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
+}
+.onboard-close {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--nx-radius-sm);
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--nx-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--nx-transition);
+  z-index: 1;
+}
+.onboard-close:hover {
+  background: var(--nx-bg);
+  color: var(--nx-text);
+}
+.onboard-icon-wrap {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: var(--nx-radius-full);
+  background: var(--nx-bg-glass);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--nx-shadow-liquid);
+  position: relative;
+  z-index: 1;
+}
+.onboard-icon-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-full);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
+}
+.onboard-icon {
+  font-size: 2rem;
+  position: relative;
+  z-index: 1;
+}
+.onboard-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+.onboard-desc {
+  font-size: 0.875rem;
+  color: var(--nx-text-secondary);
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+  position: relative;
+  z-index: 1;
+}
+.onboard-cta {
+  display: inline-flex;
+  margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+.onboard-progress-track {
+  width: 100%;
+  height: 4px;
+  background: var(--nx-border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  position: relative;
+  z-index: 1;
+}
+.onboard-progress-fill {
+  height: 100%;
+  background: var(--nx-gradient);
+  border-radius: 4px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.onboard-step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 1.25rem;
+  position: relative;
+  z-index: 1;
+}
+.onboard-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--nx-border);
+  transition: all var(--nx-transition);
+}
+.onboard-dot.active {
+  background: var(--nx-red);
+  transform: scale(1.3);
+}
+.onboard-dot.done {
+  background: var(--nx-text-muted);
+}
+.onboard-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+.onboard-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.onboard-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--nx-radius);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--nx-transition);
+  font-family: inherit;
+  border: none;
+}
+.onboard-btn-ghost {
+  background: transparent;
+  color: var(--nx-text-muted);
+}
+.onboard-btn-ghost:hover {
+  color: var(--nx-text-secondary);
+  background: var(--nx-bg);
+}
+.onboard-btn-outline {
+  background: transparent;
+  border: 1px solid var(--nx-border);
+  color: var(--nx-text-secondary);
+}
+.onboard-btn-outline:hover {
+  border-color: var(--nx-text-muted);
+  color: var(--nx-text);
+  background: var(--nx-bg);
+}
+.onboard-btn-primary {
+  background: var(--nx-red);
+  color: #fff;
+  box-shadow: var(--nx-shadow-red);
+}
+.onboard-btn-primary:hover {
+  background: var(--nx-red-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(229,57,53,0.35);
+}
+
+/* ════════════════════════════════════════════════
    iOS 26 Liquid Glass — Utility Classes
    ════════════════════════════════════════════════ */
 
