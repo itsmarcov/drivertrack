@@ -30,6 +30,8 @@
   --nx-gradient: linear-gradient(135deg, #E53935, #C62828);
   --nx-gradient-subtle: linear-gradient(135deg, #FFEBEE, #FFF5F5);
   --nx-blur: blur(24px);
+  --nx-blur-glass: blur(32px) saturate(200%);
+  --nx-blur-strong: blur(48px) saturate(220%);
   --nx-radius-sm: 8px;
   --nx-radius: 12px;
   --nx-radius-lg: 16px;
@@ -42,6 +44,13 @@
   --nx-shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
   --nx-shadow-red: 0 4px 12px rgba(229,57,53,0.2);
   --nx-shadow-glass: 0 8px 32px rgba(0,0,0,0.04);
+  --nx-shadow-liquid: 0 12px 48px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(255,255,255,0.08) inset;
+  --nx-shadow-liquid-strong: 0 16px 64px rgba(0,0,0,0.1), 0 0 0 0.5px rgba(255,255,255,0.12) inset;
+  --nx-glass-tint: rgba(229,57,53,0.06);
+  --nx-glass-tint-hover: rgba(229,57,53,0.12);
+  --nx-glass-reflect: linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 40%, transparent 65%);
+  --nx-glass-border: rgba(255,255,255,0.12);
+  --nx-glass-inner: 0 0 0 0.5px rgba(255,255,255,0.08) inset;
   --nx-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Arabic', sans-serif;
   --nx-font-display: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Arabic', sans-serif;
   --nx-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -70,6 +79,13 @@
   --nx-shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.5), 0 10px 10px -5px rgba(0,0,0,0.2);
   --nx-shadow-red: 0 4px 12px rgba(229,57,53,0.3);
   --nx-shadow-glass: 0 8px 32px rgba(0,0,0,0.2);
+  --nx-shadow-liquid: 0 12px 48px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.06) inset;
+  --nx-shadow-liquid-strong: 0 16px 64px rgba(0,0,0,0.35), 0 0 0 0.5px rgba(255,255,255,0.08) inset;
+  --nx-glass-tint: rgba(229,57,53,0.1);
+  --nx-glass-tint-hover: rgba(229,57,53,0.18);
+  --nx-glass-reflect: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 40%, transparent 65%);
+  --nx-glass-border: rgba(255,255,255,0.08);
+  --nx-glass-inner: 0 0 0 0.5px rgba(255,255,255,0.05) inset;
 }
 
 /* ─── Reset ─── */
@@ -222,10 +238,10 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   margin: 0 12px;
   border-radius: var(--nx-radius-xl);
   background: var(--nx-bg-glass);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-  border: 1px solid var(--nx-border);
-  box-shadow: var(--nx-shadow-glass), 0 0 0 0.5px rgba(255,255,255,0.1) inset;
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
+  box-shadow: var(--nx-shadow-liquid);
   transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .navbar::before {
@@ -233,11 +249,8 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   position: absolute;
   inset: 0;
   border-radius: var(--nx-radius-xl);
-  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+  background: var(--nx-glass-reflect);
   pointer-events: none;
-}
-.dark .navbar::before {
-  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
 }
 .navbar-hidden {
   transform: translateY(-80px);
@@ -502,20 +515,17 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   width: 340px;
   max-height: 360px;
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
-  box-shadow: var(--nx-shadow-glass), var(--nx-shadow-lg);
+  box-shadow: var(--nx-shadow-liquid-strong);
   z-index: 300;
-  animation: nx-scale-in 0.18s ease-out;
+  animation: nx-morph-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-origin: top left;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-.dark .nav-notif-dropdown {
-  background: var(--nx-bg-glass-strong);
 }
 .nav-notif-header {
   display: flex;
@@ -637,18 +647,15 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   left: 0;
   width: 200px;
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
-  box-shadow: var(--nx-shadow-glass), var(--nx-shadow-lg);
+  box-shadow: var(--nx-shadow-liquid-strong);
   z-index: 300;
-  animation: nx-scale-in 0.18s ease-out;
+  animation: nx-morph-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-origin: top left;
   overflow: hidden;
-}
-.dark .nav-profile-dropdown {
-  background: var(--nx-bg-glass-strong);
 }
 .nav-profile-header {
   display: flex;
@@ -829,6 +836,33 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   background: var(--nx-bg-glass-strong);
   color: var(--nx-text) !important;
 }
+.btn-glass {
+  background: var(--nx-bg-glass-strong);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
+  color: var(--nx-text) !important;
+  box-shadow: var(--nx-shadow-liquid);
+  position: relative;
+  overflow: hidden;
+}
+.btn-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
+  border-radius: inherit;
+}
+.btn-glass:hover {
+  background: var(--nx-bg-glass);
+  border-color: var(--nx-red-50);
+  box-shadow: var(--nx-shadow-liquid-strong), 0 0 0 0.5px rgba(229,57,53,0.08) inset;
+  transform: translateY(-1px);
+}
+.btn-glass:active {
+  transform: scale(0.97);
+}
 .btn-danger {
   background: var(--nx-error);
   color: #fff !important;
@@ -983,13 +1017,24 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
    ════════════════════════════════════════════════ */
 .table-container {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
   border-radius: var(--nx-radius-lg);
-  box-shadow: var(--nx-shadow-glass);
-  border: 1px solid var(--nx-border);
+  box-shadow: var(--nx-shadow-liquid);
+  border: 1px solid var(--nx-glass-border);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  position: relative;
+  isolation: isolate;
+}
+.table-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
+  z-index: -1;
 }
 .table-toolbar {
   display: flex;
@@ -1090,16 +1135,25 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 }
 .login-card {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-xl);
   padding: 2.5rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: var(--nx-shadow-glass), var(--nx-shadow-md);
-  animation: nx-scale-in 0.4s ease-out;
+  box-shadow: var(--nx-shadow-liquid-strong);
+  animation: nx-morph-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   position: relative;
+  isolation: isolate;
+}
+.login-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-xl);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
 }
 .login-logo-wrap {
   text-align: center;
@@ -1208,11 +1262,21 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
    ════════════════════════════════════════════════ */
 .card {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-liquid);
+  position: relative;
+  isolation: isolate;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
 }
 
 /* ════════════════════════════════════════════════
@@ -1234,15 +1298,23 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 }
 .nx-stat {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
   padding: 1.25rem 1.5rem;
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-liquid);
   transition: all var(--nx-transition);
   position: relative;
   overflow: hidden;
+}
+.nx-stat::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
 }
 .nx-stat::before {
   content: '';
@@ -1253,11 +1325,12 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   height: 100%;
   background: var(--nx-border);
   transition: all var(--nx-transition);
+  z-index: 1;
 }
 .nx-stat:hover {
-  box-shadow: var(--nx-shadow);
+  box-shadow: var(--nx-shadow-liquid-strong);
   transform: translateY(-2px);
-  border-color: var(--nx-border);
+  border-color: var(--nx-glass-border);
 }
 .nx-stat.highlight::before { background: var(--nx-success); }
 .nx-stat.warning::before { background: var(--nx-warning); }
@@ -1327,12 +1400,12 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 }
 .nx-action {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
   padding: 1.5rem;
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-liquid);
   text-align: center;
   transition: all var(--nx-transition);
   cursor: pointer;
@@ -1340,6 +1413,15 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   color: var(--nx-text) !important;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+}
+.nx-action::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
 }
 .nx-action::before {
   content: '';
@@ -1385,15 +1467,25 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
    ════════════════════════════════════════════════ */
 .nx-card {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-liquid);
   margin-bottom: 1.5rem;
   transition: all var(--nx-transition);
+  position: relative;
+  isolation: isolate;
 }
-.nx-card:hover { box-shadow: var(--nx-shadow-glass), var(--nx-shadow-sm); }
+.nx-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-lg);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
+}
+.nx-card:hover { box-shadow: var(--nx-shadow-liquid-strong); }
 .nx-card-header {
   display: flex;
   justify-content: space-between;
@@ -1412,11 +1504,11 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   padding: 3rem 1rem;
   color: var(--nx-text-secondary);
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-liquid);
   margin: 1rem 0;
 }
 .nx-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; opacity: 0.3; }
@@ -1429,29 +1521,39 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  animation: nx-fade-in 0.15s ease-out;
+  animation: nx-fade-in 0.2s ease-out;
 }
 .modal {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-xl);
   padding: 2rem;
   width: 100%;
   max-width: 560px;
-  box-shadow: var(--nx-shadow-glass), var(--nx-shadow-lg);
+  box-shadow: var(--nx-shadow-liquid-strong);
   max-height: 90vh;
   overflow-y: auto;
-  animation: nx-scale-in 0.25s ease-out;
+  animation: nx-morph-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  position: relative;
+  isolation: isolate;
+}
+.modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-xl);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
 }
 .modal-header {
   display: flex;
@@ -1479,13 +1581,13 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
    FILTER BAR
    ════════════════════════════════════════════════ */
 .nx-filter {
-  background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  background: var(--nx-bg-glass);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-lg);
   padding: 1.25rem;
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-liquid);
   margin-bottom: 1.5rem;
   display: flex;
   gap: 1rem;
@@ -1810,9 +1912,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .driver-tabs {
   display: flex;
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border-bottom: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border-bottom: 1px solid var(--nx-glass-border);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -1865,17 +1967,27 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .driver-greeting p { color: var(--nx-text-secondary); font-size: 0.85rem; margin-top: 0.15rem; }
 .driver-qr-card {
   background: var(--nx-bg-glass-strong);
-  backdrop-filter: var(--nx-blur);
-  -webkit-backdrop-filter: var(--nx-blur);
-  border: 1px solid var(--nx-border);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
   border-radius: var(--nx-radius-xl);
   padding: 1.5rem;
-  box-shadow: var(--nx-shadow-glass);
+  box-shadow: var(--nx-shadow-liquid-strong);
   text-align: center;
   width: 100%;
   max-width: 300px;
-  animation: nx-scale-in 0.3s ease-out;
+  animation: nx-morph-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   position: relative;
+  isolation: isolate;
+}
+.driver-qr-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--nx-radius-xl);
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
+  z-index: 0;
 }
 .driver-qr-card::before {
   content: '';
@@ -1884,6 +1996,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   height: 3px;
   background: var(--nx-gradient);
   border-radius: 0 0 3px 3px;
+  z-index: 1;
 }
 .driver-qr-header {
   display: flex;
@@ -2573,4 +2686,152 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   .admin-dash-perf > div + div {
     border-top: 0.5px solid var(--nx-border);
   }
+}
+
+/* ════════════════════════════════════════════════
+   iOS 26 Liquid Glass — Utility Classes
+   ════════════════════════════════════════════════ */
+
+/* Base glass surface — the core liquid glass material */
+.glass {
+  background: var(--nx-bg-glass);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
+  box-shadow: var(--nx-shadow-liquid);
+}
+
+/* Prominent glass — stronger blur, deeper shadow, reflection */
+.glass-prominent {
+  background: var(--nx-bg-glass-strong);
+  backdrop-filter: var(--nx-blur-strong);
+  -webkit-backdrop-filter: var(--nx-blur-strong);
+  border: 1px solid var(--nx-glass-border);
+  box-shadow: var(--nx-shadow-liquid-strong);
+}
+
+.glass-prominent::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--nx-glass-reflect);
+  pointer-events: none;
+}
+
+/* Interactive glass — responds to pointer with subtle morph */
+.glass-interactive {
+  transition: transform var(--nx-transition), box-shadow var(--nx-transition), background var(--nx-transition);
+  will-change: transform;
+}
+
+.glass-interactive:hover {
+  transform: scale(1.02);
+  background: var(--nx-bg-glass-strong);
+  box-shadow: var(--nx-shadow-liquid-strong);
+}
+
+.glass-interactive:active {
+  transform: scale(0.98);
+}
+
+/* Tinted glass — picks up brand color in the glow */
+.glass-tinted {
+  background: var(--nx-bg-glass);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: 1px solid var(--nx-glass-border);
+  box-shadow: var(--nx-shadow-liquid), 0 0 0 0.5px rgba(229,57,53,0.08) inset;
+}
+
+.glass-tinted::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--nx-glass-tint);
+  pointer-events: none;
+}
+
+/* Morphing container — adjacent glass children visually merge */
+.glass-morph-group {
+  display: flex;
+  border-radius: var(--nx-radius-lg);
+  box-shadow: var(--nx-shadow-liquid);
+  overflow: hidden;
+}
+
+.glass-morph-group > * {
+  flex: 1;
+  background: var(--nx-bg-glass);
+  backdrop-filter: var(--nx-blur-glass);
+  -webkit-backdrop-filter: var(--nx-blur-glass);
+  border: none;
+  position: relative;
+  transition: background var(--nx-transition);
+}
+
+.glass-morph-group > * + * {
+  border-left: 0.5px solid var(--nx-glass-border);
+}
+
+.glass-morph-group > *:hover {
+  background: var(--nx-bg-glass-strong);
+  z-index: 1;
+}
+
+.glass-morph-group > *:hover + * {
+  border-left-color: transparent;
+}
+
+/* Morph animation — merging shapes on mount */
+.nx-morph-in {
+  animation: nx-morph-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes nx-morph-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(4px);
+    border-radius: var(--nx-radius-xl);
+  }
+  60% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+    border-radius: var(--nx-radius);
+  }
+}
+
+/* Reflection shimmer sweep (toggled via class or :hover) */
+.glass-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,0.06),
+    transparent
+  );
+  transform: rotate(25deg);
+  animation: glass-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes glass-shimmer {
+  0% { transform: rotate(25deg) translateX(-100%); }
+  60%, 100% { transform: rotate(25deg) translateX(400%); }
 }

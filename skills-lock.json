@@ -12,6 +12,12 @@
       "sourceType": "github",
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
+    },
+    "liquid-glass-design": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "skillPath": "skills/liquid-glass-design/SKILL.md",
+      "computedHash": "cdd47ce273b84d1e630aa6ea8086baa9b4affd9f881b3f95a7b25334b67a1dc5"
     }
   }
 }
