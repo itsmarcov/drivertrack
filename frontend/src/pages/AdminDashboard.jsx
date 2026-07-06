@@ -35,6 +35,7 @@ export default function AdminDashboard() {
   const [tt, setTt] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [filterKey, setFilterKey] = useState(0);
+  const [stationsReport, setStationsReport] = useState(null);
   const mounted = useRef(true);
 
   const getParams = useCallback(() => {
@@ -64,6 +65,12 @@ export default function AdminDashboard() {
       if (isToday) {
         const s = await attendance.stats();
         if (mounted.current) setStats(s);
+      }
+    } catch {}
+    try {
+      if (isToday && user.role !== 'ops') {
+        const r = await analyticsApi.stationsReport();
+        if (mounted.current) setStationsReport(r);
       }
     } catch {}
   }, [getParams]);
@@ -261,6 +268,50 @@ export default function AdminDashboard() {
           </div>
         </AnimatedCard>
       </div>
+
+      {/* Stations Report */}
+      {stationsReport && user.role !== 'ops' && (
+        <AnimatedCard i={8} style={{ marginTop: 16, background: cardBg, border: '0.5px solid ' + cardBorder, borderRadius: 12, padding: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: textPri }}>تقرير المحطات — {stationsReport.date}</span>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>المحطة</th>
+                  <th>السائقين</th>
+                  <th>حاضر</th>
+                  <th>متأخر</th>
+                  <th>غائب</th>
+                  <th>% الحضور</th>
+                  <th>التقييم</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stationsReport.stations.map((s) => {
+                  const ratingColor = s.rating === 'PERFECT' ? '#16A34A' : s.rating === 'GOOD' ? '#EAB308' : '#DC2626';
+                  return (
+                    <tr key={s.station_id}>
+                      <td><strong>{s.station_name}</strong></td>
+                      <td>{s.total_drivers}</td>
+                      <td>{s.present_today}</td>
+                      <td>{s.late_today}</td>
+                      <td>{s.absent_today}</td>
+                      <td>{s.attendance_rate}%</td>
+                      <td>
+                        <span style={{ background: ratingColor + '20', color: ratingColor, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
+                          {s.rating}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </AnimatedCard>
+      )}
     </div>
   );
 }

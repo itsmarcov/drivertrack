@@ -102,4 +102,57 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   });
 });
 
+router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  const dateStr = req.query.date || todayStr(new Date());
+
+  const stations = await queryAll('SELECT id, name, code FROM stations ORDER BY name ASC');
+
+  const result = [];
+  for (const s of stations) {
+    const [totalDrivers] = await queryAll(
+      `SELECT COUNT(*) as count FROM users WHERE role = 'driver' AND is_active::text = '1' AND station_id = $1`,
+      [s.id]
+    );
+    const total = parseInt(totalDrivers.count);
+    if (total === 0) continue;
+
+    const [presentToday] = await queryAll(
+      `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a JOIN users u ON a.driver_id = u.id
+       WHERE a.scan_date = $1 AND u.station_id = $2`,
+      [dateStr, s.id]
+    );
+    const present = parseInt(presentToday.count);
+
+    const [lateToday] = await queryAll(
+      `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a JOIN users u ON a.driver_id = u.id
+       WHERE a.scan_date = $1 AND a.is_late = 1 AND u.station_id = $2`,
+      [dateStr, s.id]
+    );
+    const late = parseInt(lateToday.count);
+
+    const absent = total - present;
+    const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+    let rating;
+    if (rate >= 90) rating = 'PERFECT';
+    else if (rate >= 70) rating = 'GOOD';
+    else rating = 'RISKY';
+
+    result.push({
+      station_id: s.id,
+      station_name: s.name,
+      station_code: s.code,
+      total_drivers: total,
+      present_today: present,
+      late_today: late,
+      absent_today: absent,
+      attendance_rate: rate,
+      rating,
+    });
+  }
+
+  result.sort((a, b) => b.attendance_rate - a.attendance_rate);
+
+  res.json({ date: dateStr, stations: result });
+});
+
 module.exports = router;

@@ -185,4 +185,8 @@ export const analytics = {
     const qs = new URLSearchParams(params).toString();
     return request(`/analytics${qs ? '?' + qs : ''}`);
   },
+  stationsReport: (date) => {
+    const qs = date ? `?date=${date}` : '';
+    return request(`/analytics/stations-report${qs}`);
+  },
 };
