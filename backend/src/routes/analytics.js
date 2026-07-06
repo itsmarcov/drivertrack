@@ -146,9 +146,11 @@ router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), 
 
     const absent = total - present;
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
+    const timeScore = avgScanSeconds !== null ? Math.max(0, 1 - (avgScanSeconds - 18000) / 25200) * 100 : 0;
+    const composite = rate * 0.5 + timeScore * 0.5;
     let rating;
-    if (rate >= 90) rating = 'PERFECT';
-    else if (rate >= 70) rating = 'GOOD';
+    if (composite >= 90) rating = 'PERFECT';
+    else if (composite >= 70) rating = 'GOOD';
     else rating = 'RISKY';
 
     result.push({
