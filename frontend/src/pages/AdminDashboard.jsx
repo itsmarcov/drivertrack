@@ -279,26 +279,37 @@ export default function AdminDashboard() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>المحطة</th>
                   <th>السائقين</th>
                   <th>حاضر</th>
                   <th>متأخر</th>
                   <th>غائب</th>
                   <th>% الحضور</th>
+                  <th>متوسط الوصول</th>
+                  <th>أقدم حضور</th>
                   <th>التقييم</th>
                 </tr>
               </thead>
               <tbody>
                 {stationsReport.stations.map((s) => {
                   const ratingColor = s.rating === 'PERFECT' ? '#16A34A' : s.rating === 'GOOD' ? '#EAB308' : '#DC2626';
+                  const rankColor = s.rank <= 3 ? '#1A56DB' : s.rank <= 5 ? '#EAB308' : '#6B7280';
                   return (
                     <tr key={s.station_id}>
+                      <td>
+                        <span style={{ background: rankColor + '20', color: rankColor, fontWeight: 700, fontSize: 12, padding: '2px 8px', borderRadius: 8 }}>
+                          {s.rank}
+                        </span>
+                      </td>
                       <td><strong>{s.station_name}</strong></td>
                       <td>{s.total_drivers}</td>
                       <td>{s.present_today}</td>
                       <td>{s.late_today}</td>
                       <td>{s.absent_today}</td>
                       <td>{s.attendance_rate}%</td>
+                      <td style={{ fontSize: 12, fontWeight: 600 }}>{s.avg_scan_time || '—'}</td>
+                      <td style={{ fontSize: 12 }}>{s.earliest_scan_time || '—'}</td>
                       <td>
                         <span style={{ background: ratingColor + '20', color: ratingColor, padding: '2px 10px', borderRadius: 10, fontSize: 11, fontWeight: 700 }}>
                           {s.rating}

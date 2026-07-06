@@ -130,6 +130,20 @@ router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), 
     );
     const late = parseInt(lateToday.count);
 
+    const [avgTime] = await queryAll(
+      `SELECT MIN(a.scan_time::time) as earliest_time,
+              AVG(EXTRACT(EPOCH FROM a.scan_time::time)) as avg_epoch
+       FROM attendance a JOIN users u ON a.driver_id = u.id
+       WHERE a.scan_date = $1 AND u.station_id = $2`,
+      [dateStr, s.id]
+    );
+    const earliestTime = avgTime?.earliest_time || null;
+    const avgScanSeconds = avgTime?.avg_epoch ? Math.round(parseFloat(avgTime.avg_epoch)) : null;
+    const avgScanTime = avgScanSeconds !== null
+      ? String(Math.floor(avgScanSeconds / 3600)).padStart(2, '0') + ':' +
+        String(Math.floor((avgScanSeconds % 3600) / 60)).padStart(2, '0')
+      : null;
+
     const absent = total - present;
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
     let rating;
@@ -146,11 +160,18 @@ router.get('/stations-report', authenticate, authorize('admin', 'super_admin'), 
       late_today: late,
       absent_today: absent,
       attendance_rate: rate,
+      avg_scan_time: avgScanTime,
+      earliest_scan_time: earliestTime,
       rating,
     });
   }
 
-  result.sort((a, b) => b.attendance_rate - a.attendance_rate);
+  result.sort((a, b) => {
+    const aTime = a.avg_scan_time || '99:99';
+    const bTime = b.avg_scan_time || '99:99';
+    return aTime.localeCompare(bTime);
+  });
+  result.forEach((s, i) => { s.rank = i + 1; });
 
   res.json({ date: dateStr, stations: result });
 });
