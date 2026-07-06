@@ -101,6 +101,12 @@ export const attendance = {
   late: () => request('/attendance/late'),
   manualAttend: (driver_id) => request('/attendance/manual', { method: 'POST', body: JSON.stringify({ driver_id }) }),
   markLate: (data) => request('/attendance/mark-late', { method: 'POST', body: JSON.stringify(data) }),
+  exportLate: async (date) => {
+    const qs = date ? `?date=${date}` : '';
+    const res = await fetch(`/api/attendance/late/export${qs}`, { credentials: 'same-origin' });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'فشل تصدير المتأخرين'); }
+    return res.blob();
+  },
   exportExcel: async (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     const res = await fetch(`/api/attendance/export${qs ? '?' + qs : ''}`, { credentials: 'same-origin' });

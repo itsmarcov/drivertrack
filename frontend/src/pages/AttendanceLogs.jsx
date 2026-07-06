@@ -19,6 +19,7 @@ export default function AttendanceLogs() {
   const [filterDriver, setFilterDriver] = useState('');
   const [filterStation, setFilterStation] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [exportingLate, setExportingLate] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [manualDriver, setManualDriver] = useState('');
   const [manualSubmitting, setManualSubmitting] = useState(false);
@@ -75,6 +76,25 @@ export default function AttendanceLogs() {
     }
   };
 
+  const handleExportLate = async () => {
+    try {
+      setExportingLate(true);
+      const blob = await attendance.exportLate(filterDate);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `retarded-drivers-${filterDate}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setExportingLate(false);
+    }
+  };
+
   const handleManualSubmit = async () => {
     if (!manualDriver) { setManualError('الرجاء اختيار سائق'); return; }
     setManualSubmitting(true);
@@ -127,8 +147,11 @@ export default function AttendanceLogs() {
               + تسجيل يدوي
             </button>
           )}
+          <button className="btn btn-outline" onClick={handleExportLate} disabled={exportingLate}>
+            {exportingLate ? 'جاري...' : 'تصدير المتأخرين'}
+          </button>
           <button className="btn btn-outline" onClick={handleExport} disabled={exporting}>
-            {exporting ? 'جاري...' : 'تصدير Excel'}
+            {exporting ? 'جاري...' : 'تصدير الكل'}
           </button>
         </div>
       </div>

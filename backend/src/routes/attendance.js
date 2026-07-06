@@ -139,50 +139,75 @@ router.get('/stats', authenticate, authorize('admin', 'ops'), async (req, res) =
   const dateStr = today.getFullYear() + '-' +
     String(today.getMonth() + 1).padStart(2, '0') + '-' +
     String(today.getDate()).padStart(2, '0');
+  const hour = today.getHours();
+  const currentShift = hour < 14 ? 'morning' : 'evening';
 
-  let driverWhere = "role = 'driver' AND is_active::text = '1'";
-  let attWhere = 'scan_date = $1';
+  const baseQuery = (role, stationId) => {
+    let where = `role = 'driver' AND is_active::text = '1'`;
+    const params = [];
+    if (stationId) { where += ` AND station_id = $${params.length + 1}`; params.push(stationId); }
+    return { where, params };
+  };
+
+  const stationId = req.user.role === 'ops' ? req.user.station_id : (req.query.station_id || null);
+
+  const morning = baseQuery('driver', stationId);
+  morning.where += ` AND (shift = 'morning' OR shift IS NULL)`;
+  const evening = baseQuery('driver', stationId);
+  evening.where += ` AND shift = 'evening'`;
+
+  const totalMorning = await queryOne(`SELECT COUNT(*) as count FROM users WHERE ${morning.where}`, morning.params);
+  const totalEvening = await queryOne(`SELECT COUNT(*) as count FROM users WHERE ${evening.where}`, evening.params);
+
   const attParams = [dateStr];
-  let attLateWhere = 'scan_date = $1 AND is_late = 1';
-
-  if (req.user.role === 'ops' && req.user.station_id) {
-    driverWhere += ` AND station_id = $1`;
-    attWhere += ` AND u.station_id = $2`;
-    attLateWhere += ` AND u.station_id = $2`;
-    const sid = [req.user.station_id];
-    const total = await queryOne(`SELECT COUNT(*) as count FROM users WHERE ${driverWhere}`, sid);
-    const present = await queryOne(
-      `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a JOIN users u ON a.driver_id = u.id WHERE ${attWhere}`,
-      [...attParams, ...sid]
-    );
-    const late = await queryOne(
-      `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a JOIN users u ON a.driver_id = u.id WHERE ${attLateWhere}`,
-      [...attParams, ...sid]
-    );
-    return res.json({
-      total_drivers: parseInt(total.count),
-      present_today: parseInt(present.count),
-      late_today: parseInt(late.count),
-      date: dateStr,
-      station_id: req.user.station_id,
-    });
+  let stationJoin = '';
+  let stationWhere = '';
+  if (stationId) {
+    stationJoin = ' JOIN users u ON a.driver_id = u.id';
+    stationWhere = ` AND u.station_id = $${attParams.length + 1}`;
+    attParams.push(stationId);
   }
 
-  const total = await queryOne(`SELECT COUNT(*) as count FROM users WHERE ${driverWhere}`);
-  const present = await queryOne(
-    'SELECT COUNT(DISTINCT driver_id) as count FROM attendance WHERE scan_date = $1',
-    [dateStr]
+  const presentMorning = await queryOne(
+    `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a${stationJoin}
+     WHERE a.scan_date = $1 AND a.driver_id IN (SELECT id FROM users WHERE (shift = 'morning' OR shift IS NULL)${stationWhere.replaceAll('u.station_id', 'station_id')})`,
+    attParams
   );
-  const late = await queryOne(
-    "SELECT COUNT(DISTINCT driver_id) as count FROM attendance WHERE scan_date = $1 AND is_late = 1",
-    [dateStr]
+  const presentEvening = await queryOne(
+    `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a${stationJoin}
+     WHERE a.scan_date = $1 AND a.driver_id IN (SELECT id FROM users WHERE shift = 'evening'${stationWhere.replaceAll('u.station_id', 'station_id')})`,
+    attParams
   );
 
+  const lateMorning = await queryOne(
+    `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a${stationJoin}
+     WHERE a.scan_date = $1 AND a.is_late = 1 AND a.driver_id IN (SELECT id FROM users WHERE (shift = 'morning' OR shift IS NULL)${stationWhere.replaceAll('u.station_id', 'station_id')})`,
+    attParams
+  );
+  const lateEvening = await queryOne(
+    `SELECT COUNT(DISTINCT a.driver_id) as count FROM attendance a${stationJoin}
+     WHERE a.scan_date = $1 AND a.is_late = 1 AND a.driver_id IN (SELECT id FROM users WHERE shift = 'evening'${stationWhere.replaceAll('u.station_id', 'station_id')})`,
+    attParams
+  );
+
+  const mTotal = parseInt(totalMorning.count);
+  const eTotal = parseInt(totalEvening.count);
+  const mPresent = parseInt(presentMorning.count);
+  const ePresent = parseInt(presentEvening.count);
+
   res.json({
-    total_drivers: parseInt(total.count),
-    present_today: parseInt(present.count),
-    late_today: parseInt(late.count),
+    total_drivers: mTotal + eTotal,
+    total_morning: mTotal,
+    total_evening: eTotal,
+    present_today: mPresent + ePresent,
+    present_morning: mPresent,
+    present_evening: ePresent,
+    late_today: parseInt(lateMorning.count) + parseInt(lateEvening.count),
+    late_morning: parseInt(lateMorning.count),
+    late_evening: parseInt(lateEvening.count),
+    current_shift: currentShift,
     date: dateStr,
+    station_id: stationId || null,
   });
 });
 

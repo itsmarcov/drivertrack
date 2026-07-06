@@ -39,13 +39,13 @@ router.post('/', authenticate, authorize('driver'), (req, res, next) => {
   });
 }, async (req, res) => {
   try {
-    const { reason, note } = req.body;
+    const { reason, note, attendance_date } = req.body;
     if (!reason) return res.status(400).json({ error: 'السبب مطلوب' });
 
     const today = new Date();
-    const dateStr = today.getFullYear() + '-' +
+    const dateStr = attendance_date || (today.getFullYear() + '-' +
       String(today.getMonth() + 1).padStart(2, '0') + '-' +
-      String(today.getDate()).padStart(2, '0');
+      String(today.getDate()).padStart(2, '0'));
 
     const existing = await queryOne(
       'SELECT id FROM justifications WHERE driver_id = $1 AND attendance_date = $2',
@@ -120,7 +120,9 @@ router.patch('/:id/review', authenticate, authorize('admin'), async (req, res) =
     if (status === 'approved') {
       await run(
         `UPDATE penalties SET status = 'cancelled', admin_note = 'مقبول - تم إلغاء الغرامة'
-         WHERE driver_id = $1 AND penalty_date = $2 AND status = 'active'`,
+         WHERE driver_id = $1 AND attendance_id IN (
+           SELECT id FROM attendance WHERE driver_id = $1 AND scan_date = $2
+         ) AND status = 'active'`,
         [justification.driver_id, justification.attendance_date]
       );
     }

@@ -7,6 +7,17 @@ const reasons = [
   { value: 'other', label: 'أخرى' },
 ];
 
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 export default function JustificationTab() {
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
@@ -16,6 +27,7 @@ export default function JustificationTab() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [history, setHistory] = useState([]);
+  const [attendanceDate, setAttendanceDate] = useState(todayStr());
   const fileRef = useRef(null);
   const mounted = useRef(true);
 
@@ -51,6 +63,7 @@ export default function JustificationTab() {
     setSuccess('');
     const fd = new FormData();
     fd.append('reason', reason);
+    fd.append('attendance_date', attendanceDate);
     if (note.trim()) fd.append('note', note);
     if (file) fd.append('proof', file);
     try {
@@ -84,7 +97,7 @@ export default function JustificationTab() {
   return (
     <div className="fade-slide-in">
       <div className="justify-today-banner">
-        <strong>تقديم مبرر لليوم</strong>
+        <strong>تقديم مبرر</strong>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -92,6 +105,10 @@ export default function JustificationTab() {
 
       <div className="justify-form-card">
         <form onSubmit={handleSubmit} className="justify-form">
+          <div className="form-group">
+            <label className="form-label">تاريخ الغياب</label>
+            <input type="date" value={attendanceDate} onChange={(e) => setAttendanceDate(e.target.value)} max={todayStr()} style={{ width: '100%' }} />
+          </div>
           <label className="form-label">السبب</label>
           <div className="reason-chips">
             {reasons.map((r) => (
