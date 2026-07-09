@@ -296,6 +296,12 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   gap: 2px;
   flex: 1;
 }
+.nav-links-center {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  flex: 1;
+}
 .nav-link {
   padding: 0.4rem 0.6rem;
   border-radius: var(--nx-radius);
