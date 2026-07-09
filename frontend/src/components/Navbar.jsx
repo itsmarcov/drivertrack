@@ -11,30 +11,27 @@ function initials(name) {
 }
 
 function NavDropdown({ label, children }) {
+  const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
+    if (!open) return;
     const handle = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
-        ref.current.classList.remove('open');
-      }
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     };
-    document.addEventListener('mousedown', handle);
-    return () => document.removeEventListener('mousedown', handle);
-  }, []);
-  const toggle = () => {
-    const isOpen = ref.current.classList.contains('open');
-    document.querySelectorAll('.nav-dropdown.open').forEach(el => el.classList.remove('open'));
-    if (!isOpen) ref.current.classList.add('open');
-  };
+    document.addEventListener('click', handle);
+    return () => document.removeEventListener('click', handle);
+  }, [open]);
   return (
-    <div ref={ref} className="nav-dropdown">
-      <button className="nav-dropdown-toggle" onClick={toggle}>
+    <div ref={ref} className={`nav-dropdown ${open ? 'open' : ''}`}>
+      <button className="nav-dropdown-toggle" onClick={() => setOpen(!open)}>
         <span>{label}</span>
         <svg className="nav-dropdown-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <div className="nav-dropdown-menu">
-        {children}
-      </div>
+      {open && (
+        <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
