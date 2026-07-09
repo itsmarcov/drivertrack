@@ -450,6 +450,96 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 }
 .nav-drawer-logout:hover { background: #FEF2F2; }
 
+/* ── Navbar dropdown groups ── */
+.nav-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.nav-dropdown-toggle {
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--nx-radius);
+  color: var(--nx-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: all var(--nx-transition);
+}
+.nav-dropdown-toggle:hover {
+  background: rgba(229,57,53,0.06);
+  color: var(--nx-text);
+}
+.nav-dropdown.open > .nav-dropdown-toggle {
+  color: var(--nx-red);
+}
+.nav-dropdown-arrow {
+  transition: transform 0.25s ease;
+}
+.nav-dropdown.open .nav-dropdown-arrow {
+  transform: rotate(180deg);
+}
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 180px;
+  background: var(--nx-bg);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 0.35rem;
+  display: none;
+  z-index: 50;
+  margin-top: 4px;
+}
+.dark .nav-dropdown-menu { background: var(--nx-dark-surface); }
+.nav-dropdown.open .nav-dropdown-menu { display: flex; flex-direction: column; gap: 2px; }
+.nav-dd-link {
+  padding: 0.5rem 0.65rem;
+  border-radius: calc(var(--nx-radius) - 2px);
+  color: var(--nx-text-secondary) !important;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-decoration: none !important;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  transition: all var(--nx-transition);
+}
+.nav-dd-link:hover {
+  background: rgba(229,57,53,0.06);
+  color: var(--nx-text) !important;
+}
+.nav-dd-link.active {
+  background: var(--nx-red);
+  color: white !important;
+  font-weight: 600;
+}
+.nav-dd-link.active:hover { background: var(--nx-red-dark); }
+.nav-dd-link svg { flex-shrink: 0; }
+.nav-dd-badge {
+  background: var(--nx-red);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  margin-right: auto;
+}
+
 .theme-toggle {
   width: 30px;
   height: 30px;
