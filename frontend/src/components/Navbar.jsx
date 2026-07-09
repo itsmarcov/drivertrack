@@ -88,6 +88,7 @@ export default function Navbar() {
       </Link>
       <Link to="/admin/penalties" className={`nav-link ${isActive('/admin/penalties')}`} onClick={onClick}>الغرامات</Link>
       <Link to="/admin/absences" className={`nav-link ${isActive('/admin/absences')}`} onClick={onClick}>الغيابات</Link>
+      <Link to="/admin/absence-requests" className={`nav-link ${isActive('/admin/absence-requests')}`} onClick={onClick}>طلبات الغياب</Link>
 
       {(user.role === 'admin' || user.role === 'super_admin') && (
         <Link to="/admin/justifications" className={`nav-link nav-link-just ${isActive('/admin/justifications')}`} onClick={onClick}>

@@ -57,6 +57,19 @@ async function initDatabase() {
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active INTEGER DEFAULT 1");
     await pool.query("UPDATE users SET is_active = 1 WHERE is_active IS NULL");
     await pool.query("ALTER TABLE justifications ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP");
+    await pool.query(`CREATE TABLE IF NOT EXISTS absence_requests (
+      id SERIAL PRIMARY KEY,
+      driver_id INTEGER NOT NULL REFERENCES users(id),
+      date_from VARCHAR(20) NOT NULL,
+      date_to VARCHAR(20) NOT NULL,
+      reason VARCHAR(255) NOT NULL,
+      note TEXT,
+      status VARCHAR(20) DEFAULT 'pending',
+      reviewed_by INTEGER REFERENCES users(id),
+      reviewed_at TIMESTAMP,
+      admin_note TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
   } catch {}
   return pool;
 }

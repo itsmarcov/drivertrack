@@ -182,6 +182,17 @@ export const justifications = {
   restore: (id) => request(`/justifications/${id}/restore`, { method: 'POST' }),
 };
 
+export const absenceRequests = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/absence-requests${qs ? '?' + qs : ''}`);
+  },
+  my: () => request('/absence-requests/my'),
+  create: (data) => request('/absence-requests', { method: 'POST', body: JSON.stringify(data) }),
+  review: (id, data) => request(`/absence-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) }),
+  cancel: (id) => request(`/absence-requests/${id}`, { method: 'DELETE' }),
+};
+
 export const analytics = {
   get: (params = {}) => {
     const qs = new URLSearchParams(params).toString();

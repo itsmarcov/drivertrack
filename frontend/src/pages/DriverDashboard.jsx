@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import DriverProfile from './DriverProfile';
 import JustificationTab from './JustificationTab';
+import AbsenceRequests from './AbsenceRequests';
 import { useAuth } from '../context/AuthContext';
 import { qr, attendance } from '../api';
 
@@ -100,6 +101,7 @@ export default function DriverDashboard() {
         <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف الشخصي</button>
         <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
         <button className={`driver-tab ${activeTab === 'justifications' ? 'active' : ''}`} onClick={() => setActiveTab('justifications')}>المبررات</button>
+        <button className={`driver-tab ${activeTab === 'absence-requests' ? 'active' : ''}`} onClick={() => setActiveTab('absence-requests')}>الغيابات المسبقة</button>
       </div>
 
       {activeTab === 'qr' && (
@@ -148,6 +150,7 @@ export default function DriverDashboard() {
       )}
 
       {activeTab === 'justifications' && <JustificationTab />}
+      {activeTab === 'absence-requests' && <AbsenceRequests compact />}
     </div>
   );
 }

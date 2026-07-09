@@ -64,6 +64,13 @@ router.post('/mark', authenticate, authorize('admin', 'ops'), async (req, res) =
       [driver.id, targetDate]
     );
     if (existing) continue;
+    const approvedRequest = await queryOne(
+      `SELECT id FROM absence_requests
+       WHERE driver_id = $1 AND status = 'approved'
+         AND date_from <= $2 AND date_to >= $2`,
+      [driver.id, targetDate]
+    );
+    if (approvedRequest) continue;
     const currentTime = targetDate === today ? dateStr(new Date()).split(' ')[1] || '23:59' : '23:59';
     if (currentTime < cutoff) continue;
     await run(

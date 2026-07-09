@@ -17,6 +17,7 @@ const stationRoutes = require('./routes/stations');
 const penaltyRoutes = require('./routes/penalties');
 const settingsRoutes = require('./routes/settings');
 const absenceRoutes = require('./routes/absences');
+const absenceRequestRoutes = require('./routes/absence_requests');
 const analyticsRoutes = require('./routes/analytics');
 const justificationRoutes = require('./routes/justifications');
 
@@ -58,6 +59,7 @@ app.use('/api/stations', stationRoutes);
 app.use('/api/penalties', penaltyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/absences', absenceRoutes);
+app.use('/api/absence-requests', absenceRequestRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/justifications', justificationRoutes);
 
@@ -103,6 +105,7 @@ async function seedInitialData() {
       await run('DELETE FROM attendance WHERE driver_id = $1', [user.id]);
       await run('DELETE FROM attendance WHERE scanned_by = $1', [user.id]);
       await run('DELETE FROM absences WHERE driver_id = $1', [user.id]);
+      await run('DELETE FROM absence_requests WHERE driver_id = $1', [user.id]);
       await run('DELETE FROM justifications WHERE driver_id = $1', [user.id]);
       await run('DELETE FROM users WHERE id = $1', [user.id]);
       console.log('  \u2713 Default user removed: ' + username);

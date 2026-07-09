@@ -19,6 +19,8 @@ import ProfileSettings from './pages/ProfileSettings';
 import JustificationsReview from './pages/JustificationsReview';
 import DriverRegister from './pages/DriverRegister';
 import PendingDrivers from './pages/PendingDrivers';
+import AbsenceRequests from './pages/AbsenceRequests';
+import AbsenceRequestsReview from './pages/AbsenceRequestsReview';
 
 
 function HomeRedirect() {
@@ -50,6 +52,7 @@ export default function App() {
           <Route path="/admin/pending-drivers" element={<ProtectedRoute roles={['admin', 'super_admin']}><PendingDrivers /></ProtectedRoute>} />
           <Route path="/driver" element={<ProtectedRoute roles={['driver']}><DriverDashboard /></ProtectedRoute>} />
           <Route path="/driver/attendance" element={<ProtectedRoute roles={['driver']}><AttendanceLogs /></ProtectedRoute>} />
+          <Route path="/driver/absence-requests" element={<ProtectedRoute roles={['driver']}><AbsenceRequests /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/drivers" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><DriversManagement /></ProtectedRoute>} />
           <Route path="/admin/ops" element={<ProtectedRoute roles={['admin', 'super_admin']}><OpsManagement /></ProtectedRoute>} />
@@ -61,6 +64,7 @@ export default function App() {
           <Route path="/admin/settings" element={<ProtectedRoute roles={['admin', 'super_admin']}><SettingsManagement /></ProtectedRoute>} />
           <Route path="/admin/absences" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AbsencesManagement /></ProtectedRoute>} />
           <Route path="/admin/justifications" element={<ProtectedRoute roles={['admin', 'super_admin']}><JustificationsReview /></ProtectedRoute>} />
+          <Route path="/admin/absence-requests" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AbsenceRequestsReview /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

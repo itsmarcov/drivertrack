@@ -397,7 +397,15 @@ router.get('/my/profile', authenticate, authorize('admin', 'ops', 'driver'), asy
   const att30d = await queryOne(
     `SELECT COUNT(DISTINCT scan_date) as count FROM attendance WHERE driver_id = $1 AND scan_date::date >= CURRENT_DATE - INTERVAL '30 days'`, [id]);
   const abs30d = await queryOne(
-    `SELECT COUNT(*) as count FROM absences WHERE driver_id = $1 AND absence_date::date >= CURRENT_DATE - INTERVAL '30 days'`, [id]);
+    `SELECT COUNT(*) as count FROM absences a
+     WHERE a.driver_id = $1 AND a.absence_date::date >= CURRENT_DATE - INTERVAL '30 days'
+       AND NOT EXISTS (
+         SELECT 1 FROM absence_requests ar
+         WHERE ar.driver_id = a.driver_id
+           AND ar.status = 'approved'
+           AND ar.date_from <= a.absence_date
+           AND ar.date_to >= a.absence_date
+       )`, [id]);
   const dates = await queryAll('SELECT DISTINCT scan_date FROM attendance WHERE driver_id = $1 ORDER BY scan_date DESC', [id]);
   const recent = await queryAll(
     `SELECT a.id, a.scan_date, a.scan_time, a.verified, a.is_late, a.source, a.lat, a.lng, a.late_reason, s.full_name as scanned_by_name
