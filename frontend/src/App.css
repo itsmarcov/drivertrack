@@ -295,13 +295,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   display: flex;
   gap: 2px;
   flex: 1;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  -ms-overflow-style: none;
 }
-.nav-links::-webkit-scrollbar { height: 0; }
 .nav-link {
   padding: 0.4rem 0.6rem;
   border-radius: var(--nx-radius);
@@ -324,6 +318,15 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .nav-link.active:hover {
   background: var(--nx-red-dark);
 }
+.nav-link-scan {
+  background: var(--nx-red);
+  color: white !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav-link-scan:hover { background: var(--nx-red-dark) !important; color: white !important; }
 
 .nav-actions {
   display: flex;
