@@ -69,6 +69,8 @@ export default function DriverProfile({ driverId, onClose }) {
     load();
   }, [driverId]);
 
+  const [editingAddress, setEditingAddress] = useState(false);
+  const addressFormId = driverId || user?.id;
   const handleClose = () => onClose?.();
 
   if (loading) return <LoadingScreen message="جاري تحميل الملف..." />;
@@ -81,8 +83,6 @@ export default function DriverProfile({ driverId, onClose }) {
   const totalAtt = p.total_attendance || 0;
   const recent = Array.isArray(p.recent_attendance) ? p.recent_attendance : [];
 
-  const [editingAddress, setEditingAddress] = useState(false);
-  const addressFormId = driverId || user?.id;
   const initial = info?.full_name ? info.full_name.charAt(0) : '?';
   const daysLabel = rate >= 80 ? 'ممتاز' : rate >= 60 ? 'جيد' : rate >= 40 ? 'مقبول' : 'ضعيف';
 
