@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
 import { attendance, drivers } from '../api';
 import LoadingScreen from '../components/LoadingScreen';
 import AddressForm from '../components/AddressForm';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 const G = '#22C55E';
 const R = '#E53935';
@@ -70,6 +80,7 @@ export default function DriverProfile({ driverId, onClose }) {
   }, [driverId]);
 
   const [editingAddress, setEditingAddress] = useState(false);
+  const [showAddressMap, setShowAddressMap] = useState(false);
   const addressFormId = driverId || user?.id;
   const handleClose = () => onClose?.();
 
@@ -187,18 +198,37 @@ export default function DriverProfile({ driverId, onClose }) {
         {editingAddress ? (
           <AddressForm driverId={addressFormId} onSaved={() => setEditingAddress(false)} compact />
         ) : info?.wilaya_name ? (
-          <div style={{ borderRadius: 12, padding: '12px 14px', ...glass, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#111' }}>{info.wilaya_name} · {info.commune_name}</div>
-              {info.address_line && <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{info.address_line}</div>}
+          <>
+            <div onClick={() => info.latitude && info.longitude && setShowAddressMap(v => !v)}
+              style={{ borderRadius: 12, padding: '12px 14px', ...glass, display: 'flex', alignItems: 'center', gap: 10, cursor: info.latitude && info.longitude ? 'pointer' : 'default', transition: 'all 0.15s' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#111' }}>{info.wilaya_name} · {info.commune_name}</div>
+                {info.address_line && <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{info.address_line}</div>}
+                {info.latitude && info.longitude && (
+                  <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{Number(info.latitude).toFixed(4)}, {Number(info.longitude).toFixed(4)}</div>
+                )}
+              </div>
               {info.latitude && info.longitude && (
-                <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{Number(info.latitude).toFixed(4)}, {Number(info.longitude).toFixed(4)}</div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: showAddressMap ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
               )}
             </div>
-          </div>
+            {showAddressMap && info.latitude && info.longitude && (
+              <div style={{ marginTop: 8, borderRadius: 12, overflow: 'hidden', height: 200, border: '0.5px solid var(--nx-border)' }}>
+                <MapContainer center={[Number(info.latitude), Number(info.longitude)]} zoom={14} scrollWheelZoom style={{ width: '100%', height: '100%', zIndex: 0 }}>
+                  <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Marker position={[Number(info.latitude), Number(info.longitude)]}>
+                    <Popup>{info.wilaya_name} · {info.commune_name}</Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+            )}
+          </>
         ) : (
           <div style={{ borderRadius: 12, padding: '14px 16px', ...glass, textAlign: 'center' }}>
             <div style={{ fontSize: 12, color: '#aaa' }}>{isAdminView ? 'لم يتم تحديد عنوان' : 'لم تقم بتحديد عنوان سكنك بعد'}</div>
