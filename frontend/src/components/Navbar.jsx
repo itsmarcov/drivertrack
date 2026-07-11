@@ -95,6 +95,8 @@ export default function Navbar() {
     setDismissed(new Set(Object.keys(notifData.totals)));
   };
 
+  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+
   const notifSections = [
     { type: 'late', label: 'متأخرين', icon: '#E53935', bg: '#FEF2F2', link: '/admin/attendance', count: notifData?.late?.length },
     ...(isAdmin ? [{ type: 'justifications', label: 'مبررات', icon: '#F59E0B', bg: '#FFFBEB', link: '/admin/justifications', count: notifData?.justifications?.length }] : []),
@@ -104,7 +106,6 @@ export default function Navbar() {
 
   const handleLogout = () => { logout(); };
   const inits = initials(user.full_name);
-  const isAdmin = user.role === 'admin' || user.role === 'super_admin';
 
   /* ── Desktop grouped nav ── */
   const desktopNav = (
