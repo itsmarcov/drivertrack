@@ -5,6 +5,7 @@ const https = require('https');
 const rateLimit = require('express-rate-limit');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 function verifyRecaptcha(token) {
   return new Promise(resolve => {
@@ -92,6 +93,8 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   setTokenCookie(res, token);
 
+  logActivity(user, 'login');
+
   res.json({
     user: {
       id: user.id,
@@ -160,6 +163,7 @@ router.post('/register', authenticate, authorize('admin', 'super_admin'), regist
     'SELECT id, username, role, full_name, email, phone, station_id, created_at FROM users WHERE id = $1',
     [result.lastInsertRowid]
   );
+  logActivity(req.user, 'create_user', 'user', user.id, { username: user.username, role: user.role, full_name: user.full_name });
   res.status(201).json(user);
 });
 
@@ -210,15 +214,17 @@ router.put('/ops/:id', authenticate, authorize('admin', 'super_admin'), async (r
             s.name as station_name FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = $1`,
     [id]
   );
+  logActivity(req.user, 'update_user', 'user', Number(id), { updates: Object.keys(req.body) });
   res.json(updated);
 });
 
 router.delete('/ops/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const { id } = req.params;
-  const ops = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'ops'", [id]);
+  const ops = await queryOne("SELECT id, full_name FROM users WHERE id = $1 AND role = 'ops'", [id]);
   if (!ops) return res.status(404).json({ error: 'OPS user not found.' });
   await run('UPDATE attendance SET scanned_by = $1 WHERE scanned_by = $2', [req.user.id, id]);
-  const result = await run('DELETE FROM users WHERE id = $1', [id]);
+  await run('DELETE FROM users WHERE id = $1', [id]);
+  logActivity(req.user, 'delete_user', 'user', Number(id), { full_name: ops.full_name, role: 'ops' });
   res.json({ message: 'OPS user deleted successfully.' });
 });
 
@@ -239,6 +245,7 @@ router.delete('/admins/:id', authenticate, authorize('super_admin'), async (req,
   await run('DELETE FROM absences WHERE driver_id = $1', [id]);
   await run('DELETE FROM justifications WHERE driver_id = $1', [id]);
   await run('DELETE FROM users WHERE id = $1', [id]);
+  logActivity(req.user, 'delete_user', 'user', Number(id), { role: 'admin' });
   res.json({ message: 'Admin user deleted.' });
 });
 
@@ -276,6 +283,7 @@ router.put('/profile', authenticate, async (req, res) => {
     params.push(req.user.id);
     await run(`UPDATE users SET ${updates.join(', ')} WHERE id = $${p}`, params);
   }
+  logActivity(req.user, 'update_profile', 'user', req.user.id, { updates: Object.keys(req.body).filter(k => k !== 'current_password' && k !== 'new_password') });
   const updated = await queryOne(
     `SELECT u.id, u.username, u.role, u.full_name, u.email, u.phone, u.vehicle_type, u.license_plate,
             u.station_id, u.is_active, u.created_at, s.name as station_name
@@ -335,14 +343,16 @@ router.put('/pending-drivers/:id/approve', authenticate, authorize('admin', 'sup
   if (!driver) return res.status(404).json({ error: 'Pending driver not found.' });
   await run('UPDATE users SET is_active = 1, updated_at = NOW() WHERE id = $1', [id]);
   const updated = await queryOne('SELECT id, username, full_name, email, phone, is_active FROM users WHERE id = $1', [id]);
+  logActivity(req.user, 'approve_driver', 'user', Number(id), { full_name: updated.full_name });
   res.json({ message: 'Driver approved.', user: updated });
 });
 
 router.delete('/pending-drivers/:id/reject', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const { id } = req.params;
-  const driver = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'driver' AND is_active::text = '0'", [id]);
+  const driver = await queryOne("SELECT id, full_name FROM users WHERE id = $1 AND role = 'driver' AND is_active::text = '0'", [id]);
   if (!driver) return res.status(404).json({ error: 'Pending driver not found.' });
   await run('DELETE FROM users WHERE id = $1 AND role = \'driver\'', [id]);
+  logActivity(req.user, 'reject_driver', 'user', Number(id), { full_name: driver.full_name });
   res.json({ message: 'Driver registration rejected and removed.' });
 });
 

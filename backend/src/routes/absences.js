@@ -2,6 +2,7 @@ const express = require('express');
 const ExcelJS = require('exceljs');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 
@@ -80,6 +81,7 @@ router.post('/mark', authenticate, authorize('admin', 'ops'), async (req, res) =
     marked++;
   }
 
+  logActivity(req.user, 'mark_absences', 'absence', null, { date: targetDate, count: marked });
   res.json({ message: `Marked ${marked} absences for ${targetDate}.` });
 });
 
@@ -157,6 +159,7 @@ router.get('/export', authenticate, authorize('admin', 'ops'), async (req, res) 
 router.delete('/:date', authenticate, authorize('admin'), async (req, res) => {
   const { date } = req.params;
   const result = await run('DELETE FROM absences WHERE absence_date = $1', [date]);
+  logActivity(req.user, 'delete_absences', 'absence', null, { date, count: result.changes });
   res.json({ message: `Deleted ${result.changes} absences for ${date}.` });
 });
 

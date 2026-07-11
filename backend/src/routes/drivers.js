@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 
@@ -79,13 +80,14 @@ router.post('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
     'SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, created_at FROM users WHERE id = $1',
     [result.lastInsertRowid]
   );
+  logActivity(req.user, 'create_driver', 'driver', driver.id, { full_name: driver.full_name });
   res.status(201).json(driver);
 });
 
 router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   const { id } = req.params;
   const { full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, password } = req.body;
-  const existing = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'driver'", [id]);
+  const existing = await queryOne("SELECT id, full_name FROM users WHERE id = $1 AND role = 'driver'", [id]);
   if (!existing) return res.status(404).json({ error: 'Driver not found.' });
 
   const updates = [];
@@ -117,17 +119,19 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
     'SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, created_at, updated_at FROM users WHERE id = $1',
     [id]
   );
+  logActivity(req.user, 'update_driver', 'driver', Number(id), { full_name: existing.full_name, updates: Object.keys(req.body) });
   res.json(driver);
 });
 
 router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
   const { id } = req.params;
-  const existing = await queryOne("SELECT id FROM users WHERE id = $1 AND role = 'driver'", [id]);
+  const existing = await queryOne("SELECT id, full_name FROM users WHERE id = $1 AND role = 'driver'", [id]);
   if (!existing) return res.status(404).json({ error: 'Driver not found.' });
   await run('DELETE FROM absences WHERE driver_id = $1', [id]);
   await run('DELETE FROM penalties WHERE driver_id = $1', [id]);
   await run('DELETE FROM attendance WHERE driver_id = $1', [id]);
   await run("DELETE FROM users WHERE id = $1 AND role = 'driver'", [id]);
+  logActivity(req.user, 'delete_driver', 'driver', Number(id), { full_name: existing.full_name });
   res.json({ message: 'Driver deleted successfully.' });
 });
 

@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 const QR_SECRET = process.env.QR_SECRET;
@@ -114,6 +115,7 @@ router.post('/scan', authenticate, authorize('admin', 'ops'), async (req, res) =
     [result.lastInsertRowid]
   );
 
+  logActivity(req.user, 'scan_attendance', 'attendance', result.lastInsertRowid, { driver_id: driverId, driver_name: driver.full_name, late: !!late });
   res.status(201).json({
     message: `Attendance recorded successfully for ${driver.full_name}`,
     record,

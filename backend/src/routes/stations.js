@@ -1,6 +1,7 @@
 const express = require('express');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.post('/', authenticate, authorize('admin'), async (req, res) => {
   if (existing) return res.status(409).json({ error: 'Station code already exists.' });
   const result = await run('INSERT INTO stations (name, code) VALUES ($1, $2)', [name, code]);
   const station = await queryOne('SELECT * FROM stations WHERE id = $1', [result.lastInsertRowid]);
+  logActivity(req.user, 'create_station', 'station', station.id, { name: station.name, code: station.code });
   res.status(201).json(station);
 });
 
@@ -37,6 +39,7 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   }
   await run('UPDATE stations SET name = $1, code = $2 WHERE id = $3', [newName, newCode, id]);
   const updated = await queryOne('SELECT * FROM stations WHERE id = $1', [id]);
+  logActivity(req.user, 'update_station', 'station', Number(id), { name: newName, code: newCode });
   res.json(updated);
 });
 
@@ -48,6 +51,7 @@ router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
   }
   const result = await run('DELETE FROM stations WHERE id = $1', [id]);
   if (result.changes === 0) return res.status(404).json({ error: 'Station not found.' });
+  logActivity(req.user, 'delete_station', 'station', Number(id));
   res.json({ message: 'Station deleted successfully.' });
 });
 

@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'justifications');
@@ -60,6 +61,7 @@ router.post('/', authenticate, authorize('driver'), (req, res, next) => {
     );
 
     const justification = await queryOne('SELECT * FROM justifications WHERE id = $1', [result.lastInsertRowid]);
+    logActivity(req.user, 'submit_justification', 'justification', justification.id, { driver_id: req.user.id, attendance_date: dateStr, reason });
     res.status(201).json(justification);
   } catch (err) {
     console.error('Justification submit error:', err);
@@ -124,6 +126,7 @@ router.post('/:id/archive', authenticate, authorize('admin'), async (req, res) =
     if (!j) return res.status(404).json({ error: 'المبرر غير موجود' });
     if (j.archived_at) return res.status(400).json({ error: 'المبرر مؤرشف بالفعل' });
     await run('UPDATE justifications SET archived_at = NOW() WHERE id = $1', [req.params.id]);
+    logActivity(req.user, 'archive_justification', 'justification', Number(req.params.id));
     res.json({ message: 'تم أرشفة المبرر' });
   } catch (err) {
     console.error('Archive error:', err);
@@ -137,6 +140,7 @@ router.post('/:id/restore', authenticate, authorize('admin'), async (req, res) =
     if (!j) return res.status(404).json({ error: 'المبرر غير موجود' });
     if (!j.archived_at) return res.status(400).json({ error: 'المبرر غير مؤرشف' });
     await run('UPDATE justifications SET archived_at = NULL WHERE id = $1', [req.params.id]);
+    logActivity(req.user, 'restore_justification', 'justification', Number(req.params.id));
     res.json({ message: 'تم استعادة المبرر من الأرشيف' });
   } catch (err) {
     console.error('Restore error:', err);
@@ -173,6 +177,7 @@ router.patch('/:id/review', authenticate, authorize('admin'), async (req, res) =
     }
 
     const updated = await queryOne('SELECT * FROM justifications WHERE id = $1', [id]);
+    logActivity(req.user, 'review_justification', 'justification', Number(id), { status, driver_id: justification.driver_id, attendance_date: justification.attendance_date });
     res.json(updated);
   } catch (err) {
     console.error('Review justification error:', err);
@@ -191,6 +196,7 @@ router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
     }
 
     await run('DELETE FROM justifications WHERE id = $1', [req.params.id]);
+    logActivity(req.user, 'delete_justification', 'justification', Number(req.params.id), { driver_id: justification.driver_id, attendance_date: justification.attendance_date });
     res.json({ message: 'تم حذف المبرر' });
   } catch (err) {
     console.error('Delete justification error:', err);

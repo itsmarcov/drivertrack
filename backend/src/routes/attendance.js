@@ -3,6 +3,7 @@ const ExcelJS = require('exceljs');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
 const { getShiftCutoffs } = require('./qr');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.post('/mark-late', authenticate, authorize('admin', 'super_admin'), async
     [attendance_id]
   );
 
+  logActivity(req.user, 'mark_late', 'attendance', Number(attendance_id), { driver_id: att.driver_id, driver_name: att.driver_name, reason: reason.trim() });
   res.json({ message: `تم تسجيل تأخير ${att.driver_name}`, record });
 });
 
@@ -90,6 +92,7 @@ router.post('/manual', authenticate, authorize('admin', 'super_admin'), async (r
     [result.lastInsertRowid]
   );
 
+  logActivity(req.user, 'manual_attendance', 'attendance', result.lastInsertRowid, { driver_id: Number(driver_id), driver_name: driver.full_name, late: !!late });
   res.status(201).json({ message: `تم تسجيل حضور ${driver.full_name} يدوياً`, record, penalty });
 });
 

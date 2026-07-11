@@ -1,6 +1,7 @@
 const express = require('express');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ router.post('/', authenticate, authorize('driver'), async (req, res) => {
     [req.user.id, date_from, date_to, reason, note || null]
   );
   const record = await queryOne('SELECT * FROM absence_requests WHERE id = $1', [result.lastInsertRowid]);
+  logActivity(req.user, 'create_absence_request', 'absence_request', record.id, { driver_id: req.user.id, date_from, date_to, reason });
   res.status(201).json(record);
 });
 
@@ -94,6 +96,7 @@ router.patch('/:id/review', authenticate, authorize('admin', 'super_admin'), asy
      WHERE ar.id = $1`,
     [id]
   );
+  logActivity(req.user, 'review_absence_request', 'absence_request', Number(id), { status, driver_id: request.driver_id });
   res.json(record);
 });
 
@@ -108,6 +111,7 @@ router.delete('/:id', authenticate, async (req, res) => {
     return res.status(400).json({ error: 'لا يمكن حذف طلب تمت معالجته' });
   }
   await run('DELETE FROM absence_requests WHERE id = $1', [id]);
+  logActivity(req.user, 'cancel_absence_request', 'absence_request', Number(id), { driver_id: request.driver_id, date_from: request.date_from, date_to: request.date_to });
   res.json({ message: 'تم حذف الطلب' });
 });
 

@@ -207,3 +207,10 @@ export const analytics = {
 export const notifications = {
   getAll: () => request('/notifications'),
 };
+
+export const activityLogs = {
+  getAll: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/activity-logs${qs ? '?' + qs : ''}`);
+  },
+};

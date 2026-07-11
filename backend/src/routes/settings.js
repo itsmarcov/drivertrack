@@ -1,6 +1,7 @@
 const express = require('express');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { logActivity } = require('../logActivity');
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.put('/', authenticate, authorize('admin'), async (req, res) => {
   const rows = await queryAll('SELECT key, value FROM settings ORDER BY key');
   const obj = {};
   rows.forEach(r => { obj[r.key] = r.value; });
+  logActivity(req.user, 'update_settings', 'settings', null, { updated: Object.keys(req.body) });
   res.json(obj);
 });
 
