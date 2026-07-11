@@ -711,7 +711,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   border-bottom: 0.5px solid var(--nx-border-light);
 }
 .nav-notif-section:last-child { border-bottom: none; }
-.nav-notif-section-read { opacity: 0.4; pointer-events: none; }
+
 .nav-notif-section-btn {
   display: flex;
   align-items: center;
