@@ -3641,22 +3641,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   margin-top: 4px;
 }
 
-/* ── Drivers management ── */
-.dm-loading-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--nx-red);
-  margin-right: 6px;
-  animation: dm-pulse 0.8s ease-in-out infinite;
-  vertical-align: middle;
-}
-@keyframes dm-pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
 /* ── Driver Dashboard address tab ── */
 .driver-address-tab {
   padding: 16px;

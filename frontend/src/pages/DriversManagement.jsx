@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { drivers, stations } from '../api';
 import DriverProfile from './DriverProfile';
 
+const overlayStyle = { position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' };
+
 function DriverForm({ driver, onSave, onCancel }) {
   const [stationList, setStationList] = useState([]);
   const { user } = useAuth();
@@ -106,7 +108,6 @@ export default function DriversManagement() {
   const [driverList, setDriverList] = useState([]);
   const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [editingDriver, setEditingDriver] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
@@ -120,10 +121,9 @@ export default function DriversManagement() {
     setTimeout(() => { setSelectedDriver(null); setProfileClosing(false); }, 180);
   };
 
-  const loadDrivers = async (station, shift, srch, background) => {
+  const loadDrivers = async (station, shift, srch) => {
     try {
-      if (!background) setLoading(true);
-      else setRefreshing(true);
+      setLoading(true);
       const params = {};
       if (station && ['admin', 'super_admin'].includes(user.role)) params.station_id = station;
       if (shift) params.shift = shift;
@@ -133,8 +133,7 @@ export default function DriversManagement() {
     } catch (err) {
       setError(err.message);
     } finally {
-      if (!background) setLoading(false);
-      else setRefreshing(false);
+      setLoading(false);
     }
   };
 
@@ -163,7 +162,7 @@ export default function DriversManagement() {
       }
       setShowForm(false);
       setEditingDriver(null);
-      loadDrivers(filterStation, filterShift, search, true);
+      loadDrivers(filterStation, filterShift, search);
     } catch (err) {
       setError(err.message);
     }
@@ -173,7 +172,7 @@ export default function DriversManagement() {
     if (!window.confirm(`هل أنت متأكد من حذف السائق "${name}"؟`)) return;
     try {
       await drivers.delete(id);
-      loadDrivers(filterStation, filterShift, search, true);
+      loadDrivers(filterStation, filterShift, search);
     } catch (err) {
       setError(err.message);
     }
@@ -187,7 +186,7 @@ export default function DriversManagement() {
   const handleToggleActive = async (driver) => {
     try {
       await drivers.update(driver.id, { is_active: driver.is_active ? 0 : 1 });
-      loadDrivers(filterStation, filterShift, search, true);
+      loadDrivers(filterStation, filterShift, search);
     } catch (err) {
       setError(err.message);
     }
@@ -195,14 +194,13 @@ export default function DriversManagement() {
 
   const filtered = driverList;
 
-  if (loading) return <LoadingScreen message="جاري تحميل السائقين..." />;
-
   return (
-    <div className="page">
+    <div className="page" style={{ position: 'relative', minHeight: '60vh' }}>
+      {loading && <LoadingScreen message="جاري تحميل السائقين..." style={overlayStyle} />}
       <div className="page-header">
         <div className="page-header-content">
           <h2>إدارة السائقين</h2>
-          <p>{driverList.length} سائق مسجل{refreshing ? <span className="dm-loading-dot" /> : ''}</p>
+          <p>{driverList.length} سائق مسجل</p>
         </div>
         <div className="page-header-actions">
           {canAdd && (
@@ -221,12 +219,12 @@ export default function DriversManagement() {
           <div className="form-group">
             <label>بحث</label>
             <input type="text" placeholder="اسم / هاتف / مستخدم..." value={search}
-              onChange={(e) => { setSearch(e.target.value); loadDrivers(filterStation, filterShift, e.target.value, true); }} />
+              onChange={(e) => { setSearch(e.target.value); loadDrivers(filterStation, filterShift, e.target.value); }} />
           </div>
           {isAdmin && (
             <div className="form-group">
               <label>المحطة</label>
-              <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadDrivers(e.target.value, filterShift, search, true); }}>
+              <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadDrivers(e.target.value, filterShift, search); }}>
                 <option value="">جميع المحطات</option>
                 {stationList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -234,7 +232,7 @@ export default function DriversManagement() {
           )}
           <div className="form-group">
             <label>الفترة</label>
-            <select value={filterShift} onChange={(e) => { setFilterShift(e.target.value); loadDrivers(filterStation, e.target.value, search, true); }}>
+            <select value={filterShift} onChange={(e) => { setFilterShift(e.target.value); loadDrivers(filterStation, e.target.value, search); }}>
               <option value="">الكل</option>
               <option value="morning">صباحية</option>
               <option value="evening">مسائية</option>
