@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { drivers, stations } from '../api';
 import DriverProfile from './DriverProfile';
-
-const overlayStyle = { position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' };
 
 function DriverForm({ driver, onSave, onCancel }) {
   const [stationList, setStationList] = useState([]);
@@ -114,6 +112,7 @@ export default function DriversManagement() {
   const [search, setSearch] = useState('');
   const [filterStation, setFilterStation] = useState('');
   const [filterShift, setFilterShift] = useState('');
+  const searchTimer = useRef(null);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [profileClosing, setProfileClosing] = useState(false);
   const handleProfileClose = () => {
@@ -194,9 +193,10 @@ export default function DriversManagement() {
 
   const filtered = driverList;
 
+  if (loading) return <LoadingScreen message="جاري تحميل السائقين..." />;
+
   return (
-    <div className="page" style={{ position: 'relative', minHeight: '60vh' }}>
-      {loading && <LoadingScreen message="جاري تحميل السائقين..." style={overlayStyle} />}
+    <div className="page">
       <div className="page-header">
         <div className="page-header-content">
           <h2>إدارة السائقين</h2>
@@ -219,7 +219,7 @@ export default function DriversManagement() {
           <div className="form-group">
             <label>بحث</label>
             <input type="text" placeholder="اسم / هاتف / مستخدم..." value={search}
-              onChange={(e) => { setSearch(e.target.value); loadDrivers(filterStation, filterShift, e.target.value); }} />
+              onChange={(e) => { setSearch(e.target.value); clearTimeout(searchTimer.current); searchTimer.current = setTimeout(() => loadDrivers(filterStation, filterShift, e.target.value), 300); }} />
           </div>
           {isAdmin && (
             <div className="form-group">
