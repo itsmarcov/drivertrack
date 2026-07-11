@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { attendance, justifications, auth } from '../api';
+import { notifications as notifApi } from '../api';
 import { useState, useEffect, useRef } from 'react';
 
 function initials(name) {
@@ -43,9 +43,7 @@ export default function Navbar() {
   const [hidden, setHidden] = useState(false);
   const [lastY, setLastY] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [lateDrivers, setLateDrivers] = useState([]);
-  const [pendingJust, setPendingJust] = useState(0);
-  const [pendingDrivers, setPendingDrivers] = useState(0);
+  const [notifData, setNotifData] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const notifRef = useRef(null);
@@ -65,22 +63,10 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!user || user.role === 'driver') return;
-    const fetchLate = () => {
-      attendance.late().then(setLateDrivers).catch(() => {});
-    };
-    const fetchPending = (user.role === 'admin' || user.role === 'super_admin') ? () => {
-      justifications.stats().then((s) => setPendingJust(s.pendingCount || 0)).catch(() => {});
-    } : null;
-    const fetchPendingDrivers = (user.role === 'admin' || user.role === 'super_admin') ? () => {
-      auth.pendingDrivers().then((list) => setPendingDrivers(list.length)).catch(() => {});
-    } : null;
-    fetchLate();
-    if (fetchPending) fetchPending();
-    if (fetchPendingDrivers) fetchPendingDrivers();
-    const iv = setInterval(fetchLate, 30000);
-    const iv2 = fetchPending ? setInterval(fetchPending, 30000) : null;
-    const iv3 = fetchPendingDrivers ? setInterval(fetchPendingDrivers, 60000) : null;
-    return () => { clearInterval(iv); clearInterval(iv2); clearInterval(iv3); };
+    const fetch = () => { notifApi.getAll().then(setNotifData).catch(() => {}); };
+    fetch();
+    const iv = setInterval(fetch, 30000);
+    return () => clearInterval(iv);
   }, [user]);
 
   useEffect(() => {
@@ -99,6 +85,35 @@ export default function Navbar() {
   const isActive = (path) => {
     if (path === '/admin') return location.pathname === '/admin' ? 'active' : '';
     return location.pathname === path || location.pathname.startsWith(path + '/') ? 'active' : '';
+  };
+
+  const [dismissed, setDismissed] = useState(new Set());
+  const totalUnread = notifData ? Object.entries(notifData.totals).filter(([k]) => !dismissed.has(k)).reduce((s, [, c]) => s + c, 0) : 0;
+  const dismissType = (type) => setDismissed(prev => new Set([...prev, type]));
+  const dismissAll = () => {
+    if (!notifData) return;
+    setDismissed(new Set(Object.keys(notifData.totals)));
+  };
+
+  const renderNotifSection = (type, label, items, renderItem) => {
+    if (!items || !items.length) return null;
+    const isRead = dismissed.has(type);
+    return (
+      <div className={`nav-notif-section ${isRead ? 'nav-notif-section-read' : ''}`}>
+        <div className="nav-notif-section-header">
+          <span className="nav-notif-section-label">{label}</span>
+          <div className="nav-notif-section-actions">
+            <span className="nav-notif-section-count">{items.length}</span>
+            {!isRead && (
+              <button className="nav-notif-mark-read" onClick={() => dismissType(type)}>تم القراءة</button>
+            )}
+          </div>
+        </div>
+        <div className="nav-notif-section-body">
+          {items.map(renderItem)}
+        </div>
+      </div>
+    );
   };
 
   const handleLogout = () => { logout(); };
@@ -143,7 +158,7 @@ export default function Navbar() {
           <Link to="/admin/justifications" className={`nav-dd-link ${isActive('/admin/justifications')}`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
             المبررات
-            {pendingJust > 0 && <span className="nav-dd-badge">{pendingJust}</span>}
+            {notifData?.justifications?.length > 0 && <span className="nav-dd-badge">{notifData.justifications.length}</span>}
           </Link>
         )}
       </NavDropdown>
@@ -165,7 +180,7 @@ export default function Navbar() {
           <Link to="/admin/pending-drivers" className={`nav-dd-link ${isActive('/admin/pending-drivers')}`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
             تسجيلات جديدة
-            {pendingDrivers > 0 && <span className="nav-dd-badge">{pendingDrivers}</span>}
+            {notifData?.registrations?.length > 0 && <span className="nav-dd-badge">{notifData.registrations.length}</span>}
           </Link>
         </NavDropdown>
       )}
@@ -188,13 +203,13 @@ export default function Navbar() {
       {isAdmin && (
         <Link to="/admin/justifications" className={`nav-link nav-link-just ${isActive('/admin/justifications')}`} onClick={onClick}>
           المبررات
-          {pendingJust > 0 && <span className="nav-notif-badge nav-just-badge">{pendingJust}</span>}
+          {notifData?.justifications?.length > 0 && <span className="nav-notif-badge nav-just-badge">{notifData.justifications.length}</span>}
         </Link>
       )}
       {isAdmin && (
         <Link to="/admin/pending-drivers" className={`nav-link nav-link-just ${isActive('/admin/pending-drivers')}`} onClick={onClick}>
           تسجيلات جديدة
-          {pendingDrivers > 0 && <span className="nav-notif-badge nav-just-badge">{pendingDrivers}</span>}
+          {notifData?.registrations?.length > 0 && <span className="nav-notif-badge nav-just-badge">{notifData.registrations.length}</span>}
         </Link>
       )}
       {isAdmin && (
@@ -235,32 +250,59 @@ export default function Navbar() {
 
           <div className="nav-actions">
             <div ref={notifRef} className="nav-notif-wrapper">
-              <button onClick={() => setNotifOpen(!notifOpen)} className="nav-notif-btn" title="الإشعارات">
+              <button onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen) dismissAll(); }} className="nav-notif-btn" title="الإشعارات">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                {lateDrivers.length > 0 && <span className="nav-notif-badge">{lateDrivers.length}</span>}
+                {totalUnread > 0 && <span className="nav-notif-badge">{totalUnread}</span>}
               </button>
-              {notifOpen && (
+              {notifOpen && notifData && (
                 <div className="nav-notif-dropdown">
                   <div className="nav-notif-header">
                     <span>الإشعارات</span>
-                    <span className="nav-notif-count">{lateDrivers.length} متأخر</span>
+                    <span className="nav-notif-count">{notifData.totals.late + notifData.totals.justifications + notifData.totals.registrations + notifData.totals.absence_requests} إجمالي</span>
                   </div>
                   <div className="nav-notif-list">
-                    {lateDrivers.length === 0 ? (
-                      <div className="nav-notif-empty">لا يوجد متأخرين اليوم</div>
-                    ) : (
-                      lateDrivers.map((d) => (
-                        <div key={d.id} className="nav-notif-item">
-                          <div className="nav-notif-item-icon">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E53935" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                          </div>
-                          <div className="nav-notif-item-body">
-                            <div className="nav-notif-item-name">{d.driver_name}</div>
-                            <div className="nav-notif-item-meta">مسح في {d.scan_time} · {d.vehicle_type || ''} {d.license_plate || ''}</div>
-                          </div>
-                          <span className="nav-notif-item-badge">متأخر</span>
+                    {renderNotifSection('late', 'متأخرين', notifData.late, (d) => (
+                      <div key={d.id} className="nav-notif-item">
+                        <div className="nav-notif-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E53935" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                        <div className="nav-notif-item-body">
+                          <div className="nav-notif-item-name">{d.driver_name}</div>
+                          <div className="nav-notif-item-meta">مسح في {d.scan_time} · {d.vehicle_type || ''} {d.license_plate || ''}</div>
                         </div>
-                      ))
+                        <span className="nav-notif-item-badge">متأخر</span>
+                      </div>
+                    ))}
+                    {isAdmin && renderNotifSection('justifications', 'مبررات بانتظار المراجعة', notifData.justifications, (d) => (
+                      <Link key={d.id} to="/admin/justifications" className="nav-notif-item" onClick={() => setNotifOpen(false)}>
+                        <div className="nav-notif-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                        <div className="nav-notif-item-body">
+                          <div className="nav-notif-item-name">{d.driver_name}</div>
+                          <div className="nav-notif-item-meta">{d.reason} · {d.attendance_date}</div>
+                        </div>
+                        <span className="nav-notif-item-badge">قيد المراجعة</span>
+                      </Link>
+                    ))}
+                    {isAdmin && renderNotifSection('registrations', 'تسجيلات جديدة', notifData.registrations, (d) => (
+                      <Link key={d.id} to="/admin/pending-drivers" className="nav-notif-item" onClick={() => setNotifOpen(false)}>
+                        <div className="nav-notif-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
+                        <div className="nav-notif-item-body">
+                          <div className="nav-notif-item-name">{d.full_name}</div>
+                          <div className="nav-notif-item-meta">{d.vehicle_type || ''} {d.license_plate || ''}</div>
+                        </div>
+                        <span className="nav-notif-item-badge">جديد</span>
+                      </Link>
+                    ))}
+                    {renderNotifSection('absence_requests', 'طلبات غياب مسبق', notifData.absence_requests, (d) => (
+                      <Link key={d.id} to="/admin/absence-requests" className="nav-notif-item" onClick={() => setNotifOpen(false)}>
+                        <div className="nav-notif-item-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                        <div className="nav-notif-item-body">
+                          <div className="nav-notif-item-name">{d.driver_name}</div>
+                          <div className="nav-notif-item-meta">{d.date_from} → {d.date_to} · {d.reason}</div>
+                        </div>
+                        <span className="nav-notif-item-badge">بانتظار الموافقة</span>
+                      </Link>
+                    ))}
+                    {(!notifData.late.length && !notifData.justifications.length && !notifData.registrations.length && !notifData.absence_requests.length) && (
+                      <div className="nav-notif-empty">لا توجد إشعارات جديدة</div>
                     )}
                   </div>
                 </div>

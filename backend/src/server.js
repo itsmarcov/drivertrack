@@ -20,6 +20,7 @@ const absenceRoutes = require('./routes/absences');
 const absenceRequestRoutes = require('./routes/absence_requests');
 const analyticsRoutes = require('./routes/analytics');
 const justificationRoutes = require('./routes/justifications');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -62,6 +63,7 @@ app.use('/api/absences', absenceRoutes);
 app.use('/api/absence-requests', absenceRequestRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/justifications', justificationRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

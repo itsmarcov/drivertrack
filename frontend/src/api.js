@@ -203,3 +203,7 @@ export const analytics = {
     return request(`/analytics/stations-report${qs}`);
   },
 };
+
+export const notifications = {
+  getAll: () => request('/notifications'),
+};
