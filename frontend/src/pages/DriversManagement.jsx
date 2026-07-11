@@ -106,6 +106,7 @@ export default function DriversManagement() {
   const [driverList, setDriverList] = useState([]);
   const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [editingDriver, setEditingDriver] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
@@ -119,9 +120,10 @@ export default function DriversManagement() {
     setTimeout(() => { setSelectedDriver(null); setProfileClosing(false); }, 180);
   };
 
-  const loadDrivers = async (station, shift, srch) => {
+  const loadDrivers = async (station, shift, srch, background) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
+      else setRefreshing(true);
       const params = {};
       if (station && ['admin', 'super_admin'].includes(user.role)) params.station_id = station;
       if (shift) params.shift = shift;
@@ -131,7 +133,8 @@ export default function DriversManagement() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
+      else setRefreshing(false);
     }
   };
 
@@ -160,7 +163,7 @@ export default function DriversManagement() {
       }
       setShowForm(false);
       setEditingDriver(null);
-      loadDrivers();
+      loadDrivers(filterStation, filterShift, search, true);
     } catch (err) {
       setError(err.message);
     }
@@ -170,7 +173,7 @@ export default function DriversManagement() {
     if (!window.confirm(`هل أنت متأكد من حذف السائق "${name}"؟`)) return;
     try {
       await drivers.delete(id);
-      loadDrivers();
+      loadDrivers(filterStation, filterShift, search, true);
     } catch (err) {
       setError(err.message);
     }
@@ -184,7 +187,7 @@ export default function DriversManagement() {
   const handleToggleActive = async (driver) => {
     try {
       await drivers.update(driver.id, { is_active: driver.is_active ? 0 : 1 });
-      loadDrivers();
+      loadDrivers(filterStation, filterShift, search, true);
     } catch (err) {
       setError(err.message);
     }
@@ -199,7 +202,7 @@ export default function DriversManagement() {
       <div className="page-header">
         <div className="page-header-content">
           <h2>إدارة السائقين</h2>
-          <p>{driverList.length} سائق مسجل</p>
+          <p>{driverList.length} سائق مسجل{refreshing ? <span className="dm-loading-dot" /> : ''}</p>
         </div>
         <div className="page-header-actions">
           {canAdd && (
@@ -218,12 +221,12 @@ export default function DriversManagement() {
           <div className="form-group">
             <label>بحث</label>
             <input type="text" placeholder="اسم / هاتف / مستخدم..." value={search}
-              onChange={(e) => { setSearch(e.target.value); loadDrivers(filterStation, filterShift, e.target.value); }} />
+              onChange={(e) => { setSearch(e.target.value); loadDrivers(filterStation, filterShift, e.target.value, true); }} />
           </div>
           {isAdmin && (
             <div className="form-group">
               <label>المحطة</label>
-              <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadDrivers(e.target.value, filterShift, search); }}>
+              <select value={filterStation} onChange={(e) => { setFilterStation(e.target.value); loadDrivers(e.target.value, filterShift, search, true); }}>
                 <option value="">جميع المحطات</option>
                 {stationList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -231,7 +234,7 @@ export default function DriversManagement() {
           )}
           <div className="form-group">
             <label>الفترة</label>
-            <select value={filterShift} onChange={(e) => { setFilterShift(e.target.value); loadDrivers(filterStation, e.target.value, search); }}>
+            <select value={filterShift} onChange={(e) => { setFilterShift(e.target.value); loadDrivers(filterStation, e.target.value, search, true); }}>
               <option value="">الكل</option>
               <option value="morning">صباحية</option>
               <option value="evening">مسائية</option>
