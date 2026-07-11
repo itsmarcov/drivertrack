@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { attendance, drivers } from '../api';
 import LoadingScreen from '../components/LoadingScreen';
+import AddressForm from '../components/AddressForm';
 
 const G = '#22C55E';
 const R = '#E53935';
@@ -80,6 +81,8 @@ export default function DriverProfile({ driverId, onClose }) {
   const totalAtt = p.total_attendance || 0;
   const recent = Array.isArray(p.recent_attendance) ? p.recent_attendance : [];
 
+  const [editingAddress, setEditingAddress] = useState(false);
+  const addressFormId = driverId || user?.id;
   const initial = info?.full_name ? info.full_name.charAt(0) : '?';
   const daysLabel = rate >= 80 ? 'ممتاز' : rate >= 60 ? 'جيد' : rate >= 40 ? 'مقبول' : 'ضعيف';
 
@@ -167,6 +170,38 @@ export default function DriverProfile({ driverId, onClose }) {
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Address section */}
+      <div style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#888' }}>العنوان</div>
+          {!isAdminView && !editingAddress && (
+            <button className="btn btn-sm btn-outline" onClick={() => setEditingAddress(true)}>
+              {info?.wilaya_name ? 'تعديل العنوان' : 'إضافة عنوان'}
+            </button>
+          )}
+        </div>
+        {editingAddress ? (
+          <AddressForm driverId={addressFormId} onSaved={() => setEditingAddress(false)} compact />
+        ) : info?.wilaya_name ? (
+          <div style={{ borderRadius: 12, padding: '12px 14px', ...glass, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#111' }}>{info.wilaya_name} · {info.commune_name}</div>
+              {info.address_line && <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{info.address_line}</div>}
+              {info.latitude && info.longitude && (
+                <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{Number(info.latitude).toFixed(4)}, {Number(info.longitude).toFixed(4)}</div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ borderRadius: 12, padding: '14px 16px', ...glass, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, color: '#aaa' }}>{isAdminView ? 'لم يتم تحديد عنوان' : 'لم تقم بتحديد عنوان سكنك بعد'}</div>
           </div>
         )}
       </div>

@@ -168,6 +168,10 @@ export default function Navbar() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             سجل النشاطات
           </Link>
+          <Link to="/admin/drivers-map" className={`nav-dd-link ${isActive('/admin/drivers-map')}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            خريطة السائقين
+          </Link>
           <Link to="/admin/pending-drivers" className={`nav-dd-link ${isActive('/admin/pending-drivers')}`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
             تسجيلات جديدة
@@ -210,6 +214,7 @@ export default function Navbar() {
           <Link to="/admin/ops" className={`nav-link ${isActive('/admin/ops')}`} onClick={onClick}>المشغلين</Link>
           <Link to="/admin/stations" className={`nav-link ${isActive('/admin/stations')}`} onClick={onClick}>المحطات</Link>
           <Link to="/admin/activity-logs" className={`nav-link ${isActive('/admin/activity-logs')}`} onClick={onClick}>سجل النشاطات</Link>
+          <Link to="/admin/drivers-map" className={`nav-link ${isActive('/admin/drivers-map')}`} onClick={onClick}>خريطة السائقين</Link>
         </>
       )}
     </>

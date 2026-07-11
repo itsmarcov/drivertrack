@@ -10,7 +10,8 @@ router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { station_id, shift, search } = req.query;
   let sql = `SELECT u.id, u.username, u.full_name, u.email, u.phone, u.vehicle_type, u.license_plate,
                     u.station_id, u.shift, u.is_active, u.created_at, u.updated_at,
-                    s.name as station_name
+                    s.name as station_name,
+                    u.wilaya_code, u.wilaya_name, u.commune_code, u.commune_name, u.latitude, u.longitude
              FROM users u
              LEFT JOIN stations s ON u.station_id = s.id
              WHERE u.role = 'driver'`;
@@ -43,7 +44,8 @@ router.get('/:id', authenticate, async (req, res) => {
     return res.status(403).json({ error: 'Access denied.' });
   }
   const driver = await queryOne(
-    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, created_at, updated_at
+    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, created_at, updated_at,
+            wilaya_code, wilaya_name, commune_code, commune_name, address_line, latitude, longitude
      FROM users WHERE id = $1 AND role = 'driver'`,
     [id]
   );
@@ -116,11 +118,55 @@ router.put('/:id', authenticate, authorize('admin'), async (req, res) => {
   }
 
   const driver = await queryOne(
-    'SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, created_at, updated_at FROM users WHERE id = $1',
+    `SELECT id, username, full_name, email, phone, vehicle_type, license_plate, station_id, shift, is_active, created_at, updated_at,
+            wilaya_code, wilaya_name, commune_code, commune_name, address_line, latitude, longitude FROM users WHERE id = $1`,
     [id]
   );
   logActivity(req.user, 'update_driver', 'driver', Number(id), { full_name: existing.full_name, updates: Object.keys(req.body) });
   res.json(driver);
+});
+
+router.get('/:id/address', authenticate, async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== 'admin' && req.user.role !== 'ops' && req.user.role !== 'super_admin' && req.user.id !== parseInt(id)) {
+    return res.status(403).json({ error: 'Access denied.' });
+  }
+  const addr = await queryOne(
+    `SELECT wilaya_code, wilaya_name, commune_code, commune_name, address_line, latitude, longitude
+     FROM users WHERE id = $1`,
+    [id]
+  );
+  if (!addr) return res.status(404).json({ error: 'User not found.' });
+  res.json(addr);
+});
+
+router.patch('/:id/address', authenticate, async (req, res) => {
+  const { id } = req.params;
+  if (req.user.role !== 'admin' && req.user.role !== 'ops' && req.user.role !== 'super_admin' && req.user.id !== parseInt(id)) {
+    return res.status(403).json({ error: 'Access denied.' });
+  }
+  const { wilaya_code, wilaya_name, commune_code, commune_name, address_line, latitude, longitude } = req.body;
+  const updates = [];
+  const params = [];
+  let p = 1;
+  if (wilaya_code !== undefined) { updates.push(`wilaya_code = $${p++}`); params.push(wilaya_code); }
+  if (wilaya_name !== undefined) { updates.push(`wilaya_name = $${p++}`); params.push(wilaya_name); }
+  if (commune_code !== undefined) { updates.push(`commune_code = $${p++}`); params.push(commune_code); }
+  if (commune_name !== undefined) { updates.push(`commune_name = $${p++}`); params.push(commune_name); }
+  if (address_line !== undefined) { updates.push(`address_line = $${p++}`); params.push(address_line); }
+  if (latitude !== undefined) { updates.push(`latitude = $${p++}`); params.push(latitude); }
+  if (longitude !== undefined) { updates.push(`longitude = $${p++}`); params.push(longitude); }
+  if (updates.length === 0) return res.status(400).json({ error: 'No fields to update.' });
+  updates.push('updated_at = NOW()');
+  params.push(id);
+  await run(`UPDATE users SET ${updates.join(', ')} WHERE id = $${p}`, params);
+  const addr = await queryOne(
+    `SELECT wilaya_code, wilaya_name, commune_code, commune_name, address_line, latitude, longitude
+     FROM users WHERE id = $1`,
+    [id]
+  );
+  logActivity(req.user, 'update_address', 'user', Number(id), { has_coords: !!(latitude || longitude), wilaya: wilaya_name || null });
+  res.json(addr);
 });
 
 router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {

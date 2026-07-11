@@ -3481,3 +3481,176 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   border-color: var(--nx-red);
   color: #fff;
 }
+
+/* ── Address Form ── */
+.address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.af-compact {
+  gap: 12px;
+}
+.af-progress {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.af-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.4;
+  transition: opacity 0.2s;
+}
+.af-step.active,
+.af-step.done {
+  opacity: 1;
+}
+.af-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(0,0,0,0.06);
+  color: #888;
+  transition: all 0.2s;
+}
+.af-step.active .af-step-circle {
+  background: var(--nx-red);
+  color: #fff;
+}
+.af-step.done .af-step-circle {
+  background: #22C55E;
+  color: #fff;
+}
+.af-step-label {
+  font-size: 10px;
+  color: #888;
+}
+.af-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.af-search-wrap {
+  position: relative;
+}
+.af-search {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--nx-border);
+  background: var(--nx-bg);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.af-search:focus {
+  border-color: var(--nx-red);
+}
+.af-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.af-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--nx-bg);
+  border: 0.5px solid var(--nx-border);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.af-list-item:hover {
+  border-color: var(--nx-red);
+  background: rgba(229,57,53,0.04);
+}
+.af-list-item.selected {
+  border-color: var(--nx-red);
+  background: rgba(229,57,53,0.08);
+}
+.af-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111;
+}
+.af-item-sub {
+  font-size: 11px;
+  color: #888;
+}
+.af-empty {
+  text-align: center;
+  padding: 20px;
+  font-size: 12px;
+  color: #888;
+}
+.af-selected-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(229,57,53,0.06);
+}
+.af-map-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 0.5px solid var(--nx-border);
+}
+.af-coords {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  font-size: 11px;
+  color: #888;
+  padding: 4px 0;
+}
+.af-address-line {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--nx-border);
+  background: var(--nx-bg);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.af-address-line:focus {
+  border-color: var(--nx-red);
+}
+.af-save {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* ── Map View page ── */
+.mv-map-wrap {
+  width: 100%;
+  height: calc(100vh - 200px);
+  min-height: 400px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* ── Driver Dashboard address tab ── */
+.driver-address-tab {
+  padding: 16px;
+}

@@ -85,6 +85,13 @@ async function initDatabase() {
     await pool.query("CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id)");
     await pool.query("CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action)");
     await pool.query("CREATE INDEX IF NOT EXISTS idx_activity_logs_entity_type ON activity_logs(entity_type)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS wilaya_code INTEGER");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS wilaya_name VARCHAR(100)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS commune_code INTEGER");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS commune_name VARCHAR(100)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS address_line TEXT");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,7)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS longitude DECIMAL(10,7)");
   } catch {}
   return pool;
 }

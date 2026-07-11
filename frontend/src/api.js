@@ -77,6 +77,8 @@ export const drivers = {
     return request(`/drivers${qs ? '?' + qs : ''}`);
   },
   get: (id) => request(`/drivers/${id}`),
+  getAddress: (id) => request(`/drivers/${id}/address`),
+  updateAddress: (id, data) => request(`/drivers/${id}/address`, { method: 'PATCH', body: JSON.stringify(data) }),
   create: (data) => request('/drivers', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/drivers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/drivers/${id}`, { method: 'DELETE' }),

@@ -170,7 +170,8 @@ router.post('/register', authenticate, authorize('admin', 'super_admin'), regist
 router.get('/me', authenticate, async (req, res) => {
   const user = await queryOne(
     `SELECT u.id, u.username, u.role, u.full_name, u.email, u.phone, u.vehicle_type, u.license_plate,
-            u.station_id, u.is_active, u.created_at, s.name as station_name
+            u.station_id, u.is_active, u.created_at, s.name as station_name,
+            u.wilaya_code, u.wilaya_name, u.commune_code, u.commune_name, u.address_line, u.latitude, u.longitude
      FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = $1`,
     [req.user.id]
   );
@@ -286,7 +287,8 @@ router.put('/profile', authenticate, async (req, res) => {
   logActivity(req.user, 'update_profile', 'user', req.user.id, { updates: Object.keys(req.body).filter(k => k !== 'current_password' && k !== 'new_password') });
   const updated = await queryOne(
     `SELECT u.id, u.username, u.role, u.full_name, u.email, u.phone, u.vehicle_type, u.license_plate,
-            u.station_id, u.is_active, u.created_at, s.name as station_name
+            u.station_id, u.is_active, u.created_at, s.name as station_name,
+            u.wilaya_code, u.wilaya_name, u.commune_code, u.commune_name, u.address_line, u.latitude, u.longitude
      FROM users u LEFT JOIN stations s ON u.station_id = s.id WHERE u.id = $1`,
     [req.user.id]
   );

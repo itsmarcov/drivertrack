@@ -14,9 +14,11 @@
     "@capacitor/core": "^8.4.1",
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/ios": "^8.4.1",
+    "leaflet": "^1.9.4",
     "qrcode.react": "^4.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.26.0"
   },
   "devDependencies": {

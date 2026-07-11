@@ -261,6 +261,7 @@ export default function DriversManagement() {
                 <th>اللوحة</th>
                 <th>المحطة</th>
                 <th>الفترة</th>
+                <th>العنوان</th>
                 <th>الحالة</th>
                 {isAdmin && <th>الإجراءات</th>}
               </tr>
@@ -275,6 +276,7 @@ export default function DriversManagement() {
                   <td>{d.license_plate || '—'}</td>
                   <td>{d.station_name || (d.station_id ? <span className="badge badge-info">محطة {d.station_id}</span> : '—')}</td>
                   <td>{d.shift === 'evening' ? <span className="badge badge-warning">مسائية</span> : <span className="badge badge-info">صباحية</span>}</td>
+                  <td style={{ fontSize: 12 }}>{d.wilaya_name || '—'}{d.wilaya_name && d.commune_name ? ` · ${d.commune_name}` : ''}</td>
                   <td>{d.is_active ? <span className="badge badge-success">نشط</span> : <span className="badge badge-danger">غير نشط</span>}</td>
                   {isAdmin && (
                     <td>

@@ -22,6 +22,7 @@ import PendingDrivers from './pages/PendingDrivers';
 import AbsenceRequests from './pages/AbsenceRequests';
 import AbsenceRequestsReview from './pages/AbsenceRequestsReview';
 import ActivityLogs from './pages/ActivityLogs';
+import DriversMapView from './pages/DriversMapView';
 
 
 function HomeRedirect() {
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/admin/justifications" element={<ProtectedRoute roles={['admin', 'super_admin']}><JustificationsReview /></ProtectedRoute>} />
           <Route path="/admin/absence-requests" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><AbsenceRequestsReview /></ProtectedRoute>} />
           <Route path="/admin/activity-logs" element={<ProtectedRoute roles={['admin', 'super_admin']}><ActivityLogs /></ProtectedRoute>} />
+          <Route path="/admin/drivers-map" element={<ProtectedRoute roles={['admin', 'ops', 'super_admin']}><DriversMapView /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
