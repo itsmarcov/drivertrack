@@ -256,7 +256,7 @@ export default function Navbar() {
                         return (
                           <div key={type} className={`nav-notif-section ${isRead ? 'nav-notif-section-read' : ''}`}>
                             {isRead ? (
-                              <div className="nav-notif-section-btn" style={{ opacity: 0.4 }}>
+                              <div className="nav-notif-section-btn">
                                 <div className="nav-notif-section-btn-icon" style={{ background: bg }}></div>
                                 <div className="nav-notif-section-btn-body">
                                   <span className="nav-notif-section-btn-label">{label}</span>
