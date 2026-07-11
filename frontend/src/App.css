@@ -3295,3 +3295,189 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   0% { transform: rotate(25deg) translateX(-100%); }
   60%, 100% { transform: rotate(25deg) translateX(400%); }
 }
+
+/* ── Activity Logs ── */
+.log-today-badge {
+  font-size: 11px;
+  background: var(--nx-red-50, #FEF2F2);
+  color: var(--nx-red, #E53935);
+  padding: 2px 10px;
+  border-radius: 12px;
+  margin-right: 8px;
+  font-weight: 600;
+}
+.log-filters {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.log-filters-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.log-filters-row select,
+.log-filters-row input {
+  padding: 7px 12px;
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  background: var(--nx-bg);
+  color: var(--nx-text);
+  font-size: 12px;
+  font-family: inherit;
+  min-width: 140px;
+  outline: none;
+  direction: rtl;
+}
+.log-filters-row select:focus,
+.log-filters-row input:focus {
+  border-color: var(--nx-red);
+  box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.12);
+}
+.log-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.log-card {
+  display: flex;
+  background: var(--nx-bg);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.log-card:hover {
+  box-shadow: var(--nx-shadow-liquid);
+}
+.log-card-timeline {
+  width: 4px;
+  flex-shrink: 0;
+}
+.log-card-body {
+  flex: 1;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.log-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.log-card-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.log-card-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.log-card-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.log-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nx-text);
+}
+.log-card-role {
+  font-size: 10px;
+  color: var(--nx-text-tertiary);
+}
+.log-card-time {
+  font-size: 11px;
+  color: var(--nx-text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.log-card-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.log-card-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.log-card-entity {
+  font-size: 11px;
+  color: var(--nx-text-secondary);
+  font-weight: 500;
+}
+.log-card-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.log-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--nx-bg-secondary);
+  border: 1px solid var(--nx-border-light);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  direction: ltr;
+}
+.log-detail-key {
+  color: var(--nx-text-tertiary);
+  font-weight: 500;
+}
+.log-detail-val {
+  color: var(--nx-text-secondary);
+  font-weight: 600;
+}
+.log-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 12px 0;
+}
+.log-pagination-pages {
+  display: flex;
+  gap: 4px;
+}
+.log-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--nx-border);
+  background: var(--nx-bg);
+  color: var(--nx-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+}
+.log-page-btn:hover {
+  border-color: var(--nx-red);
+  color: var(--nx-red);
+}
+.log-page-btn.active {
+  background: var(--nx-red);
+  border-color: var(--nx-red);
+  color: #fff;
+}

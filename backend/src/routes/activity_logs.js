@@ -5,13 +5,15 @@ const { authenticate, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 router.get('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  const { action, entity_type, user_id, limit = 100, offset = 0 } = req.query;
+  const { action, entity_type, user_id, date_from, date_to, limit = 100, offset = 0 } = req.query;
   const conditions = [];
   const params = [];
 
   if (action) { conditions.push(`al.action = $${params.length + 1}`); params.push(action); }
   if (entity_type) { conditions.push(`al.entity_type = $${params.length + 1}`); params.push(entity_type); }
   if (user_id) { conditions.push(`al.user_id = $${params.length + 1}`); params.push(Number(user_id)); }
+  if (date_from) { conditions.push(`al.created_at::date >= $${params.length + 1}`); params.push(date_from); }
+  if (date_to) { conditions.push(`al.created_at::date <= $${params.length + 1}`); params.push(date_to); }
 
   const where = conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
   const sql = `
@@ -31,8 +33,15 @@ router.get('/', authenticate, authorize('admin', 'super_admin'), async (req, res
     params.slice(0, -2)
   );
 
-  const distinctActions = await queryAll('SELECT DISTINCT action FROM activity_logs ORDER BY action');
-  const distinctEntityTypes = await queryAll('SELECT DISTINCT entity_type FROM activity_logs WHERE entity_type IS NOT NULL ORDER BY entity_type');
+  const distinctActions = await queryAll(
+    `SELECT DISTINCT action FROM activity_logs al ${where} ORDER BY action`,
+    params.slice(0, -2)
+  );
+  const etWhere = where ? where.replace('WHERE', 'WHERE entity_type IS NOT NULL AND') : 'WHERE entity_type IS NOT NULL';
+  const distinctEntityTypes = await queryAll(
+    `SELECT DISTINCT entity_type FROM activity_logs al ${etWhere} ORDER BY entity_type`,
+    where ? params.slice(0, -2) : []
+  );
 
   res.json({
     logs,
