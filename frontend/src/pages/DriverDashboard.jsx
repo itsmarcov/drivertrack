@@ -98,8 +98,6 @@ export default function DriverDashboard() {
         </div>
       </div>
 
-      {error && <div className="alert alert-error driver-alert">{error}</div>}
-
       {announcements.filter((a) => !dismissed.has(a.id)).map((a) => (
         <div key={a.id} className={`driver-announcement ${a.priority === 'urgent' ? 'driver-announcement-urgent' : 'driver-announcement-normal'}`}>
           <div className="driver-announcement-body">
@@ -109,6 +107,8 @@ export default function DriverDashboard() {
           <button className="driver-announcement-close" onClick={() => setDismissed((prev) => new Set([...prev, a.id]))}>✕</button>
         </div>
       ))}
+
+      {error && <div className="alert alert-error driver-alert">{error}</div>}
 
       <div className="driver-tabs">
         <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
