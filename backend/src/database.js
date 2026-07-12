@@ -92,6 +92,20 @@ async function initDatabase() {
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS address_line TEXT");
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,7)");
     await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS longitude DECIMAL(10,7)");
+    await pool.query(`CREATE TABLE IF NOT EXISTS announcements (
+      id SERIAL PRIMARY KEY,
+      message TEXT NOT NULL,
+      priority VARCHAR(10) DEFAULT 'normal' CHECK(priority IN ('normal', 'urgent')),
+      audience_type VARCHAR(20) DEFAULT 'all' CHECK(audience_type IN ('all', 'drivers', 'stations')),
+      station_ids TEXT,
+      driver_ids TEXT,
+      starts_at TIMESTAMP,
+      expires_at TIMESTAMP,
+      is_active INTEGER DEFAULT 1,
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )`);
   } catch {}
   return pool;
 }

@@ -216,3 +216,11 @@ export const activityLogs = {
     return request(`/activity-logs${qs ? '?' + qs : ''}`);
   },
 };
+
+export const announcements = {
+  list: () => request('/announcements'),
+  active: () => request('/announcements/active'),
+  create: (data) => request('/announcements', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => request(`/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => request(`/announcements/${id}`, { method: 'DELETE' }),
+};

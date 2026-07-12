@@ -6,7 +6,7 @@ import JustificationTab from './JustificationTab';
 import AbsenceRequests from './AbsenceRequests';
 import AddressForm from '../components/AddressForm';
 import { useAuth } from '../context/AuthContext';
-import { qr, attendance } from '../api';
+import { qr, attendance, announcements as announcementsApi } from '../api';
 
 function QRDisplay({ data }) {
   const qrValue = JSON.stringify({
@@ -64,6 +64,8 @@ export default function DriverDashboard() {
   const [records, setRecords] = useState([]);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('qr');
+  const [announcements, setAnnouncements] = useState([]);
+  const [dismissed, setDismissed] = useState(new Set());
 
   const handleLogout = () => {
     logout();
@@ -73,6 +75,7 @@ export default function DriverDashboard() {
   useEffect(() => {
     qr.getMyQR().then(setQrData).catch((err) => setError(err.message));
     attendance.my().then(setRecords).catch(() => {});
+    announcementsApi.active().then(setAnnouncements).catch(() => {});
   }, []);
 
   const safeRecords = Array.isArray(records) ? records : [];
@@ -96,6 +99,16 @@ export default function DriverDashboard() {
       </div>
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
+
+      {announcements.filter((a) => !dismissed.has(a.id)).map((a) => (
+        <div key={a.id} className={`driver-announcement ${a.priority === 'urgent' ? 'driver-announcement-urgent' : 'driver-announcement-normal'}`}>
+          <div className="driver-announcement-body">
+            {a.priority === 'urgent' && <span className="driver-announcement-icon">⚡</span>}
+            <span>{a.message}</span>
+          </div>
+          <button className="driver-announcement-close" onClick={() => setDismissed((prev) => new Set([...prev, a.id]))}>✕</button>
+        </div>
+      ))}
 
       <div className="driver-tabs">
         <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
