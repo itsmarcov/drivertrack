@@ -6,7 +6,7 @@ import JustificationTab from './JustificationTab';
 import AbsenceRequests from './AbsenceRequests';
 import AddressForm from '../components/AddressForm';
 import { useAuth } from '../context/AuthContext';
-import { qr, attendance, announcements as announcementsApi } from '../api';
+import { qr, attendance, announcements as announcementsApi, drivers } from '../api';
 
 function QRDisplay({ data }) {
   const qrValue = JSON.stringify({
@@ -66,6 +66,8 @@ export default function DriverDashboard() {
   const [activeTab, setActiveTab] = useState('qr');
   const [announcements, setAnnouncements] = useState([]);
   const [dismissed, setDismissed] = useState(new Set());
+  const [hasAddress, setHasAddress] = useState(true);
+  const [addressPromptDismissed, setAddressPromptDismissed] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -76,6 +78,10 @@ export default function DriverDashboard() {
     qr.getMyQR().then(setQrData).catch((err) => setError(err.message));
     attendance.my().then(setRecords).catch(() => {});
     announcementsApi.active().then(setAnnouncements).catch(() => {});
+    drivers.getAddress(user.id).then((data) => {
+      const filled = data && (data.wilaya_code || data.wilaya_name || data.commune_code || data.commune_name);
+      setHasAddress(!!filled);
+    }).catch(() => {});
   }, []);
 
   const safeRecords = Array.isArray(records) ? records : [];
@@ -107,6 +113,22 @@ export default function DriverDashboard() {
           <button className="driver-announcement-close" onClick={() => setDismissed((prev) => new Set([...prev, a.id]))}>✕</button>
         </div>
       ))}
+
+      {!hasAddress && !addressPromptDismissed && (
+        <div className="driver-address-prompt">
+          <div className="driver-address-prompt-body">
+            <span className="driver-address-prompt-icon">📍</span>
+            <div>
+              <div className="driver-address-prompt-title">أضف عنوان سكنك</div>
+              <div className="driver-address-prompt-desc">لتسهيل تحديد موقعك من قبل المشرفين</div>
+            </div>
+          </div>
+          <div className="driver-address-prompt-actions">
+            <button className="btn btn-sm btn-primary" onClick={() => setActiveTab('address')}>إضافة عنوان</button>
+            <button className="btn btn-sm btn-outline" onClick={() => setAddressPromptDismissed(true)}>تخطي</button>
+          </div>
+        </div>
+      )}
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
 
