@@ -173,9 +173,12 @@ router.delete('/:id', authenticate, authorize('admin'), async (req, res) => {
   const { id } = req.params;
   const existing = await queryOne("SELECT id, full_name FROM users WHERE id = $1 AND role = 'driver'", [id]);
   if (!existing) return res.status(404).json({ error: 'Driver not found.' });
+  await run('DELETE FROM justifications WHERE driver_id = $1', [id]);
+  await run('DELETE FROM absence_requests WHERE driver_id = $1', [id]);
   await run('DELETE FROM absences WHERE driver_id = $1', [id]);
   await run('DELETE FROM penalties WHERE driver_id = $1', [id]);
   await run('DELETE FROM attendance WHERE driver_id = $1', [id]);
+  await run('DELETE FROM activity_logs WHERE user_id = $1', [id]);
   await run("DELETE FROM users WHERE id = $1 AND role = 'driver'", [id]);
   logActivity(req.user, 'delete_driver', 'driver', Number(id), { full_name: existing.full_name });
   res.json({ message: 'Driver deleted successfully.' });
