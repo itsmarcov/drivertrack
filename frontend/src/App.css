@@ -105,6 +105,11 @@ body {
 h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; letter-spacing: -0.02em; }
 :focus-visible { outline: 2px solid var(--nx-red); outline-offset: 2px; border-radius: var(--nx-radius-sm); }
 :focus:not(:focus-visible) { outline: none; }
+@media (prefers-reduced-motion: no-preference) {
+  *, *::before, *::after {
+    transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
