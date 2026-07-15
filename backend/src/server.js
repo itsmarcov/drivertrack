@@ -48,7 +48,7 @@ app.use((req, res, next) => {
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://drivertrack-qlsq.onrender.com', 'capacitor://localhost', 'http://localhost']
+    ? ['https://drivertrack-qlsq.onrender.com', 'https://navexdrivertrack.com', 'capacitor://localhost', 'http://localhost']
     : ['http://localhost:5173', 'http://localhost:5000'],
   credentials: true,
 }));
