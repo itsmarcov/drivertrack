@@ -1,10 +1,11 @@
-const API_BASE = '/api';
+const API_BASE = window.API_URL || '/api';
 
 async function request(endpoint, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   let res;
   try {
-    res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'same-origin' });
+    const isCrossOrigin = API_BASE.startsWith('http');
+    res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: isCrossOrigin ? 'include' : 'same-origin' });
   } catch {
     throw new Error('تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت.');
   }

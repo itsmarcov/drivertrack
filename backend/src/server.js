@@ -90,7 +90,12 @@ app.use((err, req, res, next) => {
 const frontendDist = path.join(__dirname, '..', '..', 'frontend', 'dist');
 app.use(express.static(frontendDist));
 app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendDist, 'index.html'));
+  const indexPath = path.join(frontendDist, 'index.html');
+  if (!req.accepts('html')) return res.status(404).end();
+  const html = require('fs').readFileSync(indexPath, 'utf8');
+  const apiUrl = process.env.PUBLIC_API_URL || '';
+  const injected = html.replace('</head>', `<script>window.API_URL='${apiUrl}'</script></head>`);
+  res.type('html').send(injected);
 });
 
 function getLocalIP() {
