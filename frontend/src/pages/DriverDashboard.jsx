@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import DriverProfile from './DriverProfile';
 import JustificationTab from './JustificationTab';
 import AbsenceRequests from './AbsenceRequests';
+import AddressGuide from '../components/AddressGuide';
 import AddressForm from '../components/AddressForm';
 import { useAuth } from '../context/AuthContext';
 import { qr, attendance, announcements as announcementsApi, drivers } from '../api';
@@ -154,19 +155,7 @@ export default function DriverDashboard() {
       })()}
 
       {!hasAddress && !addressPromptDismissed && (
-        <div className="driver-address-prompt">
-          <div className="driver-address-prompt-body">
-            <span className="driver-address-prompt-icon">📍</span>
-            <div>
-              <div className="driver-address-prompt-title">أضف عنوان سكنك</div>
-              <div className="driver-address-prompt-desc">لتسهيل تحديد موقعك من قبل المشرفين</div>
-            </div>
-          </div>
-          <div className="driver-address-prompt-actions">
-            <button className="btn btn-sm btn-primary" onClick={() => setActiveTab('address')}>إضافة عنوان</button>
-            <button className="btn btn-sm btn-outline" onClick={() => setAddressPromptDismissed(true)}>تخطي</button>
-          </div>
-        </div>
+        <AddressGuide driverId={user.id} onComplete={() => { setHasAddress(true); setAddressPromptDismissed(true); }} />
       )}
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
