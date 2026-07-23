@@ -2108,6 +2108,19 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   font-size: 14px;
   font-weight: 600;
 }
+.announcement-popup-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.announcement-popup-counter {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--nx-radius-full);
+  background: var(--nx-bg-glass);
+  color: var(--nx-text-muted);
+}
 .announcement-popup-priority {
   padding: 4px 10px;
   border-radius: var(--nx-radius-full);

@@ -96,13 +96,12 @@ export default function DriverDashboard() {
     if (!currentAnnouncement) return;
     try {
       await announcementsApi.markRead(currentAnnouncement.id);
-      setAnnouncements((prev) => prev.map((a) => a.id === currentAnnouncement.id ? { ...a, is_read: true } : a));
-      const nextUnread = announcements.filter((a) => a.id !== currentAnnouncement.id && !a.is_read);
-      if (nextUnread.length > 0) {
-        setCurrentAnnouncement(nextUnread[0]);
-      } else {
-        setCurrentAnnouncement(null);
-      }
+      setAnnouncements((prev) => {
+        const updated = prev.map((a) => a.id === currentAnnouncement.id ? { ...a, is_read: true } : a);
+        const nextUnread = updated.find((a) => !a.is_read);
+        setCurrentAnnouncement(nextUnread || null);
+        return updated;
+      });
     } catch (err) {
       setCurrentAnnouncement(null);
     }
@@ -124,16 +123,22 @@ export default function DriverDashboard() {
         </div>
       </div>
 
-      {currentAnnouncement && (
+      {currentAnnouncement && (() => {
+        const unreadList = announcements.filter((a) => !a.is_read);
+        const currentIndex = unreadList.findIndex((a) => a.id === currentAnnouncement.id);
+        return (
         <div className="modal-overlay" onClick={(e) => e.stopPropagation()}>
           <div className="modal announcement-popup" onClick={(e) => e.stopPropagation()}>
             <div className="announcement-popup-header">
               <span className="announcement-popup-priority" data-priority={currentAnnouncement.priority}>
                 {currentAnnouncement.priority === 'urgent' ? '⚡ إعلان عاجل' : '📢 إعلان'}
               </span>
-              <span className="announcement-popup-date">
-                {new Date(currentAnnouncement.created_at).toLocaleDateString('fr-DZ')}
-              </span>
+              <div className="announcement-popup-right">
+                <span className="announcement-popup-counter">{currentIndex + 1}/{unreadList.length}</span>
+                <span className="announcement-popup-date">
+                  {new Date(currentAnnouncement.created_at).toLocaleDateString('fr-DZ')}
+                </span>
+              </div>
             </div>
             <div className="announcement-popup-body">
               {currentAnnouncement.message}
@@ -145,7 +150,8 @@ export default function DriverDashboard() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {!hasAddress && !addressPromptDismissed && (
         <div className="driver-address-prompt">
