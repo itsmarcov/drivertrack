@@ -6,7 +6,11 @@ const { logActivity } = require('../logActivity');
 const router = express.Router();
 
 router.get('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  const rows = await queryAll('SELECT * FROM announcements ORDER BY created_at DESC');
+  const rows = await queryAll(`SELECT a.*,
+    COALESCE((SELECT json_agg(json_build_object('id', u.id, 'full_name', u.full_name, 'read_at', ar.read_at))
+      FROM announcement_reads ar JOIN users u ON u.id = ar.driver_id WHERE ar.announcement_id = a.id), '[]')::json AS readers,
+    (SELECT COUNT(*) FROM announcement_reads WHERE announcement_id = a.id) AS readers_count
+    FROM announcements a ORDER BY a.created_at DESC`);
   res.json(rows);
 });
 
@@ -15,11 +19,13 @@ router.get('/active', authenticate, async (req, res) => {
   const userId = req.user.id;
   const user = await queryOne('SELECT role, station_id FROM users WHERE id = $1', [userId]);
   if (!user || user.role !== 'driver') return res.json([]);
-  const rows = await queryAll(`SELECT * FROM announcements
-    WHERE is_active = 1
-      AND (starts_at IS NULL OR starts_at <= $1::timestamp)
-      AND (expires_at IS NULL OR expires_at >= $1::timestamp)
-    ORDER BY priority DESC, created_at DESC`, [now]);
+  const rows = await queryAll(`SELECT a.*,
+    (SELECT COUNT(*) FROM announcement_reads WHERE announcement_id = a.id) AS readers_count
+    FROM announcements a
+    WHERE a.is_active = 1
+      AND (a.starts_at IS NULL OR a.starts_at <= $1::timestamp)
+      AND (a.expires_at IS NULL OR a.expires_at >= $1::timestamp)
+    ORDER BY a.priority DESC, a.created_at DESC`, [now]);
   const filtered = rows.filter((a) => {
     if (a.audience_type === 'all') return true;
     if (a.audience_type === 'drivers') {
@@ -34,7 +40,36 @@ router.get('/active', authenticate, async (req, res) => {
     }
     return false;
   });
-  res.json(filtered);
+  const readIds = await queryAll(
+    'SELECT announcement_id FROM announcement_reads WHERE driver_id = $1',
+    [userId]
+  );
+  const readSet = new Set(readIds.map((r) => r.announcement_id));
+  const result = filtered.map((a) => ({ ...a, is_read: readSet.has(a.id) }));
+  res.json(result);
+});
+
+router.post('/:id/read', authenticate, async (req, res) => {
+  const userId = req.user.id;
+  const user = await queryOne('SELECT role FROM users WHERE id = $1', [userId]);
+  if (!user || user.role !== 'driver') return res.status(403).json({ error: 'Forbidden' });
+  const announcement = await queryOne('SELECT id FROM announcements WHERE id = $1', [req.params.id]);
+  if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
+  await run(
+    'INSERT INTO announcement_reads (announcement_id, driver_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+    [req.params.id, userId]
+  );
+  res.json({ success: true });
+});
+
+router.get('/:id/readers', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  const rows = await queryAll(
+    `SELECT ar.driver_id, u.full_name, u.username, ar.read_at
+     FROM announcement_reads ar JOIN users u ON u.id = ar.driver_id
+     WHERE ar.announcement_id = $1 ORDER BY ar.read_at`,
+    [req.params.id]
+  );
+  res.json(rows);
 });
 
 router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {

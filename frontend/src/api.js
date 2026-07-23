@@ -224,4 +224,6 @@ export const announcements = {
   create: (data) => request('/announcements', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => request(`/announcements/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => request(`/announcements/${id}`, { method: 'DELETE' }),
+  markRead: (id) => request(`/announcements/${id}/read`, { method: 'POST' }),
+  readers: (id) => request(`/announcements/${id}/readers`),
 };

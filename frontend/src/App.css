@@ -2093,61 +2093,56 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   font-weight: 600;
 }
 
-/* ─── Driver Announcements ─── */
-.driver-announcement {
+/* ─── Driver Announcements Popup ─── */
+.announcement-popup {
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  padding: 24px 20px;
+}
+.announcement-popup-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 14px 16px;
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.5;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  animation: slideDown 0.3s ease;
-}
-.driver-announcement-normal {
-  background: #1e3a5f;
-  color: #60a5fa;
-}
-.driver-announcement-urgent {
-  background: #5c1a1a;
-  color: #fca5a5;
-}
-.driver-announcement-normal .driver-announcement-close:hover {
-  background: rgba(96, 165, 250, 0.15);
-}
-.driver-announcement-urgent .driver-announcement-close:hover {
-  background: rgba(252, 165, 165, 0.15);
-}
-.driver-announcement-body {
-  display: flex;
   align-items: center;
-  gap: 6px;
-  flex: 1;
-}
-.driver-announcement-icon {
-  font-size: 16px;
-}
-.driver-announcement-close {
-  background: none;
-  border: none;
-  cursor: pointer;
+  margin-bottom: 16px;
   font-size: 14px;
-  opacity: 0.5;
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: inherit;
-  flex-shrink: 0;
+  font-weight: 600;
 }
-.driver-announcement-close:hover {
-  opacity: 1;
-  background: rgba(0,0,0,0.06);
+.announcement-popup-priority {
+  padding: 4px 10px;
+  border-radius: var(--nx-radius-full);
+  font-size: 13px;
+  font-weight: 600;
 }
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+.announcement-popup-priority[data-priority="urgent"] {
+  background: rgba(229, 57, 53, 0.12);
+  color: #E53935;
+}
+.announcement-popup-priority[data-priority="normal"] {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+.announcement-popup-date {
+  color: var(--nx-text-muted);
+  font-size: 12px;
+}
+.announcement-popup-body {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--nx-text);
+  margin-bottom: 20px;
+  text-align: right;
+  padding: 0 4px;
+}
+.announcement-popup-footer {
+  display: flex;
+  justify-content: center;
+}
+.announcement-popup-btn {
+  min-width: 140px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 /* ─── Driver Address Prompt ─── */

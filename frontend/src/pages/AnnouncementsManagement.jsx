@@ -9,6 +9,8 @@ export default function AnnouncementsManagement() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState('');
+  const [showReaders, setShowReaders] = useState(null);
+  const [readersList, setReadersList] = useState([]);
   const [form, setForm] = useState({
     message: '',
     priority: 'normal',
@@ -95,6 +97,11 @@ export default function AnnouncementsManagement() {
   };
 
   const now = new Date();
+
+  const openReaders = (announcement) => {
+    setShowReaders(announcement);
+    setReadersList(announcement.readers || []);
+  };
 
   if (loading) return <LoadingScreen />;
 
@@ -209,6 +216,7 @@ export default function AnnouncementsManagement() {
                 <th>الجمهور</th>
                 <th>الحالة</th>
                 <th>الفترة</th>
+                <th>القراءات</th>
                 <th>تاريخ الإنشاء</th>
                 <th>الإجراءات</th>
               </tr>
@@ -240,6 +248,15 @@ export default function AnnouncementsManagement() {
                       {a.starts_at ? new Date(a.starts_at).toLocaleDateString('fr-DZ') : 'فوري'}
                       {a.expires_at ? ' → ' + new Date(a.expires_at).toLocaleDateString('fr-DZ') : ''}
                     </td>
+                    <td>
+                      <button
+                        className={`btn btn-sm ${a.readers_count > 0 ? 'btn-primary' : 'btn-outline'}`}
+                        style={{ minWidth: 50 }}
+                        onClick={() => openReaders(a)}
+                      >
+                        {a.readers_count || 0}
+                      </button>
+                    </td>
                     <td className="text-sm text-muted">{new Date(a.created_at).toLocaleDateString('fr-DZ')}</td>
                     <td>
                       <div className="flex gap-2" style={{ alignItems: 'center' }}>
@@ -257,6 +274,40 @@ export default function AnnouncementsManagement() {
           </table>
         )}
       </div>
+      {showReaders && (
+        <div className="modal-overlay" onClick={() => setShowReaders(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="modal-header">
+              <h3>قراة الإعلان</h3>
+              <button className="modal-close" onClick={() => setShowReaders(null)}>✕</button>
+            </div>
+            <div style={{ padding: '12px 0' }}>
+              <p style={{ fontSize: 13, color: 'var(--nx-text-muted)', marginBottom: 12, padding: '0 16px' }}>
+                {showReaders.message.length > 80 ? showReaders.message.slice(0, 80) + '…' : showReaders.message}
+              </p>
+              {readersList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--nx-text-muted)', fontSize: 13 }}>
+                  لم يقرأ أحد بعد
+                </div>
+              ) : (
+                <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                  {readersList.map((r) => (
+                    <div key={r.driver_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--nx-border-light)' }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{r.full_name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--nx-text-muted)' }}>@{r.username}</div>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--nx-text-muted)', whiteSpace: 'nowrap' }}>
+                        {new Date(r.read_at).toLocaleString('fr-DZ')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

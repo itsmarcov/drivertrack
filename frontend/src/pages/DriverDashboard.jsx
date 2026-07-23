@@ -65,7 +65,7 @@ export default function DriverDashboard() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('qr');
   const [announcements, setAnnouncements] = useState([]);
-  const [dismissed, setDismissed] = useState(new Set());
+  const [currentAnnouncement, setCurrentAnnouncement] = useState(null);
   const [hasAddress, setHasAddress] = useState(true);
   const [addressPromptDismissed, setAddressPromptDismissed] = useState(false);
 
@@ -77,7 +77,11 @@ export default function DriverDashboard() {
   useEffect(() => {
     qr.getMyQR().then(setQrData).catch((err) => setError(err.message));
     attendance.my().then(setRecords).catch(() => {});
-    announcementsApi.active().then(setAnnouncements).catch(() => {});
+    announcementsApi.active().then((data) => {
+      setAnnouncements(data);
+      const firstUnread = data.find((a) => !a.is_read);
+      if (firstUnread) setCurrentAnnouncement(firstUnread);
+    }).catch(() => {});
     drivers.getAddress(user.id).then((data) => {
       const filled = data && (data.wilaya_code || data.wilaya_name || data.commune_code || data.commune_name);
       setHasAddress(!!filled);
@@ -87,6 +91,22 @@ export default function DriverDashboard() {
   const safeRecords = Array.isArray(records) ? records : [];
   const todayRecord = safeRecords.find((r) => r.scan_date === qrData?.date);
   const recentRecords = safeRecords.slice(0, 5);
+
+  const handleMarkRead = async () => {
+    if (!currentAnnouncement) return;
+    try {
+      await announcementsApi.markRead(currentAnnouncement.id);
+      setAnnouncements((prev) => prev.map((a) => a.id === currentAnnouncement.id ? { ...a, is_read: true } : a));
+      const nextUnread = announcements.filter((a) => a.id !== currentAnnouncement.id && !a.is_read);
+      if (nextUnread.length > 0) {
+        setCurrentAnnouncement(nextUnread[0]);
+      } else {
+        setCurrentAnnouncement(null);
+      }
+    } catch (err) {
+      setCurrentAnnouncement(null);
+    }
+  };
 
   return (
     <div className="driver-app">
@@ -104,15 +124,28 @@ export default function DriverDashboard() {
         </div>
       </div>
 
-      {announcements.filter((a) => !dismissed.has(a.id)).map((a) => (
-        <div key={a.id} className={`driver-announcement ${a.priority === 'urgent' ? 'driver-announcement-urgent' : 'driver-announcement-normal'}`}>
-          <div className="driver-announcement-body">
-            {a.priority === 'urgent' && <span className="driver-announcement-icon">⚡</span>}
-            <span>{a.message}</span>
+      {currentAnnouncement && (
+        <div className="modal-overlay" onClick={(e) => e.stopPropagation()}>
+          <div className="modal announcement-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="announcement-popup-header">
+              <span className="announcement-popup-priority" data-priority={currentAnnouncement.priority}>
+                {currentAnnouncement.priority === 'urgent' ? '⚡ إعلان عاجل' : '📢 إعلان'}
+              </span>
+              <span className="announcement-popup-date">
+                {new Date(currentAnnouncement.created_at).toLocaleDateString('fr-DZ')}
+              </span>
+            </div>
+            <div className="announcement-popup-body">
+              {currentAnnouncement.message}
+            </div>
+            <div className="announcement-popup-footer">
+              <button className="btn btn-primary announcement-popup-btn" onClick={handleMarkRead}>
+                تم القراءة
+              </button>
+            </div>
           </div>
-          <button className="driver-announcement-close" onClick={() => setDismissed((prev) => new Set([...prev, a.id]))}>✕</button>
         </div>
-      ))}
+      )}
 
       {!hasAddress && !addressPromptDismissed && (
         <div className="driver-address-prompt">
