@@ -71,6 +71,7 @@ export default function DriverDashboard() {
   const [currentAnnouncement, setCurrentAnnouncement] = useState(null);
   const [hasAddress, setHasAddress] = useState(true);
   const [addressPromptDismissed, setAddressPromptDismissed] = useState(false);
+  const [showReports, setShowReports] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -169,7 +170,6 @@ export default function DriverDashboard() {
         <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
         <button className={`driver-tab ${activeTab === 'justifications' ? 'active' : ''}`} onClick={() => setActiveTab('justifications')}>المبررات</button>
         <button className={`driver-tab ${activeTab === 'absence-requests' ? 'active' : ''}`} onClick={() => setActiveTab('absence-requests')}>الغيابات المسبقة</button>
-        <button className={`driver-tab ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>تبليغ</button>
         <button className={`driver-tab ${activeTab === 'address' ? 'active' : ''}`} onClick={() => setActiveTab('address')}>عنوان السكن</button>
       </div>
 
@@ -220,10 +220,25 @@ export default function DriverDashboard() {
 
       {activeTab === 'justifications' && <JustificationTab />}
       {activeTab === 'absence-requests' && <AbsenceRequests compact />}
-      {activeTab === 'reports' && <ReportsTab />}
       {activeTab === 'address' && (
         <div className="driver-address-tab">
           <AddressForm driverId={user.id} />
+        </div>
+      )}
+
+      <button className="rp-fab" onClick={() => setShowReports(true)} title="تبليغ">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </button>
+
+      {showReports && (
+        <div className="rp-overlay">
+          <div className="rp-overlay-header">
+            <button className="rp-overlay-close" onClick={() => setShowReports(false)}>✕</button>
+            <span className="rp-overlay-title">تبليغ</span>
+          </div>
+          <div className="rp-overlay-body">
+            <ReportsTab />
+          </div>
         </div>
       )}
     </div>
