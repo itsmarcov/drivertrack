@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { absences, stations as stationsApi } from '../api';
 import { useAuth } from '../context/AuthContext';
+import { playSuccess, playError } from '../utils/sounds';
 
 function todayStr() {
   const d = new Date();
@@ -48,9 +49,11 @@ export default function AbsencesManagement() {
     setMessage('');
     try {
       const res = await absences.mark();
+      playSuccess();
       setMessage('✅ ' + res.message);
       loadAbsences(filterDate, filterShift, filterStation);
     } catch (err) {
+      playError();
       setMessage('❌ ' + err.message);
     } finally {
       setMarking(false);
@@ -97,9 +100,11 @@ export default function AbsencesManagement() {
     setMessage('');
     try {
       const res = await absences.deleteByDate(filterDate);
+      playSuccess();
       setMessage('✅ ' + res.message);
       loadAbsences(filterDate, filterShift, filterStation);
     } catch (err) {
+      playError();
       setMessage('❌ ' + err.message);
     }
   };

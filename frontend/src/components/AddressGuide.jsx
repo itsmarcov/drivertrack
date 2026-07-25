@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import AddressForm from './AddressForm';
 import { drivers } from '../api';
+import { playSuccess } from '../utils/sounds';
 
 const steps = [
   { num: 1, icon: '🏢', title: 'اختر ولايتك', desc: 'حدد الولاية التي تسكن فيها' },
@@ -25,6 +26,7 @@ export default function AddressGuide({ driverId, onComplete }) {
   }, [driverId]);
 
   const handleSaved = () => {
+    playSuccess();
     setCompleted(true);
     setTimeout(() => onComplete?.(), 800);
   };

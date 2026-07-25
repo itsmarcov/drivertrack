@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { qr } from '../api';
+import { playScan, playError } from '../utils/sounds';
 
 export default function ScanQR() {
   const { user } = useAuth();
@@ -59,18 +60,8 @@ export default function ScanQR() {
   }, []);
 
   const playBeep = (type) => {
-    try {
-      const ctx = beepRef.current;
-      if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = type === 'success' ? 1200 : 300;
-      gain.gain.value = 0.3;
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } catch {}
+    if (type === 'success') playScan();
+    else playError();
   };
 
   const processQRData = async (data) => {

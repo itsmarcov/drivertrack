@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { announcements, stations as stationsApi } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function AnnouncementsManagement() {
   const [list, setList] = useState([]);
@@ -77,16 +78,18 @@ export default function AnnouncementsManagement() {
       }
       setShowForm(false);
       setEditing(null);
+      playSuccess();
       load();
-    } catch (err) { setError(err.message); }
+    } catch (err) { playError(); setError(err.message); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
     try {
       await announcements.delete(id);
+      playSuccess();
       load();
-    } catch (err) { setError(err.message); }
+    } catch (err) { playError(); setError(err.message); }
   };
 
   const toggleActive = async (a) => {

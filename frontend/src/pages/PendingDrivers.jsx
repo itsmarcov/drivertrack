@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function PendingDrivers() {
   const [drivers, setDrivers] = useState([]);
@@ -15,16 +16,18 @@ export default function PendingDrivers() {
   const handleApprove = async (id) => {
     try {
       await auth.approveDriver(id);
+      playSuccess();
       setDrivers((prev) => prev.filter((d) => d.id !== id));
-    } catch {}
+    } catch { playError(); }
   };
 
   const handleReject = async (id) => {
     if (!window.confirm('هل أنت متأكد من رفض هذا التسجيل؟')) return;
     try {
       await auth.rejectDriver(id);
+      playSuccess();
       setDrivers((prev) => prev.filter((d) => d.id !== id));
-    } catch {}
+    } catch { playError(); }
   };
 
   return (

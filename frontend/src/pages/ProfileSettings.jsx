@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function ProfileSettings() {
   const { user } = useAuth();
@@ -33,9 +34,11 @@ export default function ProfileSettings() {
       }
       const pwChanged = !!form.new_password;
       await auth.updateProfile(body);
+      playSuccess();
       setForm({ ...form, current_password: '', new_password: '', confirm_password: '' });
       setMsg({ type: 'success', text: 'تم تحديث الملف الشخصي بنجاح.' + (pwChanged ? ' استخدم كلمة المرور الجديدة في المرة القادمة.' : '') });
     } catch (err) {
+      playError();
       setMsg({ type: 'error', text: err.message });
     }
     setSaving(false);

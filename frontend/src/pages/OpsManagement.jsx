@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { auth, stations } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function OpsManagement() {
   const { user } = useAuth();
@@ -41,9 +42,11 @@ export default function OpsManagement() {
         const { username, role, ...rest } = payload;
         if (!rest.password) delete rest.password;
         await auth.updateOps(editing.id, rest);
+        playSuccess();
         setSuccess(`تم تحديث حساب "${form.full_name}" بنجاح`);
       } else {
         await auth.register(payload);
+        playSuccess();
         setSuccess(`تم إنشاء حساب "${form.full_name}" بنجاح`);
       }
       setForm({ username: '', password: '', full_name: '', email: '', phone: '', role: 'ops', station_id: '' });
@@ -51,6 +54,7 @@ export default function OpsManagement() {
       setEditing(null);
       tab === 'ops' ? loadOps() : loadAdmins();
     } catch (err) {
+      playError();
       setError(err.message);
     }
   };
@@ -73,18 +77,20 @@ export default function OpsManagement() {
     if (!window.confirm(`هل أنت متأكد من حذف المشغل "${name}"؟`)) return;
     try {
       await auth.deleteOps(id);
+      playSuccess();
       setSuccess(`تم حذف المشغل "${name}" بنجاح`);
       loadOps();
-    } catch (err) { setError(err.message); }
+    } catch (err) { playError(); setError(err.message); }
   };
 
   const handleDeleteAdmin = async (id, name) => {
     if (!window.confirm(`هل أنت متأكد من حذف المدير "${name}"؟`)) return;
     try {
       await auth.deleteAdmin(id);
+      playSuccess();
       setSuccess(`تم حذف المدير "${name}" بنجاح`);
       loadAdmins();
-    } catch (err) { setError(err.message); }
+    } catch (err) { playError(); setError(err.message); }
   };
 
   const openAddForm = (role) => {

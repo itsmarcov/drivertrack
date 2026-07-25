@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -50,9 +51,11 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await login(username, password, token || '');
+      playSuccess();
       const target = data.user.role === 'driver' ? '/driver' : '/admin';
       navigate(target, { replace: true });
     } catch (err) {
+      playError();
       if (widgetId.current != null) window.grecaptcha?.reset(widgetId.current);
       setError(err.message);
     } finally {

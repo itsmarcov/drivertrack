@@ -8,6 +8,7 @@ import AddressGuide from '../components/AddressGuide';
 import AddressForm from '../components/AddressForm';
 import { useAuth } from '../context/AuthContext';
 import { qr, attendance, announcements as announcementsApi, drivers } from '../api';
+import { playSuccess, playNotification } from '../utils/sounds';
 
 function QRDisplay({ data }) {
   const qrValue = JSON.stringify({
@@ -81,7 +82,7 @@ export default function DriverDashboard() {
     announcementsApi.active().then((data) => {
       setAnnouncements(data);
       const firstUnread = data.find((a) => !a.is_read);
-      if (firstUnread) setCurrentAnnouncement(firstUnread);
+      if (firstUnread) { setCurrentAnnouncement(firstUnread); playNotification(); }
     }).catch(() => {});
     drivers.getAddress(user.id).then((data) => {
       const filled = data && (data.wilaya_code || data.wilaya_name || data.commune_code || data.commune_name);
@@ -97,6 +98,7 @@ export default function DriverDashboard() {
     if (!currentAnnouncement) return;
     try {
       await announcementsApi.markRead(currentAnnouncement.id);
+      playSuccess();
       setAnnouncements((prev) => {
         const updated = prev.map((a) => a.id === currentAnnouncement.id ? { ...a, is_read: true } : a);
         const nextUnread = updated.find((a) => !a.is_read);

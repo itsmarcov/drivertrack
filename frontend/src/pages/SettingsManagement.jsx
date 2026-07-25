@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { settings } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function SettingsManagement() {
   const [config, setConfig] = useState({
@@ -30,8 +31,10 @@ export default function SettingsManagement() {
     setMessage('');
     try {
       await settings.update(config);
+      playSuccess();
       setMessage('✅ تم حفظ الإعدادات بنجاح');
     } catch (err) {
+      playError();
       setMessage('❌ ' + err.message);
     } finally {
       setSaving(false);

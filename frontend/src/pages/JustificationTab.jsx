@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { justifications } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 const reasons = [
   { value: 'sick', label: 'مرض' },
@@ -68,6 +69,7 @@ export default function JustificationTab() {
     if (file) fd.append('proof', file);
     try {
       await justifications.submit(fd);
+      playSuccess();
       setSuccess('تم إرسال المبرر بنجاح');
       setReason('');
       setNote('');
@@ -77,6 +79,7 @@ export default function JustificationTab() {
       const h = await justifications.my();
       if (mounted.current) setHistory(h);
     } catch (err) {
+      playError();
       setError(err.message);
     } finally {
       setSubmitting(false);

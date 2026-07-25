@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { absenceRequests } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 const reasonOptions = [
   'مرض',
@@ -52,10 +53,12 @@ export default function AbsenceRequests({ compact }) {
     setSubmitting(true);
     try {
       await absenceRequests.create(form);
+      playSuccess();
       setSuccess('تم تقديم الطلب بنجاح');
       setForm({ date_from: '', date_to: '', reason: '', note: '' });
       fetchRequests();
     } catch (err) {
+      playError();
       setError(err.message);
     }
     setSubmitting(false);

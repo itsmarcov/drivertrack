@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { drivers } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -154,9 +155,11 @@ export default function AddressForm({ driverId, onSaved, compact }) {
         latitude: form.latitude,
         longitude: form.longitude,
       });
+      playSuccess();
       setHasExisting(true);
       onSaved?.();
     } catch (e) {
+      playError();
       setError(e.message || 'فشل الحفظ');
     }
     setSaving(false);

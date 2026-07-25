@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
 import { stations } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function StationsManagement() {
   const [list, setList] = useState([]);
@@ -31,8 +32,9 @@ export default function StationsManagement() {
       setShowForm(false);
       setEditing(null);
       setForm({ name: '', code: '' });
+      playSuccess();
       load();
-    } catch (err) { setError(err.message); }
+    } catch (err) { playError(); setError(err.message); }
   };
 
   const handleEdit = (s) => {
@@ -45,8 +47,9 @@ export default function StationsManagement() {
     if (!window.confirm(`هل أنت متأكد من حذف المحطة "${name}"؟`)) return;
     try {
       await stations.delete(id);
+      playSuccess();
       load();
-    } catch (err) { setError(err.message); }
+    } catch (err) { playError(); setError(err.message); }
   };
 
   if (loading) return <LoadingScreen />;

@@ -3,6 +3,7 @@ import LoadingScreen from '../components/LoadingScreen';
 import { useAuth } from '../context/AuthContext';
 import { drivers, stations } from '../api';
 import DriverProfile from './DriverProfile';
+import { playSuccess, playError } from '../utils/sounds';
 
 function DriverForm({ driver, onSave, onCancel }) {
   const [stationList, setStationList] = useState([]);
@@ -159,10 +160,12 @@ export default function DriversManagement() {
       } else {
         await drivers.create(payload);
       }
+      playSuccess();
       setShowForm(false);
       setEditingDriver(null);
       loadDrivers(filterStation, filterShift, search);
     } catch (err) {
+      playError();
       setError(err.message);
     }
   };
@@ -171,8 +174,10 @@ export default function DriversManagement() {
     if (!window.confirm(`هل أنت متأكد من حذف السائق "${name}"؟`)) return;
     try {
       await drivers.delete(id);
+      playSuccess();
       loadDrivers(filterStation, filterShift, search);
     } catch (err) {
+      playError();
       setError(err.message);
     }
   };

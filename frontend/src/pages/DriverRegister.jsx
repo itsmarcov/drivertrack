@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, stations } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 export default function DriverRegister() {
   const [form, setForm] = useState({ username: '', password: '', full_name: '', email: '', phone: '', vehicle_type: '', license_plate: '', station_id: '' });
@@ -24,9 +25,11 @@ export default function DriverRegister() {
     setLoading(true);
     try {
       const res = await auth.registerDriver(form);
+      playSuccess();
       setSuccess(res.message);
       setTimeout(() => navigate('/login'), 4000);
     } catch (err) {
+      playError();
       setError(err.message);
     } finally {
       setLoading(false);

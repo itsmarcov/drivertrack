@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { justifications } from '../api';
+import { playSuccess, playError } from '../utils/sounds';
 
 const STAT_CARDS = [
   { key: 'pendingCount', label: 'قيد المراجعة', icon: '\u23F3', cls: 'jstat-pending' },
@@ -71,8 +72,9 @@ export default function JustificationsReview() {
     setActionLoading(id);
     try {
       await justifications.review(id, { status: 'approved' });
+      playSuccess();
       fetchAll();
-    } catch (e) { setError(e.message); }
+    } catch (e) { playError(); setError(e.message); }
     finally { setActionLoading(null); }
   };
 
@@ -80,10 +82,11 @@ export default function JustificationsReview() {
     setActionLoading(id);
     try {
       await justifications.review(id, { status: 'rejected', admin_note: rejectNote || null });
+      playSuccess();
       setShowReject(null);
       setRejectNote('');
       fetchAll();
-    } catch (e) { setError(e.message); }
+    } catch (e) { playError(); setError(e.message); }
     finally { setActionLoading(null); }
   };
 
