@@ -170,6 +170,10 @@ export default function Navbar() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
             إرسال إشعارات
           </Link>
+          <Link to="/admin/reports" className={`nav-dd-link ${isActive('/admin/reports')}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            تبليغات السائقين
+          </Link>
           <Link to="/admin/activity-logs" className={`nav-dd-link ${isActive('/admin/activity-logs')}`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             سجل النشاطات
@@ -217,6 +221,7 @@ export default function Navbar() {
           <Link to="/admin/ops" className={`nav-link ${isActive('/admin/ops')}`} onClick={onClick}>المشغلين</Link>
           <Link to="/admin/stations" className={`nav-link ${isActive('/admin/stations')}`} onClick={onClick}>المحطات</Link>
           <Link to="/admin/announcements" className={`nav-link ${isActive('/admin/announcements')}`} onClick={onClick}>إرسال إشعارات</Link>
+          <Link to="/admin/reports" className={`nav-link ${isActive('/admin/reports')}`} onClick={onClick}>تبليغات السائقين</Link>
           <Link to="/admin/activity-logs" className={`nav-link ${isActive('/admin/activity-logs')}`} onClick={onClick}>سجل النشاطات</Link>
         </>
       )}

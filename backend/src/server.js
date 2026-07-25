@@ -23,6 +23,7 @@ const justificationRoutes = require('./routes/justifications');
 const notificationRoutes = require('./routes/notifications');
 const activityLogRoutes = require('./routes/activity_logs');
 const announcementRoutes = require('./routes/announcements');
+const driverReportRoutes = require('./routes/driver_reports');
 const tempClearRoutes = require('./routes/temp_clear');
 
 const app = express();
@@ -69,6 +70,7 @@ app.use('/api/justifications', justificationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/driver-reports', driverReportRoutes);
 app.use('/api/admin', tempClearRoutes);
 
 app.get('/api/health', (req, res) => {

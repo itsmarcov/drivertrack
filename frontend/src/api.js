@@ -227,3 +227,14 @@ export const announcements = {
   markRead: (id) => request(`/announcements/${id}/read`, { method: 'POST' }),
   readers: (id) => request(`/announcements/${id}/readers`),
 };
+
+export const driverReports = {
+  my: () => request('/driver-reports/my'),
+  create: (data) => request('/driver-reports', { method: 'POST', body: JSON.stringify(data) }),
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/driver-reports${qs ? '?' + qs : ''}`);
+  },
+  update: (id, data) => request(`/driver-reports/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id) => request(`/driver-reports/${id}`, { method: 'DELETE' }),
+};

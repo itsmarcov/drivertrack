@@ -113,6 +113,21 @@ async function initDatabase() {
       read_at TIMESTAMP DEFAULT NOW(),
       UNIQUE(announcement_id, driver_id)
     )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS driver_reports (
+      id SERIAL PRIMARY KEY,
+      driver_id INTEGER NOT NULL REFERENCES users(id),
+      report_type VARCHAR(20) NOT NULL CHECK(report_type IN ('problem', 'suggestion')),
+      category VARCHAR(50) NOT NULL,
+      message TEXT NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending' CHECK(status IN ('pending', 'reviewed', 'resolved')),
+      admin_reply TEXT,
+      reviewed_by INTEGER REFERENCES users(id),
+      reviewed_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    )`);
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_driver_reports_driver_id ON driver_reports(driver_id)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_driver_reports_status ON driver_reports(status)");
   } catch {}
   return pool;
 }
