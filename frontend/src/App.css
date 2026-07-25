@@ -4042,14 +4042,14 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--nx-primary);
+  background: linear-gradient(135deg, #E53935, #B71C1C);
   color: #fff;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(229, 57, 53, 0.4);
+  box-shadow: 0 4px 20px rgba(229, 57, 53, 0.5);
   transition: all 0.2s ease;
   z-index: 900;
 }
