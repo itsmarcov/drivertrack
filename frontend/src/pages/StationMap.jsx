@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { stations } from '../api';
 import { playSuccess, playError } from '../utils/sounds';
-import { fetchCommuneBoundaries } from '../utils/communeBoundaries';
+import { loadBoundaries } from '../utils/communeBoundaries';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -13,13 +13,26 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-const stationIcon = new L.DivIcon({
-  className: 'map-station-icon',
-  html: '<div style="background:#E53935;color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:0 2px 8px rgba(229,57,53,0.5);border:2px solid #fff;">📌</div>',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-  popupAnchor: [0, -36],
-});
+const STATION_COLORS = [
+  '#E53935', '#1E88E5', '#43A047', '#FB8C00', '#8E24AA',
+  '#00ACC1', '#F4511E', '#3949AB', '#7CB342', '#D81B60',
+  '#5C6BC0', '#26A69A', '#AB47BC', '#EF5350', '#29B6F6',
+  '#9CCC65', '#FFA726', '#EC407A', '#5E35B1', '#00E676',
+];
+
+function getStationColor(index) {
+  return STATION_COLORS[index % STATION_COLORS.length];
+}
+
+function makeStationIcon(color) {
+  return new L.DivIcon({
+    className: 'map-station-icon',
+    html: `<div style="background:${color};color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:0 2px 8px ${color}80;border:2px solid #fff;">📌</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -36],
+  });
+}
 
 const driverIcon = new L.DivIcon({
   className: 'map-driver-icon',
@@ -49,34 +62,47 @@ function ClickMarker({ position, onClick }) {
   return <Marker position={[position.lat, position.lng]} />;
 }
 
-function CommuneBoundaryLayer({ coverageNames, algeriaCommunes }) {
-  const [features, setFeatures] = useState([]);
+function CoverageLayer({ stations: stationList, selectedStationId, showAll, boundaries }) {
+  const features = useMemo(() => {
+    const result = [];
+    const targetStations = showAll
+      ? stationList
+      : stationList.filter((s) => s.id === selectedStationId);
 
-  const communeInfoList = useMemo(() => {
-    return coverageNames.map((arName) => {
-      const found = algeriaCommunes.find((c) => c.name_ar === arName);
-      return { nameAr: arName, nameFr: found?.name_fr || '' };
+    targetStations.forEach((s, idx) => {
+      if (!s.coverage_communes) return;
+      const names = s.coverage_communes.split(',').map((n) => n.trim()).filter(Boolean);
+      const color = getStationColor(stationList.indexOf(s));
+
+      names.forEach((name) => {
+        const boundary = boundaries.find(
+          (f) => f.properties.nameAr === name || f.properties.nameFr === name
+        );
+        if (boundary) {
+          result.push({
+            ...boundary,
+            properties: { ...boundary.properties, stationName: s.name, stationId: s.id, color },
+          });
+        }
+      });
     });
-  }, [coverageNames.join(','), algeriaCommunes.length]);
-
-  useEffect(() => {
-    if (communeInfoList.length === 0) { setFeatures([]); return; }
-    let cancelled = false;
-    (async () => {
-      const results = await fetchCommuneBoundaries(communeInfoList);
-      if (!cancelled) setFeatures(results.filter(Boolean));
-    })();
-    return () => { cancelled = true; };
-  }, [communeInfoList.map((c) => c.nameAr).join(',')]);
+    return result;
+  }, [stationList, selectedStationId, showAll, boundaries]);
 
   if (features.length === 0) return null;
   return (
     <>
-      {features.map((f) => (
+      {features.map((f, i) => (
         <GeoJSON
-          key={`boundary-${f.properties.nameAr || f.properties.nameFr}`}
+          key={`cov-${f.properties.stationId}-${f.properties.nameAr || i}`}
           data={f}
-          style={{ color: '#E53935', fillColor: '#E53935', fillOpacity: 0.18, weight: 2, dashArray: '6 3' }}
+          style={{
+            color: f.properties.color,
+            fillColor: f.properties.color,
+            fillOpacity: 0.2,
+            weight: 2.5,
+            opacity: 0.8,
+          }}
         />
       ))}
     </>
@@ -90,6 +116,7 @@ export default function StationMap() {
   const [form, setForm] = useState({ name: '', code: '', latitude: '', longitude: '', commune_name: '', coverage_communes: '' });
   const [communes, setCommunes] = useState([]);
   const [wilayas, setWilayas] = useState([]);
+  const [boundaryData, setBoundaryData] = useState([]);
   const [coverageSearch, setCoverageSearch] = useState('');
   const [showCoverageList, setShowCoverageList] = useState(false);
   const [coverageWilaya, setCoverageWilaya] = useState('');
@@ -97,14 +124,21 @@ export default function StationMap() {
   const [sidebarTab, setSidebarTab] = useState('stations');
   const [saving, setSaving] = useState(false);
   const [filterStation, setFilterStation] = useState('');
+  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [showAllCoverage, setShowAllCoverage] = useState(false);
 
   const load = async () => {
     try {
       setLoading(true);
-      const [mapData, algeria] = await Promise.all([stations.mapData(), getAlgeriaData()]);
+      const [mapData, algeria, boundaries] = await Promise.all([
+        stations.mapData(),
+        getAlgeriaData(),
+        loadBoundaries(),
+      ]);
       setData(mapData);
       setCommunes(algeria.communes || []);
       setWilayas(algeria.wilayas || []);
+      setBoundaryData(boundaries?.features || []);
     } catch {}
     finally { setLoading(false); }
   };
@@ -209,6 +243,12 @@ export default function StationMap() {
     setSaving(false);
   };
 
+  const handleStationClick = useCallback((station) => {
+    if (editStation) return;
+    setSelectedStationId((prev) => (prev === station.id ? null : station.id));
+    setShowAllCoverage(false);
+  }, [editStation]);
+
   const mapCenter = useMemo(() => {
     if (markerPos) return [markerPos.lat, markerPos.lng];
     if (data.stations.length > 0) {
@@ -249,19 +289,46 @@ export default function StationMap() {
           </div>
         )}
 
+        {sidebarTab === 'stations' && (
+          <div className="sm-filter">
+            <button
+              className={`btn btn-sm ${showAllCoverage ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => { setShowAllCoverage(!showAllCoverage); setSelectedStationId(null); }}
+              style={{ width: '100%', fontSize: 12 }}
+            >
+              {showAllCoverage ? 'إخفاء التغطية' : 'عرض تغطية جميع المحطات'}
+            </button>
+          </div>
+        )}
+
         <div className="sm-sidebar-list">
-          {sidebarTab === 'stations' && data.stations.map((s) => (
-            <div key={s.id} className={`sm-sidebar-item ${editStation?.id === s.id ? 'active' : ''}`} onClick={() => openEdit(s)}>
-              <div className="sm-sidebar-item-icon" style={{ background: '#E5393520', color: '#E53935' }}>📌</div>
-              <div className="sm-sidebar-item-info">
-                <div className="sm-sidebar-item-name">{s.name}</div>
-                <div className="sm-sidebar-item-meta">{s.code} {s.commune_name ? `· ${s.commune_name}` : ''}</div>
+          {sidebarTab === 'stations' && data.stations.map((s, idx) => {
+            const color = getStationColor(idx);
+            const isSelected = selectedStationId === s.id;
+            return (
+              <div
+                key={s.id}
+                className={`sm-sidebar-item ${isSelected ? 'active' : ''}`}
+                onClick={() => { handleStationClick(s); openEdit(s); }}
+              >
+                <div className="sm-sidebar-item-icon" style={{ background: `${color}18`, color }}>
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, display: 'inline-block' }}></span>
+                </div>
+                <div className="sm-sidebar-item-info">
+                  <div className="sm-sidebar-item-name">{s.name}</div>
+                  <div className="sm-sidebar-item-meta">{s.code} {s.commune_name ? `· ${s.commune_name}` : ''}</div>
+                  {s.coverage_communes && (
+                    <div className="sm-sidebar-item-meta" style={{ color: 'var(--nx-primary)', fontSize: 10 }}>
+                      {s.coverage_communes.split(',').length} بلدية
+                    </div>
+                  )}
+                </div>
+                <div className="sm-sidebar-item-status">
+                  {s.latitude ? <span className="badge badge-success">📍</span> : <span className="badge badge-warning">?</span>}
+                </div>
               </div>
-              <div className="sm-sidebar-item-status">
-                {s.latitude ? <span className="badge badge-success">📍</span> : <span className="badge badge-warning">?</span>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {sidebarTab === 'drivers' && filteredDrivers.map((d) => (
             <div key={d.id} className="sm-sidebar-item">
               <div className="sm-sidebar-item-icon" style={{ background: '#3B82F620', color: '#3B82F6' }}>🚗</div>
@@ -281,21 +348,26 @@ export default function StationMap() {
 
           {editStation && <ClickMarker position={markerPos} onClick={handleMapClick} />}
 
-          {data.stations.filter((s) => s.latitude && s.longitude).map((s) => (
-            <Marker
-              key={`s-${s.id}`}
-              position={[Number(s.latitude), Number(s.longitude)]}
-              icon={stationIcon}
-              eventHandlers={{ click: () => openEdit(s) }}
-            >
-              <Popup>
-                <strong>{s.name}</strong><br />
-                {s.code}<br />
-                {s.commune_name && <>{s.commune_name}<br /></>}
-                {s.coverage_communes && <span style={{ fontSize: 12, color: '#666' }}>التغطية: {s.coverage_communes}</span>}
-              </Popup>
-            </Marker>
-          ))}
+          {data.stations.filter((s) => s.latitude && s.longitude).map((s, idx) => {
+            const color = getStationColor(data.stations.indexOf(s));
+            return (
+              <Marker
+                key={`s-${s.id}`}
+                position={[Number(s.latitude), Number(s.longitude)]}
+                icon={makeStationIcon(color)}
+                eventHandlers={{ click: () => { handleStationClick(s); openEdit(s); } }}
+              >
+                <Popup>
+                  <strong>{s.name}</strong><br />
+                  {s.code}<br />
+                  {s.commune_name && <>{s.commune_name}<br /></>}
+                  {s.coverage_communes && (
+                    <span style={{ fontSize: 12, color: '#666' }}>التغطية: {s.coverage_communes.split(',').length} بلدية</span>
+                  )}
+                </Popup>
+              </Marker>
+            );
+          })}
 
           {filteredDrivers.filter((d) => d.latitude && d.longitude).map((d) => (
             <Marker
@@ -311,18 +383,19 @@ export default function StationMap() {
             </Marker>
           ))}
 
-          {coverageCommunesList.length > 0 && (
-            <CommuneBoundaryLayer coverageNames={coverageCommunesList} algeriaCommunes={communes} />
-          )}
+          <CoverageLayer
+            stations={data.stations}
+            selectedStationId={selectedStationId}
+            showAll={showAllCoverage}
+            boundaries={boundaryData}
+          />
         </MapContainer>
 
-        {!editStation && (
-          <div className="sm-legend">
-            <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#E53935' }}></span> المحطة</div>
-            <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#3B82F6' }}></span> السائق</div>
-            <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#E53935', opacity: 0.3, border: '2px dashed #E53935' }}></span> منطقة التغطية</div>
-          </div>
-        )}
+        <div className="sm-legend">
+          <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#E53935' }}></span> المحطة</div>
+          <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#3B82F6' }}></span> السائق</div>
+          <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#888', width: 14, height: 10, borderRadius: 2, opacity: 0.5 }}></span> منطقة التغطية</div>
+        </div>
       </div>
 
       {editStation && (
@@ -369,7 +442,7 @@ export default function StationMap() {
                   <option value="">جميع الولايات</option>
                   {wilayas.map((w) => <option key={w.code} value={w.name_ar}>{w.name_ar}</option>)}
                 </select>
-                <span className="sf-coverage-hint">فلتر حسب الولاية أو ابحث في جميع الولايات</span>
+                <span className="sf-coverage-hint">فلتر حسب الولاية</span>
               </div>
               <div className="sm-coverage-input-wrap">
                 <input
