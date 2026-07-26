@@ -130,6 +130,7 @@ async function initDatabase() {
     await pool.query("CREATE INDEX IF NOT EXISTS idx_driver_reports_status ON driver_reports(status)");
     await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,7)");
     await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS longitude DECIMAL(10,7)");
+    await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS wilaya_name VARCHAR(100)");
     await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS commune_name VARCHAR(100)");
     await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS coverage_communes TEXT");
   } catch {}

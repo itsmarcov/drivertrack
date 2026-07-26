@@ -4113,6 +4113,121 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 
 /* ════════════════════════════════════════════════
+   Station Form — Enhanced
+   ════════════════════════════════════════════════ */
+.modal-lg {
+  max-width: 640px;
+}
+.sf-row {
+  display: flex;
+  gap: 12px;
+}
+.sf-grow {
+  flex: 1;
+  min-width: 0;
+}
+.sf-map-wrap {
+  border-radius: var(--nx-radius);
+  overflow: hidden;
+  border: 1px solid var(--nx-border);
+  margin-bottom: 4px;
+}
+.sf-map-hint {
+  font-size: 11px;
+  color: var(--nx-text-muted);
+  text-align: center;
+  padding: 6px;
+  background: var(--nx-bg-glass);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.sf-commune-input-wrap {
+  position: relative;
+}
+.sf-commune-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--nx-card);
+  border: 1px solid var(--nx-border);
+  border-radius: 0 0 var(--nx-radius) var(--nx-radius);
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.sf-commune-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.sf-commune-option:hover {
+  background: var(--nx-bg-glass);
+}
+.sf-coverage-wilaya-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.sf-coverage-wilaya-row select {
+  width: 200px;
+  flex-shrink: 0;
+}
+.sf-coverage-hint {
+  font-size: 11px;
+  color: var(--nx-text-muted);
+}
+.sf-coverage-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.sf-coverage-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(229, 57, 53, 0.08);
+  color: var(--nx-primary);
+  border-radius: var(--nx-radius-full);
+  font-size: 12px;
+  font-weight: 500;
+}
+.sf-coverage-tag button {
+  background: none;
+  border: none;
+  color: var(--nx-primary);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+  opacity: 0.6;
+}
+.sf-coverage-tag button:hover {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .sf-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .sf-coverage-wilaya-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sf-coverage-wilaya-row select {
+    width: 100%;
+  }
+}
+
+/* ════════════════════════════════════════════════
    Station Map — Admin
    ════════════════════════════════════════════════ */
 .sm-page {
