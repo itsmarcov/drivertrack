@@ -85,9 +85,17 @@ function CoverageLayer({ stations: stationList, selectedStationId, showAll, boun
       const color = getStationColor(stationList.indexOf(s));
 
       names.forEach((name) => {
-        const boundary = boundaries.find(
+        let boundary = boundaries.find(
           (f) => f.properties.nameAr === name || f.properties.nameFr === name
         );
+        if (!boundary) {
+          const commune = allCommunes.find((c) => c.name_ar === name || c.name_fr === name);
+          if (commune) {
+            boundary = boundaries.find(
+              (f) => f.properties.nameFr === commune.name_fr || f.properties.nameAr === commune.name_ar
+            );
+          }
+        }
         if (boundary) {
           result.push({
             ...boundary,
