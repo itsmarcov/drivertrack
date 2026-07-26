@@ -62,14 +62,24 @@ function ClickMarker({ position, onClick }) {
   return <Marker position={[position.lat, position.lng]} />;
 }
 
-function CoverageLayer({ stations: stationList, selectedStationId, showAll, boundaries }) {
+function makeFallbackPolygon(lat, lng) {
+  const r = 0.035;
+  const angles = [30, 90, 150, 210, 270, 330, 30];
+  const coords = angles.map((a) => {
+    const rad = (a * Math.PI) / 180;
+    return [lng + r * Math.cos(rad), lat + r * Math.sin(rad) * 0.75];
+  });
+  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [coords] } };
+}
+
+function CoverageLayer({ stations: stationList, selectedStationId, showAll, boundaries, allCommunes }) {
   const features = useMemo(() => {
     const result = [];
     const targetStations = showAll
       ? stationList
       : stationList.filter((s) => s.id === selectedStationId);
 
-    targetStations.forEach((s, idx) => {
+    targetStations.forEach((s) => {
       if (!s.coverage_communes) return;
       const names = s.coverage_communes.split(',').map((n) => n.trim()).filter(Boolean);
       const color = getStationColor(stationList.indexOf(s));
@@ -83,11 +93,20 @@ function CoverageLayer({ stations: stationList, selectedStationId, showAll, boun
             ...boundary,
             properties: { ...boundary.properties, stationName: s.name, stationId: s.id, color },
           });
+        } else {
+          const commune = allCommunes.find((c) => c.name_ar === name || c.name_fr === name);
+          if (commune && commune.lat && commune.lng) {
+            const fb = makeFallbackPolygon(commune.lat, commune.lng);
+            result.push({
+              ...fb,
+              properties: { nameAr: name, nameFr: commune.name_fr || '', stationName: s.name, stationId: s.id, color },
+            });
+          }
         }
       });
     });
     return result;
-  }, [stationList, selectedStationId, showAll, boundaries]);
+  }, [stationList, selectedStationId, showAll, boundaries, allCommunes]);
 
   if (features.length === 0) return null;
   return (
@@ -388,6 +407,7 @@ export default function StationMap() {
             selectedStationId={selectedStationId}
             showAll={showAllCoverage}
             boundaries={boundaryData}
+            allCommunes={communes}
           />
         </MapContainer>
 
