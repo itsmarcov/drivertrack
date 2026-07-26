@@ -74,10 +74,11 @@ export default function StationsManagement() {
   }, [selectedWilaya, communes]);
 
   const filteredStationCommunes = useMemo(() => {
-    if (!communeSearch) return stationCommunes.slice(0, 20);
+    const available = stationCommunes.filter((c) => c.name_ar !== form.commune_name);
+    if (!communeSearch) return available.slice(0, 20);
     const q = communeSearch.toLowerCase();
-    return stationCommunes.filter((c) => c.name_ar.includes(communeSearch) || c.name_fr.toLowerCase().includes(q)).slice(0, 15);
-  }, [communeSearch, stationCommunes]);
+    return available.filter((c) => c.name_ar.includes(communeSearch) || c.name_fr.toLowerCase().includes(q)).slice(0, 15);
+  }, [communeSearch, stationCommunes, form.commune_name]);
 
   const coverageWilayaObj = useMemo(() => {
     if (!coverageWilaya) return selectedWilaya;
@@ -85,9 +86,9 @@ export default function StationsManagement() {
   }, [coverageWilaya, selectedWilaya, wilayas]);
 
   const coverageCommunesPool = useMemo(() => {
-    if (!coverageWilayaObj) return [];
-    return communes.filter((c) => c.wilaya_code === coverageWilayaObj.code);
-  }, [coverageWilayaObj, communes]);
+    const base = coverageWilayaObj ? communes.filter((c) => c.wilaya_code === coverageWilayaObj.code) : communes;
+    return base.filter((c) => !coverageList.includes(c.name_ar));
+  }, [coverageWilayaObj, communes, coverageList]);
 
   const filteredCoverageCommunes = useMemo(() => {
     if (!coverageSearch) return coverageCommunesPool.slice(0, 20);
@@ -295,10 +296,10 @@ export default function StationsManagement() {
                 <label className="form-label">منطقة التغطية (البلديات التي تغطيها المحطة)</label>
                 <div className="sf-coverage-wilaya-row">
                   <select className="form-input" value={coverageWilaya} onChange={(e) => { setCoverageWilaya(e.target.value); setCoverageSearch(''); }}>
-                    <option value="">{form.wilaya_name || 'اختر الولاية أولاً'}</option>
+                    <option value="">جميع الولايات</option>
                     {wilayas.map((w) => <option key={w.code} value={w.name_ar}>{w.name_ar} ({w.name_fr})</option>)}
                   </select>
-                  <span className="sf-coverage-hint">اختر ولاية أخرى لإضافة بلديات خارج الولاية</span>
+                  <span className="sf-coverage-hint">اختر ولاية محددة أو ابحث في جميع الولايات</span>
                 </div>
                 <div className="sf-commune-input-wrap">
                   <input
@@ -306,17 +307,19 @@ export default function StationsManagement() {
                     value={coverageSearch}
                     onChange={(e) => { setCoverageSearch(e.target.value); setShowCoverageList(true); }}
                     onFocus={() => setShowCoverageList(true)}
-                    placeholder={!coverageWilayaObj ? 'اختر الولاية أولاً...' : `ابحث عن بلدية في ${coverageWilayaObj.name_ar}...`}
-                    disabled={!coverageWilayaObj}
+                    placeholder="ابحث عن بلدية..."
                   />
                   {showCoverageList && filteredCoverageCommunes.length > 0 && (
                     <div className="sf-commune-dropdown">
-                      {filteredCoverageCommunes.map((c) => (
-                        <div key={c.code} className="sf-commune-option" onClick={() => addCoverageCommune(c)}>
-                          <span>{c.name_ar}</span>
-                          <span style={{ fontSize: 11, color: '#999' }}>{c.name_fr}</span>
-                        </div>
-                      ))}
+                      {filteredCoverageCommunes.map((c) => {
+                        const wilaya = wilayas.find((w) => w.code === c.wilaya_code);
+                        return (
+                          <div key={c.code} className="sf-commune-option" onClick={() => addCoverageCommune(c)}>
+                            <span>{c.name_ar}</span>
+                            <span style={{ fontSize: 11, color: '#999' }}>{wilaya ? wilaya.name_ar : ''} · {c.name_fr}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

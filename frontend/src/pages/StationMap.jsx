@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet';
+import { useState, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { stations } from '../api';
 import { playSuccess, playError } from '../utils/sounds';
+import { fetchCommuneBoundaries } from '../utils/communeBoundaries';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -48,6 +49,33 @@ function ClickMarker({ position, onClick }) {
   return <Marker position={[position.lat, position.lng]} />;
 }
 
+function CommuneBoundaryLayer({ communesList, algeriaCommunes }) {
+  const [features, setFeatures] = useState([]);
+
+  useEffect(() => {
+    if (communesList.length === 0) { setFeatures([]); return; }
+    let cancelled = false;
+    (async () => {
+      const results = await fetchCommuneBoundaries(communesList);
+      if (!cancelled) setFeatures(results.filter(Boolean));
+    })();
+    return () => { cancelled = true; };
+  }, [communesList.join(',')]);
+
+  if (features.length === 0) return null;
+  return (
+    <>
+      {features.map((f) => (
+        <GeoJSON
+          key={`boundary-${f.properties.name}`}
+          data={f}
+          style={{ color: '#E53935', fillColor: '#E53935', fillOpacity: 0.1, weight: 2, dashArray: '5 5' }}
+        />
+      ))}
+    </>
+  );
+}
+
 export default function StationMap() {
   const [data, setData] = useState({ stations: [], drivers: [] });
   const [loading, setLoading] = useState(true);
@@ -57,6 +85,7 @@ export default function StationMap() {
   const [wilayas, setWilayas] = useState([]);
   const [coverageSearch, setCoverageSearch] = useState('');
   const [showCoverageList, setShowCoverageList] = useState(false);
+  const [coverageWilaya, setCoverageWilaya] = useState('');
   const [markerPos, setMarkerPos] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('stations');
   const [saving, setSaving] = useState(false);
@@ -85,20 +114,24 @@ export default function StationMap() {
     return form.coverage_communes.split(',').map((s) => s.trim()).filter(Boolean);
   }, [form.coverage_communes]);
 
-  const matchedCoverageCommunes = useMemo(() => {
-    if (coverageCommunesList.length === 0) return [];
-    return communes.filter((c) =>
-      coverageCommunesList.some((name) => c.name_ar === name || c.name_fr.toLowerCase() === name.toLowerCase())
-    );
-  }, [coverageCommunesList, communes]);
+  const coverageWilayaObj = useMemo(() => {
+    if (!coverageWilaya) return null;
+    return wilayas.find((w) => w.name_ar === coverageWilaya) || null;
+  }, [coverageWilaya, wilayas]);
+
+  const coveragePool = useMemo(() => {
+    if (!coverageWilayaObj) return communes;
+    return communes.filter((c) => c.wilaya_code === coverageWilayaObj.code);
+  }, [coverageWilayaObj, communes]);
 
   const filteredCommunes = useMemo(() => {
-    if (!coverageSearch) return [];
+    const available = coveragePool.filter((c) => !coverageCommunesList.includes(c.name_ar));
+    if (!coverageSearch) return available.slice(0, 15);
     const q = coverageSearch.toLowerCase();
-    return communes.filter((c) =>
+    return available.filter((c) =>
       c.name_ar.includes(coverageSearch) || c.name_fr.toLowerCase().includes(q)
     ).slice(0, 15);
-  }, [coverageSearch, communes]);
+  }, [coverageSearch, coveragePool, coverageCommunesList]);
 
   const openEdit = (s) => {
     setEditStation(s);
@@ -112,6 +145,7 @@ export default function StationMap() {
     });
     setMarkerPos(s.latitude && s.longitude ? { lat: Number(s.latitude), lng: Number(s.longitude) } : null);
     setCoverageSearch('');
+    setCoverageWilaya('');
     setShowCoverageList(false);
   };
 
@@ -120,6 +154,7 @@ export default function StationMap() {
     setForm({ name: '', code: '', latitude: '', longitude: '', commune_name: '', coverage_communes: '' });
     setMarkerPos(null);
     setCoverageSearch('');
+    setCoverageWilaya('');
   };
 
   const handleMapClick = (pos) => {
@@ -269,21 +304,16 @@ export default function StationMap() {
             </Marker>
           ))}
 
-          {matchedCoverageCommunes.map((c) => (
-            <Circle
-              key={`cov-${c.code}`}
-              center={[c.lat, c.lng]}
-              radius={8000}
-              pathOptions={{ color: '#E53935', fillColor: '#E53935', fillOpacity: 0.08, weight: 1, dashArray: '4 4' }}
-            />
-          ))}
+          {coverageCommunesList.length > 0 && (
+            <CommuneBoundaryLayer communesList={coverageCommunesList} algeriaCommunes={communes} />
+          )}
         </MapContainer>
 
         {!editStation && (
           <div className="sm-legend">
             <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#E53935' }}></span> المحطة</div>
             <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#3B82F6' }}></span> السائق</div>
-            <div className="sm-legend-item"><span className="sm-legend-circle"></span> منطقة التغطية</div>
+            <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#E53935', opacity: 0.3, border: '2px dashed #E53935' }}></span> منطقة التغطية</div>
           </div>
         )}
       </div>
@@ -326,7 +356,14 @@ export default function StationMap() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">منطقة التغطية (اسم البلدية)</label>
+              <label className="form-label">منطقة التغطية</label>
+              <div className="sf-coverage-wilaya-row">
+                <select className="form-input" value={coverageWilaya} onChange={(e) => { setCoverageWilaya(e.target.value); setCoverageSearch(''); }}>
+                  <option value="">جميع الولايات</option>
+                  {wilayas.map((w) => <option key={w.code} value={w.name_ar}>{w.name_ar}</option>)}
+                </select>
+                <span className="sf-coverage-hint">فلتر حسب الولاية أو ابحث في جميع الولايات</span>
+              </div>
               <div className="sm-coverage-input-wrap">
                 <input
                   className="form-input"
@@ -337,12 +374,15 @@ export default function StationMap() {
                 />
                 {showCoverageList && filteredCommunes.length > 0 && (
                   <div className="sm-coverage-dropdown">
-                    {filteredCommunes.map((c) => (
-                      <div key={c.code} className="sm-coverage-option" onClick={() => addCoverageCommune(c)}>
-                        <span>{c.name_ar}</span>
-                        <span style={{ fontSize: 11, color: '#999' }}>{c.name_fr}</span>
-                      </div>
-                    ))}
+                    {filteredCommunes.map((c) => {
+                      const wilaya = wilayas.find((w) => w.code === c.wilaya_code);
+                      return (
+                        <div key={c.code} className="sm-coverage-option" onClick={() => addCoverageCommune(c)}>
+                          <span>{c.name_ar}</span>
+                          <span style={{ fontSize: 11, color: '#999' }}>{wilaya ? wilaya.name_ar : ''} · {c.name_fr}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
