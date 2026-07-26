@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -80,6 +80,11 @@ export default function StationsManagement() {
     return available.filter((c) => c.name_ar.includes(communeSearch) || c.name_fr.toLowerCase().includes(q)).slice(0, 15);
   }, [communeSearch, stationCommunes, form.commune_name]);
 
+  const coverageList = useMemo(() => {
+    if (!form.coverage_communes) return [];
+    return form.coverage_communes.split(',').map((s) => s.trim()).filter(Boolean);
+  }, [form.coverage_communes]);
+
   const coverageWilayaObj = useMemo(() => {
     if (!coverageWilaya) return selectedWilaya;
     return wilayas.find((w) => w.name_ar === coverageWilaya) || selectedWilaya;
@@ -95,11 +100,6 @@ export default function StationsManagement() {
     const q = coverageSearch.toLowerCase();
     return coverageCommunesPool.filter((c) => c.name_ar.includes(coverageSearch) || c.name_fr.toLowerCase().includes(q)).slice(0, 15);
   }, [coverageSearch, coverageCommunesPool]);
-
-  const coverageList = useMemo(() => {
-    if (!form.coverage_communes) return [];
-    return form.coverage_communes.split(',').map((s) => s.trim()).filter(Boolean);
-  }, [form.coverage_communes]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
