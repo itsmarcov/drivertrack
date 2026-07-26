@@ -1,10 +1,10 @@
-const CACHE_KEY = 'commune_boundaries_cache';
+const CACHE_KEY = 'commune_boundaries_v2';
 
 function loadCache() {
-  try { return JSON.parse(sessionStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch { return {}; }
 }
 function saveCache(cache) {
-  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch {}
 }
 
 const cache = loadCache();
@@ -23,7 +23,9 @@ function osmToGeoJSON(data) {
     if (seen.has(el.id)) return;
     seen.add(el.id);
 
-    const name = el.tags?.name || el.tags?.['name:ar'] || '';
+    const nameAr = el.tags?.['name:ar'] || '';
+    const nameFr = el.tags?.['name:fr'] || el.tags?.name || '';
+    const name = nameAr || nameFr;
     if (!name) return;
 
     let coords = [];
@@ -49,7 +51,7 @@ function osmToGeoJSON(data) {
     if (coords.length > 0) {
       features.push({
         type: 'Feature',
-        properties: { name, osmId: el.id },
+        properties: { nameAr, nameFr, osmId: el.id },
         geometry: { type: 'Polygon', coordinates: coords },
       });
     }
@@ -61,40 +63,68 @@ function osmToGeoJSON(data) {
 const DZ_BBOX = '18.96,-2.17,37.09,11.99';
 const inflight = {};
 
-export async function fetchCommuneBoundaries(communeNames) {
-  const toFetch = communeNames.filter((n) => n && !cache[n]);
-  if (toFetch.length === 0) return communeNames.map((n) => cache[n]).filter(Boolean);
-
-  const BATCH = 5;
-  for (let i = 0; i < toFetch.length; i += BATCH) {
-    const batch = toFetch.slice(i, i + BATCH);
-    const promises = batch.map((name) => {
-      if (inflight[name]) return inflight[name];
-
-      const query = `[out:json][timeout:8];
+function buildQuery(searchName) {
+  const escaped = searchName.replace(/"/g, '\\"');
+  return `[out:json][timeout:15];
 (
-  way["boundary"="administrative"]["admin_level"~"^(7|8)$"]["name"="${name}"](${DZ_BBOX});
-  relation["boundary"="administrative"]["admin_level"~"^(7|8)$"]["name"="${name}"](${DZ_BBOX});
+  way["boundary"="administrative"]["admin_level"~"^(7|8)$"]["name"="${escaped}"](${DZ_BBOX});
+  relation["boundary"="administrative"]["admin_level"~"^(7|8)$"]["name"="${escaped}"](${DZ_BBOX});
 );
 out body;
 >;
 out skel qt;`;
+}
 
-      const promise = fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body: `data=${encodeURIComponent(query)}`,
-      })
-        .then((r) => r.json())
-        .then((data) => {
-          const features = osmToGeoJSON(data);
-          const match = features.find((f) => f.properties.name === name);
-          cache[name] = match || null;
+async function queryOverpass(query) {
+  const res = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    body: `data=${encodeURIComponent(query)}`,
+  });
+  if (!res.ok) throw new Error('Overpass API error');
+  return res.json();
+}
+
+async function searchBoundary(nameAr, nameFr) {
+  const names = [nameFr, nameAr].filter(Boolean);
+  for (const searchName of names) {
+    try {
+      const data = await queryOverpass(buildQuery(searchName));
+      const features = osmToGeoJSON(data);
+      const match = features.find((f) =>
+        (nameAr && (f.properties.nameAr === nameAr || f.properties.nameFr === nameAr)) ||
+        (nameFr && (f.properties.nameFr === nameFr || f.properties.nameAr === nameFr)) ||
+        f.properties.nameFr.toLowerCase() === searchName.toLowerCase()
+      );
+      if (match) return match;
+    } catch {}
+  }
+  return null;
+}
+
+export async function fetchCommuneBoundaries(communeInfoList) {
+  const toFetch = communeInfoList.filter((c) => c.nameAr && !cache[c.nameAr]);
+  if (toFetch.length === 0) return communeInfoList.map((c) => cache[c.nameAr]).filter(Boolean);
+
+  const BATCH = 3;
+  for (let i = 0; i < toFetch.length; i += BATCH) {
+    const batch = toFetch.slice(i, i + BATCH);
+    const promises = batch.map((info) => {
+      const key = info.nameAr;
+      if (inflight[key]) return inflight[key];
+
+      const promise = (async () => {
+        try {
+          const match = await searchBoundary(info.nameAr, info.nameFr);
+          cache[key] = match || null;
           return match || null;
-        })
-        .catch(() => null)
-        .finally(() => { delete inflight[name]; });
+        } catch {
+          return null;
+        } finally {
+          delete inflight[key];
+        }
+      })();
 
-      inflight[name] = promise;
+      inflight[key] = promise;
       return promise;
     });
 
@@ -102,10 +132,10 @@ out skel qt;`;
   }
 
   saveCache(cache);
-  return communeNames.map((n) => cache[n]).filter(Boolean);
+  return communeInfoList.map((c) => cache[c.nameAr]).filter(Boolean);
 }
 
-export async function fetchCommuneBoundary(name) {
-  const results = await fetchCommuneBoundaries([name]);
+export async function fetchCommuneBoundary(nameAr, nameFr) {
+  const results = await fetchCommuneBoundaries([{ nameAr, nameFr }]);
   return results[0] || null;
 }

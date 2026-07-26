@@ -4147,7 +4147,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--nx-card);
+  background: var(--nx-bg);
   border: 1px solid var(--nx-border);
   border-radius: 0 0 var(--nx-radius) var(--nx-radius);
   max-height: 180px;
@@ -4237,7 +4237,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .sm-sidebar {
   width: 320px;
   min-width: 320px;
-  background: var(--nx-card);
+  background: var(--nx-bg);
   border-right: 1px solid var(--nx-border);
   display: flex;
   flex-direction: column;
@@ -4376,7 +4376,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   right: 0;
   width: 340px;
   height: 100%;
-  background: var(--nx-card);
+  background: var(--nx-bg);
   border-left: 1px solid var(--nx-border);
   z-index: 1001;
   display: flex;
@@ -4427,7 +4427,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--nx-card);
+  background: var(--nx-bg);
   border: 1px solid var(--nx-border);
   border-radius: 0 0 var(--nx-radius) var(--nx-radius);
   max-height: 180px;

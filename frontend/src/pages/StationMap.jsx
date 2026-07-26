@@ -49,27 +49,34 @@ function ClickMarker({ position, onClick }) {
   return <Marker position={[position.lat, position.lng]} />;
 }
 
-function CommuneBoundaryLayer({ communesList, algeriaCommunes }) {
+function CommuneBoundaryLayer({ coverageNames, algeriaCommunes }) {
   const [features, setFeatures] = useState([]);
 
+  const communeInfoList = useMemo(() => {
+    return coverageNames.map((arName) => {
+      const found = algeriaCommunes.find((c) => c.name_ar === arName);
+      return { nameAr: arName, nameFr: found?.name_fr || '' };
+    });
+  }, [coverageNames.join(','), algeriaCommunes.length]);
+
   useEffect(() => {
-    if (communesList.length === 0) { setFeatures([]); return; }
+    if (communeInfoList.length === 0) { setFeatures([]); return; }
     let cancelled = false;
     (async () => {
-      const results = await fetchCommuneBoundaries(communesList);
+      const results = await fetchCommuneBoundaries(communeInfoList);
       if (!cancelled) setFeatures(results.filter(Boolean));
     })();
     return () => { cancelled = true; };
-  }, [communesList.join(',')]);
+  }, [communeInfoList.map((c) => c.nameAr).join(',')]);
 
   if (features.length === 0) return null;
   return (
     <>
       {features.map((f) => (
         <GeoJSON
-          key={`boundary-${f.properties.name}`}
+          key={`boundary-${f.properties.nameAr || f.properties.nameFr}`}
           data={f}
-          style={{ color: '#E53935', fillColor: '#E53935', fillOpacity: 0.1, weight: 2, dashArray: '5 5' }}
+          style={{ color: '#E53935', fillColor: '#E53935', fillOpacity: 0.18, weight: 2, dashArray: '6 3' }}
         />
       ))}
     </>
@@ -305,7 +312,7 @@ export default function StationMap() {
           ))}
 
           {coverageCommunesList.length > 0 && (
-            <CommuneBoundaryLayer communesList={coverageCommunesList} algeriaCommunes={communes} />
+            <CommuneBoundaryLayer coverageNames={coverageCommunesList} algeriaCommunes={communes} />
           )}
         </MapContainer>
 
