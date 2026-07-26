@@ -11,28 +11,17 @@ export async function loadBoundaries() {
   return boundaryData;
 }
 
-export function findBoundary(communeName) {
+export function findBoundary(nameFr) {
   if (!boundaryData?.features) return null;
   return boundaryData.features.find(
-    (f) => f.properties.nameAr === communeName || f.properties.nameFr === communeName
+    (f) => f.properties.nameFr === nameFr
   ) || null;
 }
 
-export function findBoundaries(communeNames) {
-  if (!boundaryData?.features || communeNames.length === 0) return [];
-  const nameSet = new Set(communeNames);
+export function findBoundaries(nameFrList) {
+  if (!boundaryData?.features || nameFrList.length === 0) return [];
+  const nameSet = new Set(nameFrList);
   return boundaryData.features.filter(
-    (f) => nameSet.has(f.properties.nameAr) || nameSet.has(f.properties.nameFr)
+    (f) => nameSet.has(f.properties.nameFr)
   );
-}
-
-export async function fetchCommuneBoundaries(communeInfoList) {
-  await loadBoundaries();
-  const names = communeInfoList.map((c) => c.nameAr || c.nameFr).filter(Boolean);
-  return findBoundaries(names);
-}
-
-export async function fetchCommuneBoundary(nameAr, nameFr) {
-  await loadBoundaries();
-  return findBoundary(nameAr) || findBoundary(nameFr) || null;
 }

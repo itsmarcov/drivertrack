@@ -86,25 +86,14 @@ function CoverageLayer({ stations: stationList, selectedStationId, showAll, boun
 
       names.forEach((name) => {
         let boundary = boundaries.find(
-          (f) => f.properties.nameAr === name || f.properties.nameFr === name
+          (f) => f.properties.nameFr === name
         );
         if (!boundary) {
           const commune = allCommunes.find((c) => c.name_ar === name || c.name_fr === name);
-          if (commune) {
+          if (commune?.name_fr) {
             boundary = boundaries.find(
-              (f) => f.properties.nameFr === commune.name_fr || f.properties.nameAr === commune.name_ar
+              (f) => f.properties.nameFr === commune.name_fr
             );
-            if (!boundary) {
-              const frLower = (commune.name_fr || '').toLowerCase();
-              if (frLower.length >= 4) {
-                boundary = boundaries.find(
-                  (f) => {
-                    const bFr = (f.properties.nameFr || '').toLowerCase();
-                    return bFr.length >= 4 && (bFr.includes(frLower) || frLower.includes(bFr));
-                  }
-                );
-              }
-            }
           }
         }
         if (boundary) {
