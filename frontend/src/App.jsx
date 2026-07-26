@@ -24,6 +24,7 @@ import AbsenceRequestsReview from './pages/AbsenceRequestsReview';
 import ActivityLogs from './pages/ActivityLogs';
 import AnnouncementsManagement from './pages/AnnouncementsManagement';
 import ReportsManagement from './pages/ReportsManagement';
+import StationMap from './pages/StationMap';
 
 
 function HomeRedirect() {
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/admin/activity-logs" element={<ProtectedRoute roles={['admin', 'super_admin']}><ActivityLogs /></ProtectedRoute>} />
           <Route path="/admin/announcements" element={<ProtectedRoute roles={['admin', 'super_admin']}><AnnouncementsManagement /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute roles={['admin', 'super_admin']}><ReportsManagement /></ProtectedRoute>} />
+          <Route path="/admin/station-map" element={<ProtectedRoute roles={['admin', 'super_admin']}><StationMap /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
