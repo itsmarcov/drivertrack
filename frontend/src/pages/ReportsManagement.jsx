@@ -10,7 +10,6 @@ const CATEGORIES = {
   communication: 'التواصل',
   station: 'المحطة',
   schedule: 'الجدول الزمني',
-  pay: 'الأجور',
   other: 'أخرى',
 };
 

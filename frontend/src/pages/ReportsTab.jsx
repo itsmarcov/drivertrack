@@ -9,7 +9,6 @@ const CATEGORIES = [
   { value: 'communication', label: 'التواصل' },
   { value: 'station', label: 'المحطة' },
   { value: 'schedule', label: 'الجدول الزمني' },
-  { value: 'pay', label: 'الأجور' },
   { value: 'other', label: 'أخرى' },
 ];
 
