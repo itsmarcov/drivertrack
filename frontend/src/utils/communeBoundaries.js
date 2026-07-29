@@ -1,10 +1,25 @@
 let boundaryData = null;
 
+const CACHE_KEY = 'drivertrack_boundaries';
+
 export async function loadBoundaries() {
   if (boundaryData) return boundaryData;
+
+  // Try localStorage first
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    try {
+      boundaryData = JSON.parse(cached);
+      return boundaryData;
+    } catch {}
+  }
+
   try {
     const res = await fetch('/data/communes-boundaries.geojson');
     boundaryData = await res.json();
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(boundaryData));
+    } catch {}
   } catch {
     boundaryData = { type: 'FeatureCollection', features: [] };
   }

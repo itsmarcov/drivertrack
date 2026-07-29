@@ -85,16 +85,12 @@ function CoverageLayer({ stations: stationList, selectedStationId, showAll, boun
       const color = getStationColor(stationList.indexOf(s));
 
       names.forEach((name) => {
-        let boundary = boundaries.find(
-          (f) => f.properties.nameFr === name
-        );
-        if (!boundary) {
-          const commune = allCommunes.find((c) => c.name_ar === name || c.name_fr === name);
-          if (commune?.name_fr) {
-            boundary = boundaries.find(
-              (f) => f.properties.nameFr === commune.name_fr
-            );
-          }
+        const commune = allCommunes.find((c) => c.name_ar === name || c.name_fr === name);
+        let boundary = null;
+        if (commune?.name_fr) {
+          boundary = boundaries.find(
+            (f) => f.properties.nameFr === commune.name_fr
+          );
         }
         if (boundary) {
           result.push({
@@ -126,9 +122,9 @@ function CoverageLayer({ stations: stationList, selectedStationId, showAll, boun
           style={{
             color: f.properties.color,
             fillColor: f.properties.color,
-            fillOpacity: 0.2,
-            weight: 2.5,
-            opacity: 0.8,
+            fillOpacity: 0.35,
+            weight: 3,
+            opacity: 0.9,
           }}
         />
       ))}
