@@ -119,10 +119,11 @@ router.get('/:id/pdf', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
 
     const buf = await generatePdf(warningHtml(warning));
-    console.log('Warning PDF generated: %d bytes', buf.length);
+    console.log('Warning PDF generated: %d bytes, header=%s', buf.length, buf.slice(0, 5).toString());
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="warning-${warning.id}.pdf"`);
-    res.send(buf);
+    res.setHeader('Content-Length', buf.length);
+    res.end(buf);
   } catch (err) {
     console.error('Warning PDF error:', err);
     if (!res.headersSent) res.status(500).json({ error: 'Failed to generate PDF: ' + err.message });

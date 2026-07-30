@@ -51,9 +51,11 @@ router.get('/:id/report', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized' });
 
     const buf = await generatePdf(penaltyHtml(penalty));
+    console.log('Penalty PDF generated: %d bytes, header=%s', buf.length, buf.slice(0, 5).toString());
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
-    res.send(buf);
+    res.setHeader('Content-Length', buf.length);
+    res.end(buf);
   } catch (err) {
     console.error('PDF error:', err);
     if (!res.headersSent) res.status(500).json({ error: 'Failed to generate report: ' + err.message });

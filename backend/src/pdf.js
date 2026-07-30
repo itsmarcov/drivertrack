@@ -115,9 +115,12 @@ async function generatePdf(htmlContent) {
   const browser = await getBrowser();
   const page = await browser.newPage();
   await page.setContent(htmlContent, { waitUntil: 'load', timeout: 30000 });
-  const buf = await page.pdf({ format: 'A4', printBackground: true });
+  const raw = await page.pdf({ format: 'A4', printBackground: true });
   await page.close();
-  if (!buf || buf.length < 200) throw new Error('Generated PDF is empty or too small (' + (buf ? buf.length : 0) + ' bytes)');
+  const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+  if (buf.length < 200) throw new Error('Generated PDF is too small (' + buf.length + ' bytes)');
+  const header = buf.slice(0, 5).toString();
+  if (header !== '%PDF-') throw new Error('Generated output is not a valid PDF (header: ' + header + ')');
   return buf;
 }
 
