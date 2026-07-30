@@ -5,52 +5,8 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// ── Arabic reshaper (same as penalties) ──
-const AR_FORMS = {
-  '\u0627':['\uFE8D','\uFE8E','\uFE8E','\uFE8D'],'\u0628':['\uFE8F','\uFE90','\uFE92','\uFE91'],
-  '\u062A':['\uFE95','\uFE96','\uFE98','\uFE97'],'\u062B':['\uFE99','\uFE9A','\uFE9C','\uFE9B'],
-  '\u062C':['\uFE9D','\uFE9E','\uFEA0','\uFE9F'],'\u062D':['\uFEA1','\uFEA2','\uFEA4','\uFEA3'],
-  '\u062E':['\uFEA5','\uFEA6','\uFEA8','\uFEA7'],'\u062F':['\uFEA9','\uFEAA','\uFEAA','\uFEA9'],
-  '\u0630':['\uFEAB','\uFEAC','\uFEAC','\uFEAB'],'\u0631':['\uFEAD','\uFEAE','\uFEAE','\uFEAD'],
-  '\u0632':['\uFEAF','\uFEB0','\uFEB0','\uFEAF'],'\u0633':['\uFEB1','\uFEB2','\uFEB4','\uFEB3'],
-  '\u0634':['\uFEB5','\uFEB6','\uFEB8','\uFEB7'],'\u0635':['\uFEB9','\uFEBA','\uFEBC','\uFEBB'],
-  '\u0636':['\uFEBD','\uFEBE','\uFEC0','\uFEBF'],'\u0637':['\uFEC1','\uFEC2','\uFEC4','\uFEC3'],
-  '\u0638':['\uFEC5','\uFEC6','\uFEC8','\uFEC7'],'\u0639':['\uFEC9','\uFECA','\uFECC','\uFECB'],
-  '\u063A':['\uFECD','\uFECE','\uFED0','\uFECF'],'\u0641':['\uFED1','\uFED2','\uFED4','\uFED3'],
-  '\u0642':['\uFED5','\uFED6','\uFED8','\uFED7'],'\u0643':['\uFED9','\uFEDA','\uFEDC','\uFEDB'],
-  '\u0644':['\uFEDD','\uFEDE','\uFEE0','\uFEDF'],'\u0645':['\uFEE1','\uFEE2','\uFEE4','\uFEE3'],
-  '\u0646':['\uFEE5','\uFEE6','\uFEE8','\uFEE7'],'\u0647':['\uFEE9','\uFEEA','\uFEEC','\uFEEB'],
-  '\u0648':['\uFEED','\uFEEE','\uFEEE','\uFEED'],'\u064A':['\uFEF1','\uFEF2','\uFEF4','\uFEF3'],
-  '\u0626':['\uFE81','\uFE82','\uFE84','\uFE83'],'\u0621':['\uFE80','\uFE80','\uFE80','\uFE80'],
-  '\u0624':['\uFE85','\uFE86','\uFE86','\uFE85'],'\u0625':['\uFE87','\uFE88','\uFE88','\uFE87'],
-  '\u0623':['\uFE83','\uFE84','\uFE84','\uFE83'],'\u0622':['\uFE81','\uFE82','\uFE82','\uFE81'],
-  '\u0649':['\uFEEF','\uFEF0','\uFEF0','\uFEEF'],'\u0629':['\uFE93','\uFE94','\uFE94','\uFE93'],
-  '\u0640':['\u0640','\u0640','\u0640','\u0640'],
-};
-const LAM_ALEF = {'\u0644\u0627':'\uFEFB','\u0644\u0623':'\uFEF5','\u0644\u0625':'\uFEF7','\u0644\u0622':'\uFEF9'};
-const PF_TO_LOGICAL = {};
-for (const [l,forms] of Object.entries(AR_FORMS)){const lcp=l.charCodeAt(0);for(const f of forms)PF_TO_LOGICAL[f.charCodeAt(0)]=[lcp];}
-for (const [pair,form] of Object.entries(LAM_ALEF)) PF_TO_LOGICAL[form.charCodeAt(0)]=[pair.charCodeAt(0),pair.charCodeAt(1)];
-function isJoiner(ch){
-  const nj='\u0627\u062F\u0630\u0631\u0632\u0648\u0624\u0625\u0623\u0622',cp=ch.charCodeAt(0);
-  return((cp>=0x0600&&cp<=0x06FF)||(cp>=0xFE70&&cp<=0xFEFF))&&!nj.includes(ch)&&ch!=='\u0621';
-}
-function ar(text){
-  if(!/[\u0600-\u06FF]/.test(text)) return text;
-  let s=text;
-  for(const[p,f]of Object.entries(LAM_ALEF))s=s.replace(new RegExp(p,'g'),f);
-  const c=[...s];
-  return c.map((ch,i)=>{
-    const f=AR_FORMS[ch];if(!f)return ch;
-    const pj=i>0&&isJoiner(c[i-1])&&AR_FORMS[c[i-1]];
-    const nj=i<c.length-1&&isJoiner(c[i+1])&&AR_FORMS[c[i+1]];
-    if(!pj&&nj)return f[3];if(pj&&nj)return f[2];if(pj&&!nj)return f[1];return f[0];
-  }).join('');
-}
-function fixU(doc){
-  const font=doc._font;if(!font||!font.unicode)return;
-  for(let i=0;i<font.unicode.length;i++){const c=font.unicode[i];if(c&&c.length===1&&PF_TO_LOGICAL[c[0]])font.unicode[i]=PF_TO_LOGICAL[c[0]];}
-}
+const ar = require('arabic-reshaper').convertArabic;
+function fixU() {} // no-op — reshaping handled by arabic-reshaper
 function formatDate(d){const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
 // ─────────────────────────────────────────────────────────────────────────────
 
