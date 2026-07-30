@@ -5,8 +5,8 @@ RUN npm ci
 COPY frontend/ .
 RUN npm run build
 
-FROM node:20-alpine
-RUN apk add --no-cache tini chromium
+FROM node:20-slim
+RUN apt-get update && apt-get install -y --no-install-recommends tini chromium && rm -rf /var/lib/apt/lists/*
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 WORKDIR /app
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist

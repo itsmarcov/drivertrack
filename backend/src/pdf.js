@@ -114,9 +114,10 @@ function formatAmount(v) {
 async function generatePdf(htmlContent) {
   const browser = await getBrowser();
   const page = await browser.newPage();
-  await page.setContent(htmlContent, { waitUntil: 'networkidle0', timeout: 30000 });
+  await page.setContent(htmlContent, { waitUntil: 'load', timeout: 30000 });
   const buf = await page.pdf({ format: 'A4', printBackground: true });
   await page.close();
+  if (!buf || buf.length < 200) throw new Error('Generated PDF is empty or too small (' + (buf ? buf.length : 0) + ' bytes)');
   return buf;
 }
 
