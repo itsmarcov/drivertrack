@@ -231,16 +231,107 @@ export default function StationMap() {
   }, [markerPos, data.stations]);
 
   if (splash) {
-    return (
-      <div style={{
+    const styles = {
+      wrap: {
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        background: '#0d0d1a', zIndex: 9999,
-      }}>
-        <div style={{ textAlign: 'center', animation: 'nx-fade-in 0.6s ease-out' }}>
-          <img src="/NAVEXlogo.png" alt="NAVEX" style={{ height: 80, marginBottom: 24, opacity: 0.9 }} />
-          <h1 style={{ color: '#E53935', fontSize: 28, fontWeight: 900, margin: '0 0 8px', letterSpacing: 1 }}>NAVEX ZONING</h1>
-          <p style={{ color: '#888', fontSize: 14, fontWeight: 600, margin: 0, letterSpacing: 3, textTransform: 'uppercase' }}>beta</p>
+        background: 'radial-gradient(ellipse at 50% 40%, #12122a 0%, #0a0a1a 60%, #05050f 100%)',
+        zIndex: 9999, overflow: 'hidden',
+      },
+      particle: {
+        position: 'absolute', borderRadius: '50%', opacity: 0.08,
+        background: '#E53935',
+      },
+      glass: {
+        position: 'relative', zIndex: 2,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        padding: '48px 64px',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 24,
+        backdropFilter: 'blur(20px)',
+      },
+      logo: {
+        height: 72, marginBottom: 28,
+        animation: 'splashLogoAnim 1.2s ease-out forwards',
+        opacity: 0, transform: 'scale(0.8)',
+      },
+      title: {
+        fontSize: 32, fontWeight: 900, letterSpacing: 2,
+        margin: '0 0 6px',
+        background: 'linear-gradient(135deg, #fff 30%, #E53935 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+      },
+      beta: {
+        display: 'inline-block',
+        fontSize: 11, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase',
+        color: '#E53935', border: '1px solid rgba(229,57,53,0.4)',
+        borderRadius: 20, padding: '4px 16px',
+        animation: 'splashPulse 2s ease-in-out infinite',
+      },
+      bar: {
+        position: 'absolute', bottom: 0, left: 0, height: 3,
+        background: 'linear-gradient(90deg, #E53935, #ff6b6b, #E53935)',
+        backgroundSize: '200% 100%',
+        animation: 'splashBar 6s ease-in-out forwards',
+      },
+    };
+
+    // Build particles
+    const particles = Array.from({ length: 12 }, (_, i) => ({
+      key: i,
+      style: {
+        ...styles.particle,
+        width: (i % 3 + 1) * 40,
+        height: (i % 3 + 1) * 40,
+        top: `${15 + (i * 37) % 70}%`,
+        left: `${5 + (i * 23) % 90}%`,
+        animation: `splashFloat ${6 + i % 4}s ease-in-out ${i * 0.4}s infinite alternate`,
+      },
+    }));
+
+    return (
+      <div style={styles.wrap}>
+        <style>{`
+          @keyframes splashLogoAnim {
+            0% { opacity: 0; transform: scale(0.8) rotate(-8deg); filter: blur(8px); }
+            60% { opacity: 1; transform: scale(1.05) rotate(1deg); filter: blur(0); }
+            100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
+          }
+          @keyframes splashFloat {
+            0% { transform: translateY(0) rotate(0deg) scale(1); }
+            100% { transform: translateY(-60px) rotate(15deg) scale(1.1); }
+          }
+          @keyframes splashPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.3); }
+            50% { box-shadow: 0 0 20px 4px rgba(229,57,53,0.15); }
+          }
+          @keyframes splashBar {
+            0% { width: 0; background-position: 200% 0; }
+            50% { width: 65%; background-position: 100% 0; }
+            85% { width: 85%; background-position: 50% 0; }
+            100% { width: 100%; background-position: 0 0; }
+          }
+        `}</style>
+        {particles.map((p) => <div key={p.key} style={p.style} />)}
+        <div style={{
+          position: 'absolute', width: 400, height: 400, borderRadius: '50%',
+          top: '15%', left: '50%', transform: 'translateX(-50%)',
+          background: 'radial-gradient(circle, rgba(229,57,53,0.06) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={styles.glass}>
+          <img src="/NAVEXlogo.png" alt="NAVEX" style={styles.logo} />
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={styles.title}>NAVEX ZONING</h1>
+            <span style={styles.beta}>beta</span>
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 40, zIndex: 2 }}>
+          <div style={{ width: 200, height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={styles.bar} />
+          </div>
         </div>
       </div>
     );
