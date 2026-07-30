@@ -4229,10 +4229,14 @@ textarea.form-input { resize: vertical; min-height: 60px; }
    Station Map — Admin
    ════════════════════════════════════════════════ */
 .sm-page {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  height: calc(100vh - 64px);
   overflow: hidden;
-  margin: -24px;
+  z-index: 100;
 }
 .sm-sidebar {
   width: 320px;

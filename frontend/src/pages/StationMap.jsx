@@ -122,6 +122,12 @@ function CoverageLayer({ stations: stationList, selectedStationId, showAll, boun
 export default function StationMap() {
   const [data, setData] = useState({ stations: [], drivers: [] });
   const [loading, setLoading] = useState(true);
+  const [splash, setSplash] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSplash(false), 6000);
+    return () => clearTimeout(t);
+  }, []);
   const [editStation, setEditStation] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', latitude: '', longitude: '', commune_name: '', coverage_communes: '' });
   const [communes, setCommunes] = useState([]);
@@ -223,6 +229,22 @@ export default function StationMap() {
     }
     return [33.9716, 3.5886];
   }, [markerPos, data.stations]);
+
+  if (splash) {
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        background: '#0d0d1a', zIndex: 9999,
+      }}>
+        <div style={{ textAlign: 'center', animation: 'nx-fade-in 0.6s ease-out' }}>
+          <img src="/NAVEXlogo.png" alt="NAVEX" style={{ height: 80, marginBottom: 24, opacity: 0.9 }} />
+          <h1 style={{ color: '#E53935', fontSize: 28, fontWeight: 900, margin: '0 0 8px', letterSpacing: 1 }}>NAVEX ZONING</h1>
+          <p style={{ color: '#888', fontSize: 14, fontWeight: 600, margin: 0, letterSpacing: 3, textTransform: 'uppercase' }}>beta</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) return <div className="loading">جاري تحميل الخريطة...</div>;
 
