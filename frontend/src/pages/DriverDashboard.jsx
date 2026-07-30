@@ -8,8 +8,51 @@ import ReportsTab from './ReportsTab';
 import AddressGuide from '../components/AddressGuide';
 import AddressForm from '../components/AddressForm';
 import { useAuth } from '../context/AuthContext';
-import { qr, attendance, announcements as announcementsApi, drivers } from '../api';
+import { qr, attendance, announcements as announcementsApi, drivers, warnings } from '../api';
 import { playSuccess, playNotification } from '../utils/sounds';
+
+function DriverWarningsTab() {
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [signingId, setSigningId] = useState(null);
+  const load = async () => {
+    try { setList(await warnings.list()); } catch {}
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, []);
+  const handleSign = async (id) => {
+    setSigningId(id);
+    try { await warnings.sign(id); load(); } catch {}
+    setSigningId(null);
+  };
+  if (loading) return <div className="nx-empty"><h3>جاري التحميل...</h3></div>;
+  if (list.length === 0) return <div className="nx-empty"><div className="nx-empty-icon">✅</div><h3>لا توجد إنذارات</h3><p>ليس لديك أي إنذارات مسجلة</p></div>;
+  return (
+    <div>
+      {list.map((w) => (
+        <div key={w.id} className="driver-history-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <strong style={{ fontSize: 15 }}>{w.title}</strong>
+            <span className={`badge ${w.status === 'pending' ? 'badge-warning' : w.status === 'signed' ? 'badge-success' : 'badge'}`}>
+              {w.status === 'pending' ? 'بانتظار التوقيع' : w.status === 'signed' ? 'تم التوقيع' : 'مؤرشف'}
+            </span>
+          </div>
+          <div style={{ fontSize: 13, color: '#555', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{w.content}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#888' }}>
+            <span>من: {w.admin_name} · {new Date(w.created_at).toLocaleDateString('fr-DZ')}</span>
+            {w.status === 'pending' && (
+              <button className="btn btn-sm btn-primary" onClick={() => handleSign(w.id)} disabled={signingId === w.id}
+                style={{ fontSize: 12, padding: '4px 16px' }}>
+                {signingId === w.id ? 'جاري...' : 'توقيع'}
+              </button>
+            )}
+            {w.signed_at && <span>تم التوقيع: {new Date(w.signed_at).toLocaleDateString('fr-DZ')}</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function QRDisplay({ data }) {
   const qrValue = JSON.stringify({
@@ -171,6 +214,7 @@ export default function DriverDashboard() {
         <button className={`driver-tab ${activeTab === 'justifications' ? 'active' : ''}`} onClick={() => setActiveTab('justifications')}>المبررات</button>
         <button className={`driver-tab ${activeTab === 'absence-requests' ? 'active' : ''}`} onClick={() => setActiveTab('absence-requests')}>الغيابات المسبقة</button>
         <button className={`driver-tab ${activeTab === 'address' ? 'active' : ''}`} onClick={() => setActiveTab('address')}>عنوان السكن</button>
+        <button className={`driver-tab ${activeTab === 'warnings' ? 'active' : ''}`} onClick={() => setActiveTab('warnings')}>الإنذارات</button>
       </div>
 
       {activeTab === 'qr' && (
@@ -225,6 +269,7 @@ export default function DriverDashboard() {
           <AddressForm driverId={user.id} />
         </div>
       )}
+      {activeTab === 'warnings' && <DriverWarningsTab />}
 
       <button className="rp-fab" onClick={() => setShowReports(true)} title="تبليغ">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>

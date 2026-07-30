@@ -188,6 +188,10 @@ export default function Navbar() {
             تسجيلات جديدة
             {notifData?.registrations?.length > 0 && <span className="nav-dd-badge">{notifData.registrations.length}</span>}
           </Link>
+          <Link to="/admin/warnings" className={`nav-dd-link ${isActive('/admin/warnings')}`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            الإنذارات
+          </Link>
         </NavDropdown>
       )}
     </>
@@ -228,6 +232,7 @@ export default function Navbar() {
           <Link to="/admin/announcements" className={`nav-link ${isActive('/admin/announcements')}`} onClick={onClick}>إرسال إشعارات</Link>
           <Link to="/admin/reports" className={`nav-link ${isActive('/admin/reports')}`} onClick={onClick}>تبليغات السائقين</Link>
           <Link to="/admin/activity-logs" className={`nav-link ${isActive('/admin/activity-logs')}`} onClick={onClick}>سجل النشاطات</Link>
+          <Link to="/admin/warnings" className={`nav-link ${isActive('/admin/warnings')}`} onClick={onClick}>الإنذارات</Link>
         </>
       )}
     </>

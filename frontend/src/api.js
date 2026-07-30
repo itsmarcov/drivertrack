@@ -239,3 +239,17 @@ export const driverReports = {
   update: (id, data) => request(`/driver-reports/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id) => request(`/driver-reports/${id}`, { method: 'DELETE' }),
 };
+
+export const warnings = {
+  list: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/warnings${qs ? '?' + qs : ''}`);
+  },
+  my: () => request('/warnings?status='),
+  stats: () => request('/warnings/stats'),
+  create: (data) => request('/warnings', { method: 'POST', body: JSON.stringify(data) }),
+  get: (id) => request(`/warnings/${id}`),
+  sign: (id) => request(`/warnings/${id}/sign`, { method: 'PATCH' }),
+  archive: (id) => request(`/warnings/${id}/archive`, { method: 'PATCH' }),
+  restore: (id) => request(`/warnings/${id}/restore`, { method: 'PATCH' }),
+};

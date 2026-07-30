@@ -133,6 +133,19 @@ async function initDatabase() {
     await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS wilaya_name VARCHAR(100)");
     await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS commune_name VARCHAR(100)");
     await pool.query("ALTER TABLE stations ADD COLUMN IF NOT EXISTS coverage_communes TEXT");
+    await pool.query(`CREATE TABLE IF NOT EXISTS warnings (
+      id SERIAL PRIMARY KEY,
+      driver_id INTEGER NOT NULL REFERENCES users(id),
+      admin_id INTEGER NOT NULL REFERENCES users(id),
+      title VARCHAR(255) NOT NULL,
+      content TEXT NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending' CHECK(status IN ('pending','signed','archived')),
+      signed_at TIMESTAMP,
+      archived_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_warnings_driver_id ON warnings(driver_id)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_warnings_status ON warnings(status)");
   } catch {}
   return pool;
 }
