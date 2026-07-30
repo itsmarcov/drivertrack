@@ -146,6 +146,7 @@ async function initDatabase() {
     )`);
     await pool.query("CREATE INDEX IF NOT EXISTS idx_warnings_driver_id ON warnings(driver_id)");
     await pool.query("CREATE INDEX IF NOT EXISTS idx_warnings_status ON warnings(status)");
+    await pool.query("ALTER TABLE warnings ADD COLUMN IF NOT EXISTS signature_data TEXT");
   } catch {}
   return pool;
 }

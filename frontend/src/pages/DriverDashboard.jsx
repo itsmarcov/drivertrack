@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import DriverProfile from './DriverProfile';
@@ -11,24 +11,126 @@ import { useAuth } from '../context/AuthContext';
 import { qr, attendance, announcements as announcementsApi, drivers, warnings } from '../api';
 import { playSuccess, playNotification } from '../utils/sounds';
 
+function SignaturePad({ onConfirm, onCancel }) {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
+  const lastRef = useRef(null);
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Draw guide line
+    ctx.beginPath();
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.moveTo(20, 50);
+    ctx.lineTo(c.width - 20, 50);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2.5;
+  }, []);
+
+  const startDraw = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    setIsDrawing(true);
+    setHasDrawn(true);
+    lastRef.current = { x, y };
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.beginPath();
+    ctx.moveTo(lastRef.current.x, lastRef.current.y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    lastRef.current = { x, y };
+  };
+
+  const endDraw = () => setIsDrawing(false);
+
+  const clear = () => {
+    const c = canvasRef.current;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, c.width, c.height);
+    setHasDrawn(false);
+  };
+
+  const confirm = () => {
+    if (!hasDrawn) return;
+    onConfirm(canvasRef.current.toDataURL('image/png'));
+  };
+
+  return (
+    <div className="sig-overlay">
+      <div className="sig-modal">
+        <h3 style={{ margin: '0 0 12px', fontSize: 15, textAlign: 'center' }}>التوقيع</h3>
+        <p style={{ fontSize: 12, color: '#888', textAlign: 'center', margin: '0 0 12px' }}>يرجى التوقيع في المساحة أدناه</p>
+        <canvas ref={canvasRef} width={300} height={100}
+          onMouseDown={startDraw} onMouseMove={draw} onMouseUp={endDraw} onMouseLeave={endDraw}
+          onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={endDraw}
+          style={{ border: '1px solid #ddd', borderRadius: 8, width: '100%', height: 100, touchAction: 'none', cursor: 'crosshair', background: '#fafafa' }} />
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button className="btn btn-primary" onClick={confirm} disabled={!hasDrawn} style={{ flex: 1 }}>تأكيد التوقيع</button>
+          <button className="btn btn-outline" onClick={clear}>مسح</button>
+          <button className="btn btn-outline" onClick={onCancel}>إلغاء</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DriverWarningsTab() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [signingId, setSigningId] = useState(null);
+  const [showSigPad, setShowSigPad] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(null);
   const load = async () => {
     try { setList(await warnings.list()); } catch {}
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
-  const handleSign = async (id) => {
-    setSigningId(id);
-    try { await warnings.sign(id); load(); } catch {}
+
+  const handleSignConfirm = async (sigData) => {
+    if (!showSigPad) return;
+    setSigningId(showSigPad.id);
+    setShowSigPad(null);
+    try { await warnings.sign(showSigPad.id, sigData); load(); } catch {}
     setSigningId(null);
   };
+
+  const handlePdf = async (id) => {
+    setPdfLoading(id);
+    try {
+      const blob = await warnings.downloadPdf(id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch {}
+    setPdfLoading(null);
+  };
+
   if (loading) return <div className="nx-empty"><h3>جاري التحميل...</h3></div>;
   if (list.length === 0) return <div className="nx-empty"><div className="nx-empty-icon">✅</div><h3>لا توجد إنذارات</h3><p>ليس لديك أي إنذارات مسجلة</p></div>;
   return (
     <div>
+      {showSigPad && <SignaturePad onConfirm={handleSignConfirm} onCancel={() => setShowSigPad(null)} />}
       {list.map((w) => (
         <div key={w.id} className="driver-history-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -40,13 +142,18 @@ function DriverWarningsTab() {
           <div style={{ fontSize: 13, color: '#555', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{w.content}</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#888' }}>
             <span>من: {w.admin_name} · {new Date(w.created_at).toLocaleDateString('fr-DZ')}</span>
-            {w.status === 'pending' && (
-              <button className="btn btn-sm btn-primary" onClick={() => handleSign(w.id)} disabled={signingId === w.id}
-                style={{ fontSize: 12, padding: '4px 16px' }}>
-                {signingId === w.id ? 'جاري...' : 'توقيع'}
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-sm btn-outline" onClick={() => handlePdf(w.id)} disabled={pdfLoading === w.id} style={{ fontSize: 11, padding: '2px 10px' }}>
+                {pdfLoading === w.id ? '...' : 'PDF'}
               </button>
-            )}
-            {w.signed_at && <span>تم التوقيع: {new Date(w.signed_at).toLocaleDateString('fr-DZ')}</span>}
+              {w.status === 'pending' && (
+                <button className="btn btn-sm btn-primary" onClick={() => setShowSigPad(w)} disabled={signingId === w.id}
+                  style={{ fontSize: 12, padding: '4px 16px' }}>
+                  {signingId === w.id ? 'جاري...' : 'توقيع'}
+                </button>
+              )}
+              {w.signed_at && <span style={{ fontSize: 11 }}>وقع: {new Date(w.signed_at).toLocaleDateString('fr-DZ')}</span>}
+            </div>
           </div>
         </div>
       ))}
@@ -207,14 +314,16 @@ export default function DriverDashboard() {
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
 
-      <div className="driver-tabs">
-        <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
-        <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف الشخصي</button>
-        <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
-        <button className={`driver-tab ${activeTab === 'justifications' ? 'active' : ''}`} onClick={() => setActiveTab('justifications')}>المبررات</button>
-        <button className={`driver-tab ${activeTab === 'absence-requests' ? 'active' : ''}`} onClick={() => setActiveTab('absence-requests')}>الغيابات المسبقة</button>
-        <button className={`driver-tab ${activeTab === 'address' ? 'active' : ''}`} onClick={() => setActiveTab('address')}>عنوان السكن</button>
-        <button className={`driver-tab ${activeTab === 'warnings' ? 'active' : ''}`} onClick={() => setActiveTab('warnings')}>الإنذارات</button>
+      <div className="driver-tabs-scroll">
+        <div className="driver-tabs">
+          <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
+          <button className={`driver-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>الملف الشخصي</button>
+          <button className={`driver-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>سجل الحضور</button>
+          <button className={`driver-tab ${activeTab === 'justifications' ? 'active' : ''}`} onClick={() => setActiveTab('justifications')}>المبررات</button>
+          <button className={`driver-tab ${activeTab === 'absence-requests' ? 'active' : ''}`} onClick={() => setActiveTab('absence-requests')}>الغيابات المسبقة</button>
+          <button className={`driver-tab ${activeTab === 'address' ? 'active' : ''}`} onClick={() => setActiveTab('address')}>عنوان السكن</button>
+          <button className={`driver-tab ${activeTab === 'warnings' ? 'active' : ''}`} onClick={() => setActiveTab('warnings')}>الإنذارات</button>
+        </div>
       </div>
 
       {activeTab === 'qr' && (

@@ -4522,3 +4522,168 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     to { transform: translateY(0); }
   }
 }
+
+/* ════════════════════════════════════════════════
+   WARNINGS (إنذارات)
+   ════════════════════════════════════════════════ */
+.w-stats-bar {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #888;
+}
+.w-stat-pending strong { color: #F59E0B; }
+.w-stat-signed strong { color: #10B981; }
+.w-stat-archived strong { color: #6B7280; }
+
+.w-form-card {
+  background: var(--nx-card);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius-lg);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.w-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--nx-border);
+}
+.w-form-header h3 { margin: 0; font-size: 15px; }
+.w-bulk-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--nx-text-secondary);
+}
+.w-form-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.w-form-row { width: 100%; }
+.w-form-actions { margin-top: 4px; }
+
+.w-driver-grid {
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  overflow: hidden;
+}
+.w-driver-grid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--nx-bg-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--nx-border);
+}
+.w-driver-grid-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+.w-driver-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid var(--nx-border);
+}
+.w-driver-item:last-child { border-bottom: none; }
+.w-driver-item:hover { background: var(--nx-bg-glass); }
+.w-driver-item.selected { background: rgba(229,57,53,0.06); }
+.w-driver-item-info { flex: 1; min-width: 0; }
+.w-driver-item-name { font-size: 13px; font-weight: 600; }
+.w-driver-item-meta { font-size: 11px; color: #888; }
+.w-driver-check { color: #E53935; font-weight: 700; font-size: 14px; }
+
+.w-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.w-search-input { flex: 1; min-width: 160px; }
+.w-station-select { width: 180px; }
+.w-status-filters { display: flex; gap: 6px; }
+
+.w-list { display: flex; flex-direction: column; gap: 10px; }
+.w-card {
+  background: var(--nx-card);
+  border: 1px solid var(--nx-border);
+  border-radius: var(--nx-radius);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.w-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.w-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.w-card-title { font-size: 15px; }
+.w-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.w-card-content {
+  font-size: 13px;
+  color: #555;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+.w-card-meta {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: #888;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.w-card-date { margin-right: auto; }
+.w-station-badge {
+  font-size: 10px;
+  background: rgba(229,57,53,0.08);
+  color: #E53935;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* ─── Signature Pad ─── */
+.sig-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.sig-modal {
+  background: var(--nx-card);
+  border-radius: var(--nx-radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+/* ─── Driver scrollable tabs ─── */
+.driver-tabs-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.driver-tabs-scroll::-webkit-scrollbar { display: none; }
+.driver-tabs-scroll .driver-tabs { flex-wrap: nowrap; }
