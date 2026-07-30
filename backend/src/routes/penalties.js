@@ -5,8 +5,6 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-const ar = require('arabic-reshaper').convertArabic;
-function fixU() {} // no-op — reshaping handled by arabic-reshaper
 function formatDate(d){const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
 function formatAmount(v){const n=parseFloat(v);return isNaN(n)?String(v):String(Math.round(n));}
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,8 +88,8 @@ router.get('/:id/report', authenticate, async (req, res) => {
 
     // Title
     doc.font('ArB').fontSize(24).fillColor('#E53935')
-       .text(ar('إشعار غرامة تأخير'), PL, y, { width:W, align:'center', lineBreak:false });
-    fixU(doc); y += 40;
+       .text('إشعار غرامة تأخير', PL, y, { width:W, align:'center', lineBreak:false });
+    y += 40;
 
     // Divider
     doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 16;
@@ -100,12 +98,9 @@ router.get('/:id/report', authenticate, async (req, res) => {
     function infoRow(label, value) {
       const LW = 120;
       doc.font('ArB').fontSize(11).fillColor('#374151')
-         .text(ar(label), PL, y, { width:LW, align:'right', lineBreak:false });
-      fixU(doc);
-      const isAr = /[\u0600-\u06FF]/.test(String(value));
+         .text(label, PL, y, { width:LW, align:'right', lineBreak:false });
       doc.font('ArR').fontSize(11).fillColor('#111827')
-         .text(isAr ? ar(String(value)) : String(value), PL+LW+8, y, { width:W-LW-8, align:'right', lineBreak:false });
-      fixU(doc);
+         .text(String(value), PL+LW+8, y, { width:W-LW-8, align:'right', lineBreak:false });
       y += 22;
     }
     infoRow('السائق:', penalty.driver_name);
@@ -127,29 +122,27 @@ router.get('/:id/report', authenticate, async (req, res) => {
         const test = line ? line + ' ' + w : w;
         if (doc.widthOfString(test) > W && line) {
           doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false });
-          fixU(doc);
-          y += LH; line = w;
+           y += LH; line = w;
         } else {
           line = test;
         }
       }
-      if (line) { doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false }); fixU(doc); y += LH; }
+      if (line) { doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false }); y += LH; }
       y += gap;
     }
 
     doc.font('ArR').fontSize(12).fillColor('#111827');
-    wrap(ar('نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.'), 8);
-    wrap(ar('كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ') + amount + ' ' + ar('دج فقط عن كل طرد يتم توصيله.'), 8);
-    wrap(ar('نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.'), 8);
-    wrap(ar('مع الشكر والتقدير.'), 20);
+    wrap('نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.', 8);
+    wrap('كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ' + amount + ' ' + 'دج فقط عن كل طرد يتم توصيله.', 8);
+    wrap('نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.', 8);
+    wrap('مع الشكر والتقدير.', 20);
 
     // Footer
     doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 12;
     const now = new Date().toLocaleString('ar-DZ');
-    const footer = ar('تم إصدار هذا التقرير بواسطة') + ' DriverTRACK \u2014 ' + now;
+    const footer = 'تم إصدار هذا التقرير بواسطة' + ' DriverTRACK \u2014 ' + now;
     doc.font('ArR').fontSize(8).fillColor('#9CA3AF')
        .text(footer, PL, y, { width:W, align:'center', lineBreak:false });
-    fixU(doc);
 
     doc.end();
   } catch (err) {

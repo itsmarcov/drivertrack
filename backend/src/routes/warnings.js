@@ -5,8 +5,6 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-const ar = require('arabic-reshaper').convertArabic;
-function fixU() {} // no-op — reshaping handled by arabic-reshaper
 function formatDate(d){const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -156,27 +154,24 @@ router.get('/:id/pdf', authenticate, async (req, res) => {
 
     // Title
     doc.font('ArB').fontSize(22).fillColor('#1a1a1a')
-       .text(ar('إشعار إنذار'), PL, y, { width:W, align:'center', lineBreak:false });
-    fixU(doc); y += 34;
+       .text('إشعار إنذار', PL, y, { width:W, align:'center', lineBreak:false });
+    y += 34;
 
     // Divider
     doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E53935').lineWidth(2).stroke(); y += 16;
 
     // Warning ID & Date
     doc.font('ArR').fontSize(9).fillColor('#9CA3AF')
-       .text(ar('رقم الإشعار: #') + warning.id + '    ' + ar('تاريخ الإنشاء: ') + formatDate(warning.created_at), PL, y, { width:W, align:'center', lineBreak:false });
-    fixU(doc); y += 24;
+       .text('رقم الإشعار: #' + warning.id + '    ' + 'تاريخ الإنشاء: ' + formatDate(warning.created_at), PL, y, { width:W, align:'center', lineBreak:false });
+    y += 24;
 
     // Info rows
     function infoRow(label, value) {
       const LW = 130;
       doc.font('ArB').fontSize(11).fillColor('#374151')
-         .text(ar(label), PL, y, { width:LW, align:'right', lineBreak:false });
-      fixU(doc);
-      const isAr = /[\u0600-\u06FF]/.test(String(value));
+         .text(label, PL, y, { width:LW, align:'right', lineBreak:false });
       doc.font('ArR').fontSize(11).fillColor('#111827')
-         .text(isAr ? ar(String(value)) : String(value), PL+LW+8, y, { width:W-LW-8, align:'right', lineBreak:false });
-      fixU(doc);
+         .text(String(value), PL+LW+8, y, { width:W-LW-8, align:'right', lineBreak:false });
       y += 22;
     }
     infoRow('السائق:', warning.driver_name);
@@ -190,8 +185,8 @@ router.get('/:id/pdf', authenticate, async (req, res) => {
 
     // Title label
     doc.font('ArB').fontSize(14).fillColor('#E53935')
-       .text(ar(warning.title), PL, y, { width:W, align:'right', lineBreak:false });
-    fixU(doc); y += 28;
+       .text(warning.title, PL, y, { width:W, align:'right', lineBreak:false });
+    y += 28;
 
     // Content body with word wrap
     const LH = 22;
@@ -203,24 +198,23 @@ router.get('/:id/pdf', authenticate, async (req, res) => {
         const test = line ? line + ' ' + w : w;
         if (doc.widthOfString(test) > W && line) {
           doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false });
-          fixU(doc);
-          y += LH; line = w;
+           y += LH; line = w;
         } else {
           line = test;
         }
       }
-      if (line) { doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false }); fixU(doc); y += LH; }
+      if (line) { doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false }); y += LH; }
       y += gap;
     }
     doc.font('ArR').fontSize(12).fillColor('#374151');
-    wrap(ar(warning.content), 16);
+    wrap(warning.content, 16);
 
     // Signature section
     doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 16;
 
     doc.font('ArB').fontSize(11).fillColor('#111827')
-       .text(ar('توقيع السائق:'), PL, y, { width:W, align:'right', lineBreak:false });
-    fixU(doc); y += 6;
+       .text('توقيع السائق:', PL, y, { width:W, align:'right', lineBreak:false });
+    y += 6;
 
     if (warning.signature_data) {
       const sigData = warning.signature_data.replace(/^data:image\/\w+;base64,/, '');
@@ -231,14 +225,13 @@ router.get('/:id/pdf', authenticate, async (req, res) => {
       } catch { y += 6; }
     } else if (warning.status === 'signed') {
       doc.font('ArR').fontSize(10).fillColor('#6B7280')
-         .text(ar('تم التوقيع إلكترونيًا'), PL, y, { width:W, align:'right', lineBreak:false });
-      fixU(doc);
+         .text('تم التوقيع إلكترونيًا', PL, y, { width:W, align:'right', lineBreak:false });
       y += 22;
     }
     if (warning.signed_at) {
       doc.font('ArR').fontSize(10).fillColor('#6B7280')
-         .text(ar('تاريخ التوقيع: ') + formatDate(warning.signed_at), PL, y, { width:W, align:'right', lineBreak:false });
-      fixU(doc); y += 22;
+         .text('تاريخ التوقيع: ' + formatDate(warning.signed_at), PL, y, { width:W, align:'right', lineBreak:false });
+      y += 22;
     }
 
     y += 10;
@@ -246,10 +239,9 @@ router.get('/:id/pdf', authenticate, async (req, res) => {
 
     // Footer
     const now = new Date().toLocaleString('ar-DZ');
-    const footer = ar('تم إصدار هذا التقرير بواسطة') + ' DriverTRACK \u2014 ' + now;
+    const footer = 'تم إصدار هذا التقرير بواسطة' + ' DriverTRACK \u2014 ' + now;
     doc.font('ArR').fontSize(8).fillColor('#9CA3AF')
        .text(footer, PL, y, { width:W, align:'center', lineBreak:false });
-    fixU(doc);
 
     doc.end();
   } catch (err) {
