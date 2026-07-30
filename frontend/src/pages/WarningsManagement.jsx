@@ -16,6 +16,7 @@ export default function WarningsManagement() {
   const [formDriverSearch, setFormDriverSearch] = useState('');
   const [bulkMode, setBulkMode] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(null);
+  const [pdfError, setPdfError] = useState('');
 
   const load = async () => {
     try {
@@ -79,12 +80,18 @@ export default function WarningsManagement() {
 
   const handlePdf = async (id) => {
     setPdfLoading(id);
+    setPdfError('');
     try {
       const blob = await warnings.downloadPdf(id);
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-    } catch {}
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `warning-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) { setPdfError(err.message); }
     setPdfLoading(null);
   };
 
@@ -192,6 +199,8 @@ export default function WarningsManagement() {
           ))}
         </div>
       </div>
+
+      {pdfError && <div className="alert alert-error" style={{ marginBottom: 12, fontSize: 13 }}>{pdfError}</div>}
 
       <div className="w-list">
         {list.length === 0 ? (

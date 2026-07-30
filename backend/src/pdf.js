@@ -5,7 +5,10 @@ const fs = require('fs');
 let browserPromise = null;
 async function getBrowser() {
   if (!browserPromise) {
-    browserPromise = puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] });
+    browserPromise = puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] }).catch(e => {
+      browserPromise = null;
+      throw e;
+    });
   }
   return browserPromise;
 }

@@ -120,9 +120,14 @@ function DriverWarningsTab() {
     try {
       const blob = await warnings.downloadPdf(id);
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-    } catch {}
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `warning-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) { alert(err.message); }
     setPdfLoading(null);
   };
 
