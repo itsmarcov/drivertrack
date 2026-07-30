@@ -12,23 +12,39 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+const STATION_COLORS = [
+  '#E53935', '#1E88E5', '#43A047', '#FB8C00', '#8E24AA',
+  '#00ACC1', '#F4511E', '#3949AB', '#7CB342', '#D81B60',
+  '#5C6BC0', '#26A69A', '#AB47BC', '#EF5350', '#29B6F6',
+  '#9CCC65', '#FFA726', '#EC407A', '#5E35B1', '#00E676',
+];
+
+function getStationColor(index) {
+  return STATION_COLORS[index % STATION_COLORS.length];
+}
+
 function makeStationIcon(color) {
   return new L.DivIcon({
     className: 'map-station-icon',
     html: `<div style="background:${color};color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:0 2px 8px ${color}80;border:2px solid #fff;">📌</div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -36],
+    iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -36],
   });
 }
 
 const driverIcon = new L.DivIcon({
   className: 'map-driver-icon',
   html: '<div style="background:#3B82F6;color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-shadow:0 2px 6px rgba(59,130,246,0.4);border:2px solid #fff;">🚗</div>',
-  iconSize: [26, 26],
-  iconAnchor: [13, 26],
-  popupAnchor: [0, -30],
+  iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -30],
 });
+
+const algeriaOutlineStyle = { color: '#1a1a2e', weight: 2, fillColor: '#e8e8f0', fillOpacity: 1 };
+const communeBoundaryStyle = { color: '#999', weight: 0.5, fill: false };
+
+let boundaryCache = null;
+async function loadGeojson(url) {
+  const res = await fetch(url);
+  return res.json();
+}
 
 function MapCenterer({ center, zoom }) {
   const map = useMap();
@@ -42,21 +58,86 @@ function ClickMarker({ position, onClick }) {
   return <Marker position={[position.lat, position.lng]} />;
 }
 
+function CoverageLayer({ stations: stationList, selectedStationId, showAll, boundaries, allCommunes }) {
+  const features = useMemo(() => {
+    const result = [];
+    const targetStations = showAll ? stationList : stationList.filter((s) => s.id === selectedStationId);
+    targetStations.forEach((s) => {
+      if (!s.coverage_communes) return;
+      const names = s.coverage_communes.split(',').map((n) => n.trim()).filter(Boolean);
+      const color = getStationColor(stationList.indexOf(s));
+      names.forEach((name) => {
+        const commune = allCommunes.find((c) => c.name_ar === name || c.name_fr === name);
+        if (!commune?.name_fr) return;
+        const boundary = boundaries.find((f) => f.properties.nameFr === commune.name_fr);
+        if (boundary) {
+          result.push({
+            ...boundary,
+            properties: { ...boundary.properties, stationName: s.name, stationId: s.id, color },
+          });
+        } else {
+          if (commune.lat && commune.lng) {
+            const r = 0.025;
+            const angles = [30, 90, 150, 210, 270, 330, 30];
+            const coords = angles.map((a) => {
+              const rad = (a * Math.PI) / 180;
+              return [commune.lng + r * Math.cos(rad), commune.lat + r * Math.sin(rad) * 0.75];
+            });
+            result.push({
+              type: 'Feature', properties: { nameFr: commune.name_fr, stationName: s.name, stationId: s.id, color },
+              geometry: { type: 'Polygon', coordinates: [coords] },
+            });
+          }
+        }
+      });
+    });
+    return result;
+  }, [stationList, selectedStationId, showAll, boundaries, allCommunes]);
+
+  if (features.length === 0) return null;
+  return (
+    <>
+      {features.map((f, i) => (
+        <GeoJSON
+          key={`cov-${f.properties.stationId}-${f.properties.nameFr || i}`}
+          data={f}
+          style={{ color: f.properties.color, fillColor: f.properties.color, fillOpacity: 0.35, weight: 3, opacity: 0.9 }}
+        />
+      ))}
+    </>
+  );
+}
+
 export default function StationMap() {
   const [data, setData] = useState({ stations: [], drivers: [] });
   const [loading, setLoading] = useState(true);
   const [editStation, setEditStation] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', latitude: '', longitude: '', commune_name: '', coverage_communes: '' });
+  const [communes, setCommunes] = useState([]);
+  const [wilayas, setWilayas] = useState([]);
+  const [boundaryData, setBoundaryData] = useState([]);
+  const [algeriaOutline, setAlgeriaOutline] = useState(null);
   const [markerPos, setMarkerPos] = useState(null);
   const [sidebarTab, setSidebarTab] = useState('stations');
   const [saving, setSaving] = useState(false);
   const [filterStation, setFilterStation] = useState('');
+  const [selectedStationId, setSelectedStationId] = useState(null);
+  const [showAllCoverage, setShowAllCoverage] = useState(false);
 
   const load = async () => {
     try {
       setLoading(true);
-      const mapData = await stations.mapData();
+      const [mapData, algeria, boundaries, outline] = await Promise.all([
+        stations.mapData(),
+        loadGeojson('/data/algeria.json'),
+        loadGeojson('/data/communes-boundaries.geojson'),
+        loadGeojson('/data/algeria-boundary.geojson'),
+      ]);
       setData(mapData);
+      setCommunes(algeria.communes || []);
+      setWilayas(algeria.wilayas || []);
+      setBoundaryData(boundaries?.features || []);
+      setAlgeriaOutline(outline);
     } catch {}
     finally { setLoading(false); }
   };
@@ -94,28 +175,30 @@ export default function StationMap() {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.code) { return; }
+    if (!form.name || !form.code) return;
     setSaving(true);
     try {
       const payload = {
-        name: form.name,
-        code: form.code,
+        name: form.name, code: form.code,
         latitude: form.latitude ? Number(form.latitude) : null,
         longitude: form.longitude ? Number(form.longitude) : null,
         commune_name: form.commune_name || null,
         coverage_communes: form.coverage_communes || null,
       };
-      if (editStation._new) {
-        await stations.create(payload);
-      } else {
-        await stations.update(editStation.id, payload);
-      }
+      if (editStation._new) await stations.create(payload);
+      else await stations.update(editStation.id, payload);
       playSuccess();
       setEditStation(null);
       load();
     } catch (err) { playError(); }
     setSaving(false);
   };
+
+  const handleStationClick = useCallback((station) => {
+    if (editStation) return;
+    setSelectedStationId((prev) => (prev === station.id ? null : station.id));
+    setShowAllCoverage(false);
+  }, [editStation]);
 
   const mapCenter = useMemo(() => {
     if (markerPos) return [markerPos.lat, markerPos.lng];
@@ -135,10 +218,9 @@ export default function StationMap() {
     <div className="sm-page">
       <div className="sm-sidebar">
         <div className="sm-sidebar-header">
-          <h2>خريطة المحطات</h2>
+          <h2>خريطة الجزائر</h2>
           <button className="btn btn-sm btn-primary" onClick={openCreate}>+ محطة</button>
         </div>
-
         <div className="sm-sidebar-tabs">
           <button className={`sm-sidebar-tab ${sidebarTab === 'stations' ? 'active' : ''}`} onClick={() => setSidebarTab('stations')}>
             المحطات ({data.stations.length})
@@ -147,7 +229,6 @@ export default function StationMap() {
             السائقين ({filteredDrivers.length})
           </button>
         </div>
-
         {sidebarTab === 'drivers' && (
           <div className="sm-filter">
             <select value={filterStation} onChange={(e) => setFilterStation(e.target.value)} className="form-input" style={{ fontSize: 12 }}>
@@ -156,17 +237,24 @@ export default function StationMap() {
             </select>
           </div>
         )}
-
+        {sidebarTab === 'stations' && (
+          <div className="sm-filter">
+            <button className={`btn btn-sm ${showAllCoverage ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => { setShowAllCoverage(!showAllCoverage); setSelectedStationId(null); }}
+              style={{ width: '100%', fontSize: 12 }}>
+              {showAllCoverage ? 'إخفاء التغطية' : 'عرض تغطية جميع المحطات'}
+            </button>
+          </div>
+        )}
         <div className="sm-sidebar-list">
-          {sidebarTab === 'stations' && data.stations.map((s) => {
+          {sidebarTab === 'stations' && data.stations.map((s, idx) => {
+            const color = getStationColor(idx);
+            const isSelected = selectedStationId === s.id;
             return (
-              <div
-                key={s.id}
-                className="sm-sidebar-item"
-                onClick={() => openEdit(s)}
-              >
-                <div className="sm-sidebar-item-icon" style={{ background: '#E5393520', color: '#E53935' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#E53935', display: 'inline-block' }}></span>
+              <div key={s.id} className={`sm-sidebar-item ${isSelected ? 'active' : ''}`}
+                onClick={() => { handleStationClick(s); openEdit(s); }}>
+                <div className="sm-sidebar-item-icon" style={{ background: `${color}18`, color }}>
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, display: 'inline-block' }}></span>
                 </div>
                 <div className="sm-sidebar-item-info">
                   <div className="sm-sidebar-item-name">{s.name}</div>
@@ -196,50 +284,46 @@ export default function StationMap() {
       </div>
 
       <div className="sm-map-area">
-        <MapContainer center={mapCenter} zoom={6} scrollWheelZoom style={{ width: '100%', height: '100%' }}>
-          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <MapContainer center={mapCenter} zoom={6} scrollWheelZoom style={{ width: '100%', height: '100%', background: '#1a1a2e' }}>
           <MapCenterer center={mapCenter} zoom={markerPos ? 14 : undefined} />
 
           {editStation && <ClickMarker position={markerPos} onClick={handleMapClick} />}
 
-          {data.stations.filter((s) => s.latitude && s.longitude).map((s) => {
+          {algeriaOutline && <GeoJSON data={algeriaOutline} style={algeriaOutlineStyle} />}
+          {boundaryData.length > 0 && <GeoJSON data={{ type: 'FeatureCollection', features: boundaryData }} style={communeBoundaryStyle} />}
+
+          {data.stations.filter((s) => s.latitude && s.longitude).map((s, idx) => {
+            const color = getStationColor(data.stations.indexOf(s));
             return (
-              <Marker
-                key={`s-${s.id}`}
-                position={[Number(s.latitude), Number(s.longitude)]}
-                icon={makeStationIcon('#E53935')}
-                eventHandlers={{ click: () => openEdit(s) }}
-              >
+              <Marker key={`s-${s.id}`} position={[Number(s.latitude), Number(s.longitude)]}
+                icon={makeStationIcon(color)}
+                eventHandlers={{ click: () => { handleStationClick(s); openEdit(s); } }}>
                 <Popup>
-                  <strong>{s.name}</strong><br />
-                  {s.code}<br />
+                  <strong>{s.name}</strong><br />{s.code}<br />
                   {s.commune_name && <>{s.commune_name}<br /></>}
-                  {s.coverage_communes && (
-                    <span style={{ fontSize: 12, color: '#666' }}>التغطية: {s.coverage_communes.split(',').length} بلدية</span>
-                  )}
+                  {s.coverage_communes && <span style={{ fontSize: 12, color: '#666' }}>التغطية: {s.coverage_communes.split(',').length} بلدية</span>}
                 </Popup>
               </Marker>
             );
           })}
 
           {filteredDrivers.filter((d) => d.latitude && d.longitude).map((d) => (
-            <Marker
-              key={`d-${d.id}`}
-              position={[Number(d.latitude), Number(d.longitude)]}
-              icon={driverIcon}
-            >
+            <Marker key={`d-${d.id}`} position={[Number(d.latitude), Number(d.longitude)]} icon={driverIcon}>
               <Popup>
-                <strong>{d.full_name}</strong><br />
-                {d.commune_name || d.wilaya_name || ''}<br />
+                <strong>{d.full_name}</strong><br />{d.commune_name || d.wilaya_name || ''}<br />
                 {d.station_name && <span style={{ fontSize: 12, color: '#E53935' }}>المحطة: {d.station_name}</span>}
               </Popup>
             </Marker>
           ))}
+
+          <CoverageLayer stations={data.stations} selectedStationId={selectedStationId}
+            showAll={showAllCoverage} boundaries={boundaryData} allCommunes={communes} />
         </MapContainer>
 
         <div className="sm-legend">
           <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#E53935' }}></span> المحطة</div>
           <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#3B82F6' }}></span> السائق</div>
+          <div className="sm-legend-item"><span className="sm-legend-dot" style={{ background: '#888', width: 14, height: 10, borderRadius: 2, opacity: 0.5 }}></span> منطقة التغطية</div>
         </div>
       </div>
 
@@ -249,7 +333,6 @@ export default function StationMap() {
             <h3>{editStation._new ? 'محطة جديدة' : `تعديل: ${editStation.name}`}</h3>
             <button className="modal-close" onClick={() => setEditStation(null)}>✕</button>
           </div>
-
           <div className="sm-edit-body">
             <div className="form-group">
               <label className="form-label">اسم المحطة</label>
@@ -259,18 +342,10 @@ export default function StationMap() {
               <label className="form-label">الرمز</label>
               <input className="form-input" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
             </div>
-
             <div className="form-group">
               <label className="form-label">البلدية</label>
               <input className="form-input" value={form.commune_name} onChange={(e) => setForm({ ...form, commune_name: e.target.value })} placeholder="اسم البلدية..." />
             </div>
-
-            <div className="form-group">
-              <label className="form-label">منطقة التغطية</label>
-              <textarea className="form-input" value={form.coverage_communes} onChange={(e) => setForm({ ...form, coverage_communes: e.target.value })} placeholder="أسماء البلديات مفصولة بفاصلة..." rows={3} style={{ fontSize: 12 }} />
-              <small style={{ color: '#888', fontSize: 11 }}>أدخل أسماء البلديات مفصولة بفاصلة (مثال: بئر خادم, زرالدة, أولاد هداج)</small>
-            </div>
-
             <div className="sm-coords-row">
               <div className="form-group" style={{ flex: 1 }}>
                 <label className="form-label">خط العرض</label>
@@ -281,11 +356,15 @@ export default function StationMap() {
                 <input className="form-input" value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} placeholder="3.58..." />
               </div>
             </div>
-
             <div className="sm-map-hint">
               {markerPos ? '📍 تم تحديد الموقع — اضغط على الخريطة لتحديده' : 'اضغط على الخريطة لتحديد موقع المحطة'}
             </div>
-
+            <div className="form-group">
+              <label className="form-label">منطقة التغطية</label>
+              <textarea className="form-input" value={form.coverage_communes} onChange={(e) => setForm({ ...form, coverage_communes: e.target.value })}
+                placeholder="أسماء البلديات مفصولة بفاصلة..." rows={3} style={{ fontSize: 12 }} />
+              <small style={{ color: '#888', fontSize: 11 }}>أسماء البلديات مفصولة بفاصلة (مثال: بئر خادم, زرالدة, أولاد هداج)</small>
+            </div>
             <div className="sm-edit-actions">
               <button className="btn btn-primary" onClick={handleSave} disabled={saving || !form.name || !form.code}>
                 {saving ? 'جاري الحفظ...' : editStation._new ? 'إنشاء' : 'حفظ'}
