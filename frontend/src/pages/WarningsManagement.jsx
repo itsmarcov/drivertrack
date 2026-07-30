@@ -19,22 +19,14 @@ export default function WarningsManagement() {
   const [pdfError, setPdfError] = useState('');
 
   const load = async () => {
-    try {
-      const params = {};
-      if (filter) params.status = filter;
-      if (filterStation) params.station_id = filterStation;
-      if (search) params.search = search;
-      const [w, s, d, st] = await Promise.all([
-        warnings.list(params),
-        warnings.stats(),
-        drivers.list(),
-        stations.list(),
-      ]);
-      setList(w);
-      setStats(s);
-      setDriverList(d);
-      setStationList(st);
-    } catch {}
+    const params = {};
+    if (filter) params.status = filter;
+    if (filterStation) params.station_id = filterStation;
+    if (search) params.search = search;
+    try { const w = await warnings.list(params); setList(w); } catch (e) { console.error('load warnings', e); }
+    try { const s = await warnings.stats(); setStats(s); } catch (e) { console.error('load stats', e); }
+    try { const d = await drivers.list(); setDriverList(d); } catch (e) { console.error('load drivers', e); }
+    try { const st = await stations.list(); setStationList(st); } catch (e) { console.error('load stations', e); }
   };
   useEffect(() => { load(); }, [filter, filterStation, search]);
 
@@ -71,12 +63,12 @@ export default function WarningsManagement() {
       setFormDriverSearch('');
       setSelectAll(false);
       load();
-    } catch {}
+    } catch (e) { console.error('create warning', e); }
     setSaving(false);
   };
 
-  const handleArchive = async (id) => { try { await warnings.archive(id); load(); } catch {} };
-  const handleRestore = async (id) => { try { await warnings.restore(id); load(); } catch {} };
+  const handleArchive = async (id) => { try { await warnings.archive(id); load(); } catch (e) { console.error('archive', e); } };
+  const handleRestore = async (id) => { try { await warnings.restore(id); load(); } catch (e) { console.error('restore', e); } };
 
   const handlePdf = async (id) => {
     setPdfLoading(id);
