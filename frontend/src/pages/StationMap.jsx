@@ -256,7 +256,10 @@ export default function StationMap() {
         animation: 'splashBorderGlow 4s ease-in-out infinite alternate',
       },
       logo: {
-        height: 72, marginBottom: 28, filter: 'brightness(0) invert(1)',
+        width: 72, height: 72, marginBottom: 28,
+        background: 'linear-gradient(135deg, #fff 20%, #E53935 100%)',
+        mask: 'url(/NAVEXlogo.png) center/contain no-repeat',
+        WebkitMask: 'url(/NAVEXlogo.png) center/contain no-repeat',
         animation: 'splashLogoAnim 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         opacity: 0, transform: 'scale(0.6)',
       },
@@ -313,7 +316,7 @@ export default function StationMap() {
         `}</style>
         <div style={styles.glow} />
         <div style={styles.glass}>
-          <img src="/NAVEXlogo.png" alt="NAVEX" style={styles.logo} />
+          <div style={styles.logo} />
           <div style={{ textAlign: 'center' }}>
             <h1 style={styles.title}>NAVEX ZONING</h1>
             <span style={styles.beta}>beta</span>
