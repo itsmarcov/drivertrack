@@ -245,22 +245,18 @@ export default function StationMap() {
         pointerEvents: 'none',
         animation: 'splashGlow 4s ease-in-out infinite alternate',
       },
-      borderGlow: {
-        position: 'absolute', inset: -2, borderRadius: 26, zIndex: -1,
-        background: 'conic-gradient(from 0deg, transparent, rgba(229,57,53,0.3), transparent, rgba(229,57,53,0.3), transparent)',
-        animation: 'splashBorderRotate 6s linear infinite',
-      },
       glass: {
         position: 'relative', zIndex: 2,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         padding: '48px 64px',
         background: 'rgba(10,5,5,0.6)',
-        border: '1px solid rgba(229,57,53,0.12)',
+        border: '1px solid rgba(229,57,53,0.15)',
         borderRadius: 24,
         backdropFilter: 'blur(24px)',
+        animation: 'splashBorderGlow 4s ease-in-out infinite alternate',
       },
       logo: {
-        height: 72, marginBottom: 28,
+        height: 72, marginBottom: 28, filter: 'brightness(0) invert(1)',
         animation: 'splashLogoAnim 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         opacity: 0, transform: 'scale(0.6)',
       },
@@ -300,9 +296,9 @@ export default function StationMap() {
             0% { opacity: 0.4; transform: translateX(-50%) scale(1); }
             100% { opacity: 1; transform: translateX(-50%) scale(1.3); }
           }
-          @keyframes splashBorderRotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+          @keyframes splashBorderGlow {
+            0% { box-shadow: 0 0 20px rgba(229,57,53,0.03), 0 0 60px rgba(229,57,53,0.02); border-color: rgba(229,57,53,0.12); }
+            100% { box-shadow: 0 0 40px rgba(229,57,53,0.08), 0 0 80px rgba(229,57,53,0.04); border-color: rgba(229,57,53,0.25); }
           }
           @keyframes splashPulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(229,57,53,0.15); }
@@ -317,7 +313,6 @@ export default function StationMap() {
         `}</style>
         <div style={styles.glow} />
         <div style={styles.glass}>
-          <div style={styles.borderGlow} />
           <img src="/NAVEXlogo.png" alt="NAVEX" style={styles.logo} />
           <div style={{ textAlign: 'center' }}>
             <h1 style={styles.title}>NAVEX ZONING</h1>
