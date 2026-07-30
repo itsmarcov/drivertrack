@@ -1,12 +1,9 @@
 const express = require('express');
-const path = require('path');
 const { queryAll, queryOne, run } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { generatePdf, warningHtml } = require('../pdf');
 
 const router = express.Router();
-
-function formatDate(d){const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
-// ─────────────────────────────────────────────────────────────────────────────
 
 router.get('/', authenticate, async (req, res) => {
   const { status, driver_id, station_id, search } = req.query;
@@ -117,133 +114,14 @@ router.get('/:id/pdf', authenticate, async (req, res) => {
        WHERE w.id = $1`,
       [parseInt(req.params.id)]
     );
-    if (!warning) return res.status(404).json({ error: 'Warning not found' });
+      if (!warning) return res.status(404).json({ error: 'Warning not found' });
     if (req.user.role === 'driver' && warning.driver_id !== req.user.id)
       return res.status(403).json({ error: 'Unauthorized' });
 
-    const PDFDocument = require('pdfkit');
-    const fs = require('fs');
-    const doc = new PDFDocument({ size:'A4', margin:0, info:{ Title:'Warning Report', Author:'DriverTRACK' } });
-    const fontsDir = path.join(__dirname, '..', '..', 'fonts');
-    doc.registerFont('ArR', path.join(fontsDir, 'NotoSansArabic-Regular.ttf'));
-    doc.registerFont('ArB', path.join(fontsDir, 'NotoSansArabic-Bold.ttf'));
-
-    let logoPath = path.join(__dirname, '..', '..', '..', 'frontend', 'dist', 'NAVEXlogo.png');
-    if (!fs.existsSync(logoPath)) {
-      const alt = path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png');
-      if (fs.existsSync(alt)) logoPath = alt; else logoPath = null;
-    }
-
-    const chunks = [];
-    doc.on('data', c => chunks.push(c));
-    doc.on('end', () => {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="warning-${warning.id}.pdf"`);
-      res.send(Buffer.concat(chunks));
-    });
-    doc.on('error', e => { throw e; });
-
-    const PL=50, PR=50, PT=40, W=595-PL-PR;
-    let y = PT;
-
-    // Logo
-    if (logoPath && fs.existsSync(logoPath)) {
-      doc.image(logoPath, PL + W/2 - 55, y, { height:45 });
-      y += 60;
-    }
-
-    // Title
-    doc.font('ArB').fontSize(22).fillColor('#1a1a1a')
-       .text('إشعار إنذار', PL, y, { width:W, align:'center', lineBreak:false });
-    y += 34;
-
-    // Divider
-    doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E53935').lineWidth(2).stroke(); y += 16;
-
-    // Warning ID & Date
-    doc.font('ArR').fontSize(9).fillColor('#9CA3AF')
-       .text('رقم الإشعار: #' + warning.id + '    ' + 'تاريخ الإنشاء: ' + formatDate(warning.created_at), PL, y, { width:W, align:'center', lineBreak:false });
-    y += 24;
-
-    // Info rows
-    function infoRow(label, value) {
-      const LW = 130;
-      doc.font('ArB').fontSize(11).fillColor('#374151')
-         .text(label, PL, y, { width:LW, align:'right', lineBreak:false });
-      doc.font('ArR').fontSize(11).fillColor('#111827')
-         .text(String(value), PL+LW+8, y, { width:W-LW-8, align:'right', lineBreak:false });
-      y += 22;
-    }
-    infoRow('السائق:', warning.driver_name);
-    infoRow('رقم الهاتف:', warning.driver_phone || '---');
-    if (warning.license_plate) infoRow('لوحة الترقيم:', warning.license_plate);
-    if (warning.station_name) infoRow('المحطة:', warning.station_name);
-    infoRow('تم الإصدار من:', warning.admin_name);
-
-    y += 6;
-    doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 16;
-
-    // Title label
-    doc.font('ArB').fontSize(14).fillColor('#E53935')
-       .text(warning.title, PL, y, { width:W, align:'right', lineBreak:false });
-    y += 28;
-
-    // Content body with word wrap
-    const LH = 22;
-    function wrap(text, gap) {
-      if (!text || text === '') { y += gap; return; }
-      const words = text.split(' ');
-      let line = '';
-      for (const w of words) {
-        const test = line ? line + ' ' + w : w;
-        if (doc.widthOfString(test) > W && line) {
-          doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false });
-           y += LH; line = w;
-        } else {
-          line = test;
-        }
-      }
-      if (line) { doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false }); y += LH; }
-      y += gap;
-    }
-    doc.font('ArR').fontSize(12).fillColor('#374151');
-    wrap(warning.content, 16);
-
-    // Signature section
-    doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 16;
-
-    doc.font('ArB').fontSize(11).fillColor('#111827')
-       .text('توقيع السائق:', PL, y, { width:W, align:'right', lineBreak:false });
-    y += 6;
-
-    if (warning.signature_data) {
-      const sigData = warning.signature_data.replace(/^data:image\/\w+;base64,/, '');
-      try {
-        const sigImg = Buffer.from(sigData, 'base64');
-        doc.image(sigImg, PL + W - 180, y, { width: 160, height: 50 });
-        y += 60;
-      } catch { y += 6; }
-    } else if (warning.status === 'signed') {
-      doc.font('ArR').fontSize(10).fillColor('#6B7280')
-         .text('تم التوقيع إلكترونيًا', PL, y, { width:W, align:'right', lineBreak:false });
-      y += 22;
-    }
-    if (warning.signed_at) {
-      doc.font('ArR').fontSize(10).fillColor('#6B7280')
-         .text('تاريخ التوقيع: ' + formatDate(warning.signed_at), PL, y, { width:W, align:'right', lineBreak:false });
-      y += 22;
-    }
-
-    y += 10;
-    doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 12;
-
-    // Footer
-    const now = new Date().toLocaleString('ar-DZ');
-    const footer = 'تم إصدار هذا التقرير بواسطة' + ' DriverTRACK \u2014 ' + now;
-    doc.font('ArR').fontSize(8).fillColor('#9CA3AF')
-       .text(footer, PL, y, { width:W, align:'center', lineBreak:false });
-
-    doc.end();
+    const buf = await generatePdf(warningHtml(warning));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="warning-${warning.id}.pdf"`);
+    res.send(buf);
   } catch (err) {
     console.error('Warning PDF error:', err);
     if (!res.headersSent) res.status(500).json({ error: 'Failed to generate PDF: ' + err.message });

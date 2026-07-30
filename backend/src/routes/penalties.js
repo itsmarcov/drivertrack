@@ -1,13 +1,9 @@
 const express = require('express');
-const path = require('path');
 const { queryAll, queryOne } = require('../database');
 const { authenticate, authorize } = require('../middleware/auth');
+const { generatePdf, penaltyHtml } = require('../pdf');
 
 const router = express.Router();
-
-function formatDate(d){const dt=new Date(d);return`${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;}
-function formatAmount(v){const n=parseFloat(v);return isNaN(n)?String(v):String(Math.round(n));}
-// ─────────────────────────────────────────────────────────────────────────────
 
 router.get('/', authenticate, authorize('admin', 'ops'), async (req, res) => {
   const { date, driver_id, station_id } = req.query;
@@ -50,101 +46,14 @@ router.get('/:id/report', authenticate, async (req, res) => {
               LEFT JOIN attendance a ON p.attendance_id = a.id WHERE p.id = $1`,
       [parseInt(req.params.id)]
     );
-    if (!penalty) return res.status(404).json({ error: 'Penalty not found' });
+      if (!penalty) return res.status(404).json({ error: 'Penalty not found' });
     if (req.user.role === 'driver' && penalty.driver_id !== req.user.id)
       return res.status(403).json({ error: 'Unauthorized' });
 
-    const PDFDocument = require('pdfkit');
-    const fs = require('fs');
-
-    const doc = new PDFDocument({ size:'A4', margin:0, info:{ Title:'Penalty Report', Author:'DriverTRACK' } });
-    const fontsDir = path.join(__dirname, '..', '..', 'fonts');
-    doc.registerFont('ArR', path.join(fontsDir, 'NotoSansArabic-Regular.ttf'));
-    doc.registerFont('ArB', path.join(fontsDir, 'NotoSansArabic-Bold.ttf'));
-
-    let logoPath = path.join(__dirname, '..', '..', '..', 'frontend', 'dist', 'NAVEXlogo.png');
-    if (!fs.existsSync(logoPath)) {
-      const alt = path.join(__dirname, '..', '..', '..', 'frontend', 'public', 'NAVEXlogo.png');
-      if (fs.existsSync(alt)) logoPath = alt; else logoPath = null;
-    }
-
-    const chunks = [];
-    doc.on('data', c => chunks.push(c));
-    doc.on('end', () => {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
-      res.send(Buffer.concat(chunks));
-    });
-    doc.on('error', e => { throw e; });
-
-    const PL=50, PR=50, PT=40, W=595-PL-PR;
-    let y = PT;
-
-    // Logo
-    if (logoPath && fs.existsSync(logoPath)) {
-      doc.image(logoPath, PL + W/2 - 55, y, { height:45 });
-      y += 60;
-    }
-
-    // Title
-    doc.font('ArB').fontSize(24).fillColor('#E53935')
-       .text('إشعار غرامة تأخير', PL, y, { width:W, align:'center', lineBreak:false });
-    y += 40;
-
-    // Divider
-    doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 16;
-
-    // Info rows
-    function infoRow(label, value) {
-      const LW = 120;
-      doc.font('ArB').fontSize(11).fillColor('#374151')
-         .text(label, PL, y, { width:LW, align:'right', lineBreak:false });
-      doc.font('ArR').fontSize(11).fillColor('#111827')
-         .text(String(value), PL+LW+8, y, { width:W-LW-8, align:'right', lineBreak:false });
-      y += 22;
-    }
-    infoRow('السائق:', penalty.driver_name);
-    infoRow('رقم الهاتف:', penalty.driver_phone || '---');
-    infoRow('تاريخ المخالفة:', formatDate(penalty.penalty_date));
-
-    y += 6;
-    doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 20;
-
-    // Body — manual word-wrap with lineBreak:false so PDFKit never loses RTL
-    const amount = formatAmount(penalty.amount);
-    const LH = 22;
-
-    function wrap(text, gap) {
-      if (text === '') { y += gap; return; }
-      const words = text.split(' ');
-      let line = '';
-      for (const w of words) {
-        const test = line ? line + ' ' + w : w;
-        if (doc.widthOfString(test) > W && line) {
-          doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false });
-           y += LH; line = w;
-        } else {
-          line = test;
-        }
-      }
-      if (line) { doc.text(line, PL, y, { width: W, align: 'right', lineBreak: false }); y += LH; }
-      y += gap;
-    }
-
-    doc.font('ArR').fontSize(12).fillColor('#111827');
-    wrap('نحيطكم علمًا بأنه تم تسجيل غرامة مالية بسبب التأخر عن الموعد المحدد للحضور.', 8);
-    wrap('كما نود إعلامكم بأنه، وكنتيجة لهذا التأخير، سيتم احتساب ربح التوصيل الخاص بكم لهذا اليوم بمبلغ ' + amount + ' ' + 'دج فقط عن كل طرد يتم توصيله.', 8);
-    wrap('نرجو الالتزام بالمواعيد المحددة مستقبلاً لتفادي أي إجراءات أو خصومات مماثلة.', 8);
-    wrap('مع الشكر والتقدير.', 20);
-
-    // Footer
-    doc.moveTo(PL,y).lineTo(PL+W,y).strokeColor('#E5E7EB').lineWidth(1).stroke(); y += 12;
-    const now = new Date().toLocaleString('ar-DZ');
-    const footer = 'تم إصدار هذا التقرير بواسطة' + ' DriverTRACK \u2014 ' + now;
-    doc.font('ArR').fontSize(8).fillColor('#9CA3AF')
-       .text(footer, PL, y, { width:W, align:'center', lineBreak:false });
-
-    doc.end();
+    const buf = await generatePdf(penaltyHtml(penalty));
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="penalty-${penalty.id}.pdf"`);
+    res.send(buf);
   } catch (err) {
     console.error('PDF error:', err);
     if (!res.headersSent) res.status(500).json({ error: 'Failed to generate report: ' + err.message });
