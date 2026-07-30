@@ -256,7 +256,7 @@ export default function StationMap() {
         animation: 'splashBorderGlow 4s ease-in-out infinite alternate',
       },
       logo: {
-        width: 72, height: 72, marginBottom: 28,
+        width: 96, height: 96, marginBottom: 32,
         background: 'linear-gradient(135deg, #fff 20%, #E53935 100%)',
         mask: 'url(/NAVEXlogo.png) center/contain no-repeat',
         WebkitMask: 'url(/NAVEXlogo.png) center/contain no-repeat',
