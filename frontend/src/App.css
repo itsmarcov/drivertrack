@@ -239,7 +239,7 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .navbar {
   position: sticky;
   top: 12px;
-  z-index: 100;
+  z-index: 200;
   margin: 0 12px;
   border-radius: var(--nx-radius-xl);
   background: var(--nx-bg-glass);

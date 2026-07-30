@@ -37,7 +37,7 @@ const driverIcon = new L.DivIcon({
   iconSize: [26, 26], iconAnchor: [13, 26], popupAnchor: [0, -30],
 });
 
-const algeriaOutlineStyle = { color: '#1a1a2e', weight: 2, fillColor: '#e8e8f0', fillOpacity: 1 };
+const algeriaOutlineStyle = { color: '#2a1515', weight: 2, fillColor: '#0d0505', fillOpacity: 1 };
 const communeBoundaryStyle = { color: '#999', weight: 0.5, fill: false };
 
 let boundaryCache = null;
@@ -331,7 +331,7 @@ export default function StationMap() {
     );
   }
 
-  if (loading) return <div className="loading">جاري تحميل الخريطة...</div>;
+  if (loading) return <div style={{ padding: 24, textAlign: 'center', color: '#888', fontSize: 14 }}>جاري تحميل الخريطة...</div>;
 
   return (
     <div className="sm-page">
@@ -403,7 +403,7 @@ export default function StationMap() {
       </div>
 
       <div className="sm-map-area">
-          <MapContainer center={mapCenter} zoom={6} scrollWheelZoom style={{ width: '100%', height: '100%', background: '#1a1a2e' }}>
+          <MapContainer center={mapCenter} zoom={6} scrollWheelZoom style={{ width: '100%', height: '100%', background: '#0d0505' }}>
           <MapCenterer center={mapCenter} zoom={markerPos ? 14 : undefined} />
           <ZoomWatcher onZoom={setZoom} />
 
