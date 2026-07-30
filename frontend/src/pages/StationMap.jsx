@@ -52,6 +52,17 @@ function MapCenterer({ center, zoom }) {
   return null;
 }
 
+function ZoomWatcher({ onZoom }) {
+  const map = useMap();
+  useEffect(() => {
+    const h = () => onZoom(map.getZoom());
+    map.on('zoomend', h);
+    h();
+    return () => map.off('zoomend', h);
+  }, [map, onZoom]);
+  return null;
+}
+
 function ClickMarker({ position, onClick }) {
   useMapEvents({ click(e) { onClick({ lat: e.latlng.lat, lng: e.latlng.lng }); } });
   if (!position) return null;
@@ -68,8 +79,8 @@ function CoverageLayer({ stations: stationList, selectedStationId, showAll, boun
       const color = getStationColor(stationList.indexOf(s));
       names.forEach((name) => {
         const commune = allCommunes.find((c) => c.name_ar === name || c.name_fr === name);
-        if (!commune?.name_fr) return;
-        const boundary = boundaries.find((f) => f.properties.nameFr === commune.name_fr);
+        if (!commune?.code) return;
+        const boundary = boundaries.find((f) => f.properties.communeCode === String(commune.code));
         if (boundary) {
           result.push({
             ...boundary,
@@ -123,6 +134,7 @@ export default function StationMap() {
   const [filterStation, setFilterStation] = useState('');
   const [selectedStationId, setSelectedStationId] = useState(null);
   const [showAllCoverage, setShowAllCoverage] = useState(false);
+  const [zoom, setZoom] = useState(6);
 
   const load = async () => {
     try {
@@ -284,13 +296,39 @@ export default function StationMap() {
       </div>
 
       <div className="sm-map-area">
-        <MapContainer center={mapCenter} zoom={6} scrollWheelZoom style={{ width: '100%', height: '100%', background: '#1a1a2e' }}>
+          <MapContainer center={mapCenter} zoom={6} scrollWheelZoom style={{ width: '100%', height: '100%', background: '#1a1a2e' }}>
           <MapCenterer center={mapCenter} zoom={markerPos ? 14 : undefined} />
+          <ZoomWatcher onZoom={setZoom} />
 
           {editStation && <ClickMarker position={markerPos} onClick={handleMapClick} />}
 
           {algeriaOutline && <GeoJSON data={algeriaOutline} style={algeriaOutlineStyle} />}
           {boundaryData.length > 0 && <GeoJSON data={{ type: 'FeatureCollection', features: boundaryData }} style={communeBoundaryStyle} />}
+
+          {communes.length > 0 && zoom >= 8 && (
+            <GeoJSON
+              data={{
+                type: 'FeatureCollection',
+                features: communes
+                  .filter((c) => c.lat && c.lng && c.name_fr)
+                  .map((c) => ({
+                    type: 'Feature',
+                    properties: { name: c.name_fr },
+                    geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+                  })),
+              }}
+              pointToLayer={(feature, latlng) =>
+                L.marker(latlng, {
+                  icon: L.divIcon({
+                    className: 'commune-label-icon',
+                    html: `<span style="font-size:8px;color:#666;text-shadow:0 0 2px #fff,0 0 2px #fff,0 0 2px #fff;white-space:nowrap;pointer-events:none;font-weight:500;letter-spacing:-0.3px">${feature.properties.name}</span>`,
+                    iconSize: [0, 0],
+                    iconAnchor: [0, 0],
+                  }),
+                })
+              }
+            />
+          )}
 
           {data.stations.filter((s) => s.latitude && s.longitude).map((s, idx) => {
             const color = getStationColor(data.stations.indexOf(s));
