@@ -2,10 +2,41 @@ const puppeteer = require('puppeteer');
 const path = require('path');
 const fs = require('fs');
 
+const CHROME_PATHS = [
+  '/usr/bin/chromium-browser',
+  '/usr/bin/chromium',
+  '/usr/bin/google-chrome',
+  '/usr/bin/google-chrome-stable',
+  '/snap/bin/chromium',
+];
+
+function findChrome() {
+  for (const p of CHROME_PATHS) {
+    if (fs.existsSync(p)) return p;
+  }
+  try {
+    const bundled = puppeteer.executablePath();
+    if (bundled && fs.existsSync(bundled)) return bundled;
+  } catch {}
+  return null;
+}
+
 let browserPromise = null;
 async function getBrowser() {
   if (!browserPromise) {
-    browserPromise = puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] }).catch(e => {
+    const executablePath = findChrome();
+    if (!executablePath) {
+      throw new Error(
+        'Chrome/Chromium not found. Install it with:\n' +
+        '  sudo apt update && sudo apt install chromium-browser -y\n' +
+        'Or download manually from https://www.chromium.org/getting-involved/download-chromium'
+      );
+    }
+    browserPromise = puppeteer.launch({
+      headless: true,
+      executablePath,
+      args: ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage'],
+    }).catch(e => {
       browserPromise = null;
       throw e;
     });
