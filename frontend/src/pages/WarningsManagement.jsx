@@ -44,13 +44,15 @@ export default function WarningsManagement() {
     }));
   };
 
+  const prevSelectAll = useRef(false);
   useEffect(() => {
     if (selectAll) {
       setForm((f) => ({ ...f, driver_ids: filteredDrivers.map((d) => d.id) }));
-    } else {
+    } else if (prevSelectAll.current) {
       setForm((f) => ({ ...f, driver_ids: [] }));
     }
-  }, [selectAll, filteredDrivers]);
+    prevSelectAll.current = selectAll;
+  }, [selectAll]);
 
   const handleCreate = async () => {
     if (form.driver_ids.length === 0 || !form.title || !form.content) return;
