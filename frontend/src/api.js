@@ -258,3 +258,18 @@ export const warnings = {
     return res.blob();
   },
 };
+
+export const questionnaires = {
+  list: () => request('/questionnaires'),
+  active: () => request('/questionnaires/active'),
+  create: (data) => request('/questionnaires', { method: 'POST', body: JSON.stringify(data) }),
+  get: (id) => request(`/questionnaires/${id}`),
+  respond: (id, answers) => request(`/questionnaires/${id}/respond`, { method: 'POST', body: JSON.stringify({ answers }) }),
+  downloadReport: async (id) => {
+    const res = await fetch(`/api/questionnaires/${id}/report`, { credentials: 'same-origin' });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to generate report'); }
+    return res.blob();
+  },
+  updateStatus: (id, status) => request(`/questionnaires/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  remove: (id) => request(`/questionnaires/${id}`, { method: 'DELETE' }),
+};

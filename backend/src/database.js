@@ -147,6 +147,32 @@ async function initDatabase() {
     await pool.query("CREATE INDEX IF NOT EXISTS idx_warnings_driver_id ON warnings(driver_id)");
     await pool.query("CREATE INDEX IF NOT EXISTS idx_warnings_status ON warnings(status)");
     await pool.query("ALTER TABLE warnings ADD COLUMN IF NOT EXISTS signature_data TEXT");
+    await pool.query(`CREATE TABLE IF NOT EXISTS questionnaires (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      status VARCHAR(20) DEFAULT 'active' CHECK(status IN ('active','closed')),
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS questionnaire_questions (
+      id SERIAL PRIMARY KEY,
+      questionnaire_id INTEGER NOT NULL REFERENCES questionnaires(id) ON DELETE CASCADE,
+      question_text TEXT NOT NULL,
+      question_type VARCHAR(20) DEFAULT 'text' CHECK(question_type IN ('text','choice','rating')),
+      options TEXT,
+      sort_order INTEGER DEFAULT 0
+    )`);
+    await pool.query(`CREATE TABLE IF NOT EXISTS questionnaire_responses (
+      id SERIAL PRIMARY KEY,
+      questionnaire_id INTEGER NOT NULL REFERENCES questionnaires(id) ON DELETE CASCADE,
+      driver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      answers TEXT NOT NULL,
+      submitted_at TIMESTAMP DEFAULT NOW(),
+      UNIQUE(questionnaire_id, driver_id)
+    )`);
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_questionnaire_questions_qid ON questionnaire_questions(questionnaire_id)");
+    await pool.query("CREATE INDEX IF NOT EXISTS idx_questionnaire_responses_qid ON questionnaire_responses(questionnaire_id)");
   } catch {}
   return pool;
 }

@@ -26,6 +26,7 @@ import AnnouncementsManagement from './pages/AnnouncementsManagement';
 import ReportsManagement from './pages/ReportsManagement';
 import StationMap from './pages/StationMap';
 import WarningsManagement from './pages/WarningsManagement';
+import QuestionnairesManagement from './pages/QuestionnairesManagement';
 
 
 function HomeRedirect() {
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="/admin/reports" element={<ProtectedRoute roles={['admin', 'super_admin']}><ReportsManagement /></ProtectedRoute>} />
           <Route path="/admin/station-map" element={<ProtectedRoute roles={['admin', 'super_admin']}><StationMap /></ProtectedRoute>} />
           <Route path="/admin/warnings" element={<ProtectedRoute roles={['admin', 'super_admin']}><WarningsManagement /></ProtectedRoute>} />
+          <Route path="/admin/questionnaires" element={<ProtectedRoute roles={['admin', 'super_admin']}><QuestionnairesManagement /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

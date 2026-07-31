@@ -8,7 +8,7 @@ import ReportsTab from './ReportsTab';
 import AddressGuide from '../components/AddressGuide';
 import AddressForm from '../components/AddressForm';
 import { useAuth } from '../context/AuthContext';
-import { qr, attendance, announcements as announcementsApi, drivers, warnings } from '../api';
+import { qr, attendance, announcements as announcementsApi, drivers, warnings, questionnaires } from '../api';
 import { playSuccess, playNotification } from '../utils/sounds';
 
 function SignaturePad({ onConfirm, onCancel }) {
@@ -166,6 +166,104 @@ function DriverWarningsTab() {
   );
 }
 
+function QuestionnairePopup({ questionnaire, onClose }) {
+  const [answers, setAnswers] = useState({});
+  const [sending, setSending] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+
+  const setAnswer = (qid, value) => setAnswers((a) => ({ ...a, [qid]: value }));
+  const allAnswered = questionnaire.questions.every((qq) => {
+    const v = answers[qq.id];
+    return v !== undefined && v !== null && String(v).trim() !== '';
+  });
+
+  const submit = async () => {
+    if (!allAnswered) return;
+    setSending(true);
+    try {
+      await questionnaires.respond(questionnaire.id, answers);
+      setDone(true);
+    } catch (err) { setError(err.message); }
+    setSending(false);
+  };
+
+  return (
+    <div className="modal-overlay q-overlay" onClick={(e) => e.stopPropagation()}>
+      <div className="modal questionnaire-popup" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+        {done ? (
+          <>
+            <div style={{ textAlign: 'center', padding: '16px 0' }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
+              <h3 style={{ margin: '0 0 8px', fontSize: 16 }}>شكراً لك! تم إرسال إجاباتك</h3>
+              <p style={{ fontSize: 13, color: 'var(--nx-text-muted)', margin: '0 0 16px' }}>تم تسجيل إجاباتك على الاستبيان بنجاح</p>
+              <button className="btn btn-primary" onClick={onClose}>إغلاق</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="modal-header">
+              <h3>📝 {questionnaire.title}</h3>
+              <button className="modal-close" onClick={onClose}>✕</button>
+            </div>
+            {questionnaire.description && (
+              <p style={{ fontSize: 13, color: 'var(--nx-text-muted)', margin: '-8px 0 14px', whiteSpace: 'pre-wrap' }}>{questionnaire.description}</p>
+            )}
+            <div style={{ maxHeight: '55vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {questionnaire.questions.map((qq, idx) => (
+                <div key={qq.id}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+                    <span className="badge badge-danger" style={{ borderRadius: '50%', minWidth: 22, textAlign: 'center', flexShrink: 0 }}>{idx + 1}</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600 }}>{qq.question_text}</div>
+                      {qq.question_type === 'rating' && <div style={{ fontSize: 11, color: 'var(--nx-text-muted)' }}>التقييم من 1 إلى 5</div>}
+                    </div>
+                  </div>
+                  {qq.question_type === 'text' && (
+                    <textarea className="form-input" rows={3} value={answers[qq.id] || ''} onChange={(e) => setAnswer(qq.id, e.target.value)} placeholder="إجابتك..." style={{ marginRight: 30 }} />
+                  )}
+                  {qq.question_type === 'choice' && (
+                    <div style={{ marginRight: 30, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {(qq.options || []).map((opt, oi) => (
+                        <label key={oi} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '6px 10px', borderRadius: 8, background: answers[qq.id] === opt ? 'var(--nx-bg-glass)' : 'transparent', border: '1px solid var(--nx-border-light)' }}>
+                          <input type="radio" name={`q-${qq.id}`} checked={answers[qq.id] === opt} onChange={() => setAnswer(qq.id, opt)} />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {qq.question_type === 'rating' && (
+                    <div style={{ marginRight: 30, display: 'flex', gap: 6 }}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button key={n} onClick={() => setAnswer(qq.id, n)} className="btn btn-sm"
+                          style={{
+                            fontSize: 22,
+                            background: answers[qq.id] >= n ? '#FFD700' : 'transparent',
+                            color: answers[qq.id] >= n ? '#1a1a1a' : 'var(--nx-text-muted)',
+                            border: '1px solid var(--nx-border)',
+                          }}>
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {error && <div className="alert alert-error" style={{ marginTop: 12 }}>{error}</div>}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button className="btn btn-outline" onClick={onClose} disabled={sending}>إغلاق</button>
+              <button className="btn btn-primary" onClick={submit} disabled={sending || !allAnswered}>
+                {sending ? 'جاري الإرسال...' : `إرسال الإجابات`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function QRDisplay({ data }) {
   const qrValue = JSON.stringify({
     driverId: data.driverId,
@@ -227,6 +325,8 @@ export default function DriverDashboard() {
   const [hasAddress, setHasAddress] = useState(true);
   const [addressPromptDismissed, setAddressPromptDismissed] = useState(false);
   const [showReports, setShowReports] = useState(false);
+  const [pendingQuestionnaires, setPendingQuestionnaires] = useState([]);
+  const [currentQuestionnaire, setCurrentQuestionnaire] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -240,6 +340,13 @@ export default function DriverDashboard() {
       setAnnouncements(data);
       const firstUnread = data.find((a) => !a.is_read);
       if (firstUnread) { setCurrentAnnouncement(firstUnread); playNotification(); }
+    }).catch(() => {});
+    questionnaires.active().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setPendingQuestionnaires(data);
+        setCurrentQuestionnaire(data[0]);
+        playNotification();
+      }
     }).catch(() => {});
     drivers.getAddress(user.id).then((data) => {
       const filled = data && (data.wilaya_code || data.wilaya_name || data.commune_code || data.commune_name);
@@ -267,6 +374,15 @@ export default function DriverDashboard() {
     }
   };
 
+  const handleQuestionnaireClose = () => {
+    setCurrentQuestionnaire(null);
+    setPendingQuestionnaires((prev) => {
+      const remaining = prev.filter((q) => q.id !== currentQuestionnaire?.id);
+      if (remaining.length > 0) setCurrentQuestionnaire(remaining[0]);
+      return remaining;
+    });
+  };
+
   return (
     <div className="driver-app">
       <div className="driver-top-bar">
@@ -282,6 +398,10 @@ export default function DriverDashboard() {
           مرحباً، <strong>{user.full_name}</strong>
         </div>
       </div>
+
+      {currentQuestionnaire && (
+        <QuestionnairePopup questionnaire={currentQuestionnaire} onClose={handleQuestionnaireClose} />
+      )}
 
       {currentAnnouncement && (() => {
         const unreadList = announcements.filter((a) => !a.is_read);

@@ -2092,6 +2092,9 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 }
 
 /* ─── Driver Announcements Popup ─── */
+.questionnaire-popup { max-width: 560px; }
+.modal-overlay.q-overlay { z-index: 300; }
+
 .announcement-popup {
   max-width: 400px;
   width: 90%;

@@ -87,6 +87,19 @@ body { direction: rtl; font-family: 'ArR', sans-serif; color: #374151; }
 .sig-img img { max-width: 160px; height: 50px; }
 .sig-text { font-size: 10px; color: #6B7280; text-align: right; }
 .footer { font-size: 8px; color: #9CA3AF; text-align: center; margin-top: 10px; }
+.q-title { font-family: 'ArB'; font-size: 20px; color: #E53935; text-align: center; margin: 8px 0 2px; }
+.q-desc { font-size: 11px; color: #6B7280; text-align: center; margin-bottom: 14px; white-space: pre-wrap; }
+.q-meta { font-size: 9px; color: #9CA3AF; text-align: center; margin-bottom: 14px; }
+.q-question { margin-top: 16px; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 6px; }
+.q-question-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.q-question-num { font-family: 'ArB'; font-size: 11px; background: #E53935; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+.q-question-text { font-family: 'ArB'; font-size: 13px; color: #111827; flex: 1; }
+.q-type-badge { font-size: 9px; color: #6B7280; background: #F3F4F6; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.q-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 4px; }
+.q-table th { background: #F9FAFB; font-family: 'ArB'; color: #374151; text-align: right; padding: 6px 8px; border: 1px solid #E5E7EB; }
+.q-table td { padding: 6px 8px; border: 1px solid #E5E7EB; color: #111827; vertical-align: top; }
+.q-answer-text { white-space: pre-wrap; }
+.q-no-data { font-size: 11px; color: #9CA3AF; text-align: center; padding: 12px 0; }
 `;
 
 function html(head, body) {
@@ -184,4 +197,73 @@ function penaltyHtml(p) {
   `);
 }
 
-module.exports = { generatePdf, warningHtml, penaltyHtml };
+function questionTypeLabel(type) {
+  const m = { text: 'إجابة نصية', choice: 'اختيار من متعدد', rating: 'تقييم' };
+  return m[type] || type;
+}
+
+function formatRating(v) {
+  const n = Number(v);
+  if (isNaN(n)) return escapeHtml(String(v));
+  const full = Math.round(n);
+  let stars = '';
+  for (let i = 1; i <= 5; i++) stars += i <= full ? '★' : '☆';
+  return `${stars} (${n})`;
+}
+
+function formatAnswer(answer, type) {
+  if (answer === undefined || answer === null || answer === '') return '<span style="color:#9CA3AF;">بدون إجابة</span>';
+  if (type === 'rating') return formatRating(answer);
+  return escapeHtml(String(answer));
+}
+
+function questionnaireReportHtml(q, questions, responses) {
+  const logoSrc = logoUri();
+  const logoBlock = logoSrc ? `<div class="logo"><img src="${logoSrc}" alt=""></div>` : '';
+
+  const questionBlocks = questions.map((qq, idx) => {
+    const tableRows = responses.length === 0
+      ? `<tr><td colspan="3" class="q-no-data">لا توجد إجابات بعد</td></tr>`
+      : responses.map((r) => `
+          <tr>
+            <td>${escapeHtml(r.driver_name)}</td>
+            <td style="white-space:nowrap;">${escapeHtml(r.driver_phone || '---')}</td>
+            <td class="q-answer-text">${formatAnswer(r.answers[qq.id], qq.question_type)}</td>
+          </tr>
+        `).join('\n');
+
+    return `
+      <div class="q-question">
+        <div class="q-question-head">
+          <span class="q-question-num">${idx + 1}</span>
+          <span class="q-question-text">${escapeHtml(qq.question_text)}</span>
+          <span class="q-type-badge">${questionTypeLabel(qq.question_type)}</span>
+        </div>
+        <table class="q-table">
+          <thead>
+            <tr>
+              <th style="width:30%;">السائق</th>
+              <th style="width:20%;">الهاتف</th>
+              <th>الإجابة</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+    `;
+  }).join('\n');
+
+  return html('', `
+    ${logoBlock}
+    <div class="title">تقرير استبيان</div>
+    <div class="q-title">${escapeHtml(q.title)}</div>
+    ${q.description ? `<div class="q-desc">${escapeHtml(q.description)}</div>` : ''}
+    <div class="q-meta">تاريخ الإصدار: ${formatDate(new Date())} — عدد الإجابات: ${responses.length}</div>
+    <hr class="divider-red">
+    ${questionBlocks}
+    <hr class="divider-gray">
+    <div class="footer">تم إصدار هذا التقرير بواسطة DriverTRACK — ${new Date().toLocaleString('ar-DZ')}</div>
+  `);
+}
+
+module.exports = { generatePdf, warningHtml, penaltyHtml, questionnaireReportHtml };
