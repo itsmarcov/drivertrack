@@ -2,32 +2,26 @@ import { useState, useEffect } from 'react';
 
 const MILESTONES = [
   { n: 7, icon: '🔥', label: 'أسبوع' },
-  { n: 14, icon: '🐐', label: 'أسبوعين' },
-  { n: 30, icon: '👑', label: 'شهر' },
-  { n: 60, icon: '🦸', label: 'شهرين' },
+  { n: 14, icon: '📅', label: 'أسبوعين' },
+  { n: 30, icon: '🗓️', label: 'شهر' },
+  { n: 60, icon: '🏅', label: 'شهرين' },
   { n: 100, icon: '🏆', label: 'مئة يوم' },
 ];
 
 function messageFor(s) {
   if (s.streak === 0) {
-    if (s.dead) return `💀 النار طفات! كان عندك شريط ${s.best_streak} يوم... ابدا من الصفر يا بطل`;
-    if (s.total_days > 0) return `⚠️ آخر حضور كان من ${s.days_since_last} يوم... النار تبرد. سجّل بكري غدوة`;
-    return '🌱 ما زال ما بديتش النار. سجّل حضورك هذا الصباح واشعلها!';
+    if (s.dead) return `انتهت سلسلة الحضور. كانت قد وصلت إلى ${s.best_streak} يوم متواصل`;
+    if (s.total_days > 0) return `آخر تسجيل حضور كان قبل ${s.days_since_last} يوم. سجّل حضورك غداً لبدء سلسلة جديدة`;
+    return 'لم يتم تسجيل أي حضور بعد. سجّل حضورك غداً لبدء سلسلة الحضور';
   }
-  if (s.streak === 1) return '🔥 شرارة اليوم الأول! حافظ عليها — غدوة تزيد تولع';
-  if (s.streak === 2) return '🔥 نار في مهدها! يومين متواصلين. كمّل ما تفرطش';
-  if (s.streak === 3) return '🔥🔥 3 أيام! راهي تولع مليح، لا تروح تضربها مية';
-  if (s.streak === 4) return '4 أيام نار! حتى الماتور ديال البوسطة ما يصبرش قدك';
-  if (s.streak === 5) return '🚗 5 أيام! الزيت والقعدة... نقصد الحضور دايم';
-  if (s.streak === 6) return '6 أيام! بكرا يكون عندك أسبوع كامل مشتعل 💪';
-  if (s.streak === 7) return '🔥🔥🔥 أسبوع كامل نار! "7 أيام بلا كسرة" — ملك الأسبوع';
-  if (s.streak === 10) return '🚀 عشرة أيام! النار ولات نوع جديد من الحماس';
-  if (s.streak === 14) return '🐐 أسبوعين نار! أنت المايسترو الحقيقي';
-  if (s.streak === 21) return '🧠 21 يوم! العادة الذهبية صنعتها. خليها خالدة';
-  if (s.streak === 30) return '👑 شهر كامل ما غبتش! أنت الأسطورة بعينها';
-  if (s.streak === 60) return '🦸 شهرين نار! أنت أقوى من بطارية السيارة';
-  if (s.streak === 100) return '🏆 مئة يوم! ما بقاتش فوق منك حاجة. إهدينا النصيحة';
-  return `🔥 ${s.streak} يوم من النار المستمرة! خلي الماكينة خدامة`;
+  if (s.streak === 1) return 'تم تسجيل حضور يوم واحد. استمر غداً لمواصلة السلسلة';
+  if (s.streak === 7) return 'تم تحقيق سلسلة حضور أسبوع كامل';
+  if (s.streak === 14) return 'تم تحقيق سلسلة حضور أسبوعين متتاليين';
+  if (s.streak === 21) return 'تم تحقيق سلسلة حضور 21 يوم متتالي';
+  if (s.streak === 30) return 'تم تحقيق سلسلة حضور شهر كامل';
+  if (s.streak === 60) return 'تم تحقيق سلسلة حضور شهرين متتاليين';
+  if (s.streak === 100) return 'تم تحقيق سلسلة حضور 100 يوم متتالي';
+  return `سلسلة حضور متواصلة منذ ${s.streak} يوم`;
 }
 
 export default function StreakCard({ data }) {
@@ -56,11 +50,11 @@ export default function StreakCard({ data }) {
     <div className={`streak-card streak-${state}`}>
       <div className="streak-main">
         <div className="streak-flame" style={{ fontSize: flameSize }}>
-          {s.at_risk ? '⏳' : streak > 0 ? '🔥' : '🪨'}
+          {s.at_risk ? '⏳' : streak > 0 ? '🔥' : '📋'}
         </div>
         <div className="streak-meta">
           <div className="streak-count">{streak}</div>
-          <div className="streak-label">{streak === 1 ? 'يوم نار متواصل' : streak > 1 ? 'أيام نار متواصلة' : 'نارك مطفية'}</div>
+          <div className="streak-label">{streak === 1 ? 'يوم حضور متواصل' : streak > 1 ? 'أيام حضور متواصلة' : 'لا توجد سلسلة'}</div>
         </div>
         <div className="streak-best">
           <div className="streak-best-num">{best}</div>
@@ -101,7 +95,7 @@ export default function StreakCard({ data }) {
 
       {celebrated && (
         <div className="streak-celebration">
-          🎉 إنجاز جديد! وصلت {celebrated.label} من النار ({celebrated.n} يوم) — يا نار يا بطل!
+          🎉 إنجاز جديد! تم تحقيق سلسلة {celebrated.label} من الحضور المتواصل ({celebrated.n} يوم)
         </div>
       )}
     </div>
