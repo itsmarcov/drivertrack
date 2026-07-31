@@ -361,13 +361,13 @@ export default function DriverDashboard() {
     attendance.streak().then(setStreakData).catch(() => {});
   };
 
-  useEffect(() => {
-    if (todayRecord && (!streakData || !streakData.today_scanned)) loadStreak();
-  }, [todayRecord]);
-
   const safeRecords = Array.isArray(records) ? records : [];
   const todayRecord = safeRecords.find((r) => r.scan_date === qrData?.date);
   const recentRecords = safeRecords.slice(0, 5);
+
+  useEffect(() => {
+    if (todayRecord && (!streakData || !streakData.today_scanned)) loadStreak();
+  }, [todayRecord]);
 
   const handleMarkRead = async () => {
     if (!currentAnnouncement) return;
