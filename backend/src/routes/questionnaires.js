@@ -7,7 +7,7 @@ const { logActivity } = require('../logActivity');
 const router = express.Router();
 
 router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
-  const { title, description, questions } = req.body;
+  const { title, description, questions, audience_type, station_ids, driver_ids } = req.body;
   if (!title || !questions || !Array.isArray(questions) || questions.length === 0) {
     return res.status(400).json({ error: 'title and at least one question are required' });
   }
@@ -19,10 +19,21 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, re
       return res.status(400).json({ error: 'Choice questions need at least two options' });
     }
   }
+  const audience = audience_type || 'all';
+  if (audience === 'drivers' && (!driver_ids || driver_ids.length === 0)) {
+    return res.status(400).json({ error: 'Select at least one driver' });
+  }
+  if (audience === 'stations' && (!station_ids || station_ids.length === 0)) {
+    return res.status(400).json({ error: 'Select at least one station' });
+  }
 
   const result = await run(
-    `INSERT INTO questionnaires (title, description, status, created_by) VALUES ($1, $2, 'active', $3)`,
-    [title, description || null, req.user.id]
+    `INSERT INTO questionnaires (title, description, status, audience_type, station_ids, driver_ids, created_by)
+     VALUES ($1, $2, 'active', $3, $4, $5, $6)`,
+    [title, description || null, audience,
+      audience === 'stations' ? station_ids.join(',') : null,
+      audience === 'drivers' ? driver_ids.join(',') : null,
+      req.user.id]
   );
   const qid = result.lastInsertRowid;
 
@@ -41,7 +52,7 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, re
 
 router.get('/', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   const list = await queryAll(
-    `SELECT q.id, q.title, q.description, q.status, q.created_at,
+    `SELECT q.id, q.title, q.description, q.status, q.created_at, q.audience_type, q.station_ids, q.driver_ids,
             u.full_name as created_by_name,
             (SELECT COUNT(*)::int FROM questionnaire_questions qq WHERE qq.questionnaire_id = q.id) as questions_count,
             (SELECT COUNT(*)::int FROM questionnaire_responses qr WHERE qr.questionnaire_id = q.id) as responses_count
@@ -53,8 +64,10 @@ router.get('/', authenticate, authorize('admin', 'super_admin'), async (req, res
 });
 
 router.get('/active', authenticate, authorize('driver'), async (req, res) => {
+  const user = await queryOne('SELECT id, station_id FROM users WHERE id = $1', [req.user.id]);
+  if (!user) return res.json([]);
   const rows = await queryAll(
-    `SELECT q.id, q.title, q.description, q.created_at,
+    `SELECT q.id, q.title, q.description, q.created_at, q.audience_type, q.station_ids, q.driver_ids,
             COALESCE(json_agg(
               json_build_object('id', qq.id, 'question_text', qq.question_text, 'question_type', qq.question_type, 'options', qq.options)
               ORDER BY qq.sort_order
@@ -63,11 +76,25 @@ router.get('/active', authenticate, authorize('driver'), async (req, res) => {
      JOIN questionnaire_questions qq ON qq.questionnaire_id = q.id
      LEFT JOIN questionnaire_responses qr ON qr.questionnaire_id = q.id AND qr.driver_id = $1
      WHERE q.status = 'active' AND qr.id IS NULL
-     GROUP BY q.id, q.title, q.description, q.created_at
+     GROUP BY q.id, q.title, q.description, q.created_at, q.audience_type, q.station_ids, q.driver_ids
      ORDER BY q.created_at ASC`,
     [req.user.id]
   );
-  const parsed = rows.map((r) => {
+  const filtered = rows.filter((r) => {
+    if (r.audience_type === 'all') return true;
+    if (r.audience_type === 'drivers') {
+      if (!r.driver_ids) return false;
+      const ids = r.driver_ids.split(',').map((s) => parseInt(s.trim()));
+      return ids.includes(user.id);
+    }
+    if (r.audience_type === 'stations') {
+      if (!r.station_ids || !user.station_id) return false;
+      const ids = r.station_ids.split(',').map((s) => parseInt(s.trim()));
+      return ids.includes(user.station_id);
+    }
+    return false;
+  });
+  const parsed = filtered.map((r) => {
     const questions = typeof r.questions === 'string' ? JSON.parse(r.questions) : r.questions;
     const cleaned = questions.map((qq) => {
       if (qq.question_type === 'choice' && qq.options) {

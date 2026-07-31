@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import LoadingScreen from '../components/LoadingScreen';
-import { questionnaires } from '../api';
+import { questionnaires, drivers as driversApi, stations as stationsApi } from '../api';
 import { playSuccess, playError } from '../utils/sounds';
 
 function createEmptyQuestion() {
@@ -9,18 +9,23 @@ function createEmptyQuestion() {
 
 export default function QuestionnairesManagement() {
   const [list, setList] = useState([]);
+  const [driversList, setDriversList] = useState([]);
+  const [stationList, setStationList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', questions: [createEmptyQuestion()] });
+  const [form, setForm] = useState({ title: '', description: '', questions: [createEmptyQuestion()], audience_type: 'all', station_ids: [], driver_ids: [], driver_search: '' });
   const [detail, setDetail] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(null);
 
   const load = async () => {
     try {
       setLoading(true);
-      setList(await questionnaires.list());
+      const [q, d, s] = await Promise.all([questionnaires.list(), driversApi.list(), stationsApi.list()]);
+      setList(q);
+      setDriversList(d);
+      setStationList(s);
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   };
@@ -28,7 +33,7 @@ export default function QuestionnairesManagement() {
   useEffect(() => { load(); }, []);
 
   const openCreate = () => {
-    setForm({ title: '', description: '', questions: [createEmptyQuestion()] });
+    setForm({ title: '', description: '', questions: [createEmptyQuestion()], audience_type: 'all', station_ids: [], driver_ids: [], driver_search: '' });
     setShowForm(true);
   };
 
@@ -76,6 +81,32 @@ export default function QuestionnairesManagement() {
     });
   };
 
+  const filteredFormDrivers = driversList.filter((d) => {
+    if (!form.driver_search) return true;
+    const q = form.driver_search.toLowerCase();
+    return d.full_name?.toLowerCase().includes(q) || d.phone?.includes(q) || d.license_plate?.toLowerCase().includes(q);
+  });
+
+  const toggleDriverSel = (id) => {
+    setForm((f) => ({
+      ...f,
+      driver_ids: f.driver_ids.includes(id) ? f.driver_ids.filter((x) => x !== id) : [...f.driver_ids, id],
+    }));
+  };
+
+  const toggleStationSel = (id) => {
+    setForm((f) => ({
+      ...f,
+      station_ids: f.station_ids.includes(id) ? f.station_ids.filter((x) => x !== id) : [...f.station_ids, id],
+    }));
+  };
+
+  const audienceLabel = (q) => {
+    if (q.audience_type === 'drivers') return `سائقين محددين (${q.driver_ids ? q.driver_ids.split(',').length : 0})`;
+    if (q.audience_type === 'stations') return `محطات محددة (${q.station_ids ? q.station_ids.split(',').length : 0})`;
+    return 'جميع السائقين';
+  };
+
   const handleSubmit = async () => {
     setError('');
     const questions = form.questions
@@ -87,9 +118,18 @@ export default function QuestionnairesManagement() {
       }));
     if (!form.title.trim()) { setError('يرجى إدخال عنوان الاستبيان'); return; }
     if (questions.length === 0) { setError('يرجى إضافة سؤال واحد على الأقل'); return; }
+    if (form.audience_type === 'drivers' && form.driver_ids.length === 0) { setError('يرجى اختيار سائق واحد على الأقل'); return; }
+    if (form.audience_type === 'stations' && form.station_ids.length === 0) { setError('يرجى اختيار محطة واحدة على الأقل'); return; }
     setSaving(true);
     try {
-      await questionnaires.create({ title: form.title.trim(), description: form.description.trim() || null, questions });
+      await questionnaires.create({
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+        questions,
+        audience_type: form.audience_type,
+        station_ids: form.audience_type === 'stations' ? form.station_ids : undefined,
+        driver_ids: form.audience_type === 'drivers' ? form.driver_ids : undefined,
+      });
       playSuccess();
       setShowForm(false);
       load();
@@ -172,6 +212,67 @@ export default function QuestionnairesManagement() {
                 <textarea className="form-input" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="وصف اختياري..." />
               </div>
 
+              <div className="form-group">
+                <label className="form-label">الجمهور المستهدف</label>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+                  {[
+                    { v: 'all', label: 'جميع السائقين' },
+                    { v: 'stations', label: 'محطات محددة' },
+                    { v: 'drivers', label: 'سائقين محددين' },
+                  ].map((o) => (
+                    <label key={o.v} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                      <input type="radio" name="audience" checked={form.audience_type === o.v} onChange={() => setForm({ ...form, audience_type: o.v, station_ids: [], driver_ids: [] })} />
+                      {o.label}
+                    </label>
+                  ))}
+                </div>
+
+                {form.audience_type === 'stations' && (
+                  <div style={{ border: '1px solid var(--nx-border)', borderRadius: 8, padding: 10 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {stationList.map((s) => {
+                        const checked = form.station_ids.includes(s.id);
+                        return (
+                          <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer', padding: '4px 8px', border: '1px solid var(--nx-border)', borderRadius: 6, background: checked ? 'var(--nx-bg-glass)' : 'transparent' }}>
+                            <input type="checkbox" checked={checked} onChange={() => toggleStationSel(s.id)} />
+                            {s.name}
+                          </label>
+                        );
+                      })}
+                      {stationList.length === 0 && <span style={{ fontSize: 12, color: 'var(--nx-text-muted)' }}>لا توجد محطات</span>}
+                    </div>
+                  </div>
+                )}
+
+                {form.audience_type === 'drivers' && (
+                  <div>
+                    <input className="form-input" style={{ marginBottom: 8 }} value={form.driver_search} onChange={(e) => setForm({ ...form, driver_search: e.target.value })} placeholder="بحث عن سائق بالاسم أو الهاتف..." />
+                    <div style={{ border: '1px solid var(--nx-border)', borderRadius: 8, overflow: 'hidden', maxHeight: 200, overflowY: 'auto' }}>
+                      {filteredFormDrivers.length === 0 ? (
+                        <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--nx-text-muted)' }}>لا يوجد سائقين</div>
+                      ) : (
+                        filteredFormDrivers.map((d) => {
+                          const checked = form.driver_ids.includes(d.id);
+                          return (
+                            <div key={d.id} onClick={() => toggleDriverSel(d.id)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 10px', borderBottom: '1px solid var(--nx-border-light)', cursor: 'pointer', background: checked ? 'var(--nx-bg-glass)' : 'transparent' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                <input type="checkbox" readOnly checked={checked} />
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.full_name}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--nx-text-muted)' }}>{d.phone}{d.station_name ? ` · ${d.station_name}` : ''}</div>
+                                </div>
+                              </div>
+                              {checked && <span style={{ color: '#E53935', fontWeight: 700 }}>✓</span>}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--nx-text-muted)', marginTop: 6 }}>تم اختيار {form.driver_ids.length} سائق</div>
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '12px 0 8px' }}>
                 <strong style={{ fontSize: 14 }}>الأسئلة</strong>
                 <button className="btn btn-sm btn-outline" onClick={addQuestion}>+ إضافة سؤال</button>
@@ -233,6 +334,7 @@ export default function QuestionnairesManagement() {
             <thead>
               <tr>
                 <th>العنوان</th>
+                <th>الجمهور</th>
                 <th>الأسئلة</th>
                 <th>الإجابات</th>
                 <th>الحالة</th>
@@ -248,6 +350,11 @@ export default function QuestionnairesManagement() {
                       <strong style={{ fontSize: 13 }}>{q.title}</strong>
                       {q.description && <div style={{ fontSize: 11, color: 'var(--nx-text-muted)' }}>{q.description.length > 50 ? q.description.slice(0, 50) + '…' : q.description}</div>}
                     </div>
+                  </td>
+                  <td>
+                    <span className="badge" style={{ fontSize: 11 }}>
+                      {audienceLabel(q)}
+                    </span>
                   </td>
                   <td style={{ textAlign: 'center' }}>{q.questions_count}</td>
                   <td style={{ textAlign: 'center' }}>

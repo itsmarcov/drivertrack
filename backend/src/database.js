@@ -152,6 +152,9 @@ async function initDatabase() {
       title VARCHAR(255) NOT NULL,
       description TEXT,
       status VARCHAR(20) DEFAULT 'active' CHECK(status IN ('active','closed')),
+      audience_type VARCHAR(20) DEFAULT 'all' CHECK(audience_type IN ('all','drivers','stations')),
+      station_ids TEXT,
+      driver_ids TEXT,
       created_by INTEGER REFERENCES users(id),
       created_at TIMESTAMP DEFAULT NOW()
     )`);
@@ -173,6 +176,9 @@ async function initDatabase() {
     )`);
     await pool.query("CREATE INDEX IF NOT EXISTS idx_questionnaire_questions_qid ON questionnaire_questions(questionnaire_id)");
     await pool.query("CREATE INDEX IF NOT EXISTS idx_questionnaire_responses_qid ON questionnaire_responses(questionnaire_id)");
+    await pool.query("ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS audience_type VARCHAR(20) DEFAULT 'all'");
+    await pool.query("ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS station_ids TEXT");
+    await pool.query("ALTER TABLE questionnaires ADD COLUMN IF NOT EXISTS driver_ids TEXT");
   } catch {}
   return pool;
 }
