@@ -2443,6 +2443,185 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
 .driver-today-banner small { font-size: 0.75rem; opacity: 0.8; }
 .driver-today-banner.warning { background: var(--nx-warning-bg); color: #92400E; border: 1px solid #FDE68A; }
 
+/* ─── Attendance Streak Card (Snap-style) ─── */
+.streak-card {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto 1rem;
+  border-radius: var(--nx-radius-xl);
+  padding: 1.25rem;
+  background: linear-gradient(160deg, #2a2a3a 0%, #4a2030 55%, #6b2d1e 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: nx-morph-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.streak-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: -60px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 120, 40, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+  animation: streak-glow 2.4s ease-in-out infinite;
+}
+.streak-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FF9800, #FF5722, #F44336);
+}
+.streak-cold {
+  background: linear-gradient(160deg, #2a2a3a 0%, #33343f 60%, #3d3e4a 100%);
+}
+.streak-cold::after { background: linear-gradient(90deg, #9E9E9E, #757575, #616161); }
+.streak-dead {
+  background: linear-gradient(160deg, #26262b 0%, #2f2f35 60%, #3a3a41 100%);
+}
+.streak-dead::after { background: linear-gradient(90deg, #616161, #424242, #212121); }
+.streak-risk {
+  animation: streak-risk-pulse 1.6s ease-in-out infinite;
+}
+.streak-risk::after { background: linear-gradient(90deg, #FFC107, #FF5722, #D32F2F); }
+.streak-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.streak-flame {
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(255, 140, 30, 0.65));
+  animation: streak-burn 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.streak-meta { flex: 1; min-width: 0; }
+.streak-count {
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, #fff 20%, #FFC107 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.streak-label { font-size: 0.72rem; color: rgba(255, 255, 255, 0.75); margin-top: 2px; }
+.streak-best {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 6px 10px;
+  flex-shrink: 0;
+}
+.streak-best-num { font-size: 1.15rem; font-weight: 700; line-height: 1; }
+.streak-best-label { font-size: 0.62rem; color: rgba(255, 255, 255, 0.65); margin-top: 2px; }
+.streak-msg {
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.streak-progress { margin-bottom: 0.75rem; }
+.streak-progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 4px;
+}
+.streak-progress-bar {
+  height: 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.streak-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #FFC107, #FF5722);
+  transition: width 0.8s ease;
+}
+.streak-milestones {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+}
+.streak-chip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+  opacity: 0.45;
+  filter: grayscale(1);
+  transition: all 0.2s ease;
+}
+.streak-chip.done {
+  opacity: 1;
+  filter: none;
+  background: rgba(255, 120, 40, 0.18);
+  border-color: rgba(255, 150, 60, 0.4);
+}
+.streak-chip small { font-size: 0.58rem; color: rgba(255, 255, 255, 0.7); }
+.streak-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding-top: 0.6rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+.streak-today { color: #66FF9E; font-weight: 600; }
+.streak-today.no { color: #FFB4A2; }
+.streak-celebration {
+  margin-top: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #FFB300, #FF7043);
+  color: #4a1c05;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  animation: streak-bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes streak-glow {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.25); opacity: 1; }
+}
+@keyframes streak-burn {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  25% { transform: rotate(2deg) scale(1.08); }
+  50% { transform: rotate(-2deg) scale(1); }
+  75% { transform: rotate(2deg) scale(1.08); }
+}
+@keyframes streak-risk-pulse {
+  0%, 100% { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.35), 0 10px 30px rgba(0, 0, 0, 0.25); }
+}
+@keyframes streak-bounce-in {
+  0% { transform: translateY(10px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
 /* ─── Driver Profile Tab ─── */
 .driver-profile-section {
   flex: 1;

@@ -7,6 +7,7 @@ import AbsenceRequests from './AbsenceRequests';
 import ReportsTab from './ReportsTab';
 import AddressGuide from '../components/AddressGuide';
 import AddressForm from '../components/AddressForm';
+import StreakCard from '../components/StreakCard';
 import { useAuth } from '../context/AuthContext';
 import { qr, attendance, announcements as announcementsApi, drivers, warnings, questionnaires } from '../api';
 import { playSuccess, playNotification } from '../utils/sounds';
@@ -327,6 +328,7 @@ export default function DriverDashboard() {
   const [showReports, setShowReports] = useState(false);
   const [pendingQuestionnaires, setPendingQuestionnaires] = useState([]);
   const [currentQuestionnaire, setCurrentQuestionnaire] = useState(null);
+  const [streakData, setStreakData] = useState(null);
 
   const handleLogout = () => {
     logout();
@@ -352,7 +354,16 @@ export default function DriverDashboard() {
       const filled = data && (data.wilaya_code || data.wilaya_name || data.commune_code || data.commune_name);
       setHasAddress(!!filled);
     }).catch(() => {});
+    loadStreak();
   }, []);
+
+  const loadStreak = () => {
+    attendance.streak().then(setStreakData).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (todayRecord && (!streakData || !streakData.today_scanned)) loadStreak();
+  }, [todayRecord]);
 
   const safeRecords = Array.isArray(records) ? records : [];
   const todayRecord = safeRecords.find((r) => r.scan_date === qrData?.date);
@@ -453,6 +464,7 @@ export default function DriverDashboard() {
 
       {activeTab === 'qr' && (
         <>
+          {streakData && <StreakCard data={streakData} />}
           {qrData && <QRDisplay data={qrData} />}
           {todayRecord ? (
             <div className="driver-today-banner success">

@@ -96,6 +96,7 @@ export const attendance = {
     return request(`/attendance${qs ? '?' + qs : ''}`);
   },
   my: () => request('/attendance/my'),
+  streak: () => request('/attendance/my/streak'),
   profile: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/attendance/my/profile${qs ? '?' + qs : ''}`);
