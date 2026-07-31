@@ -24,7 +24,7 @@ function messageFor(s) {
   return `سلسلة حضور متواصلة منذ ${s.streak} يوم`;
 }
 
-export default function StreakCard({ data }) {
+export default function StreakCard({ data, compact }) {
   const s = data || {};
   const streak = s.streak || 0;
   const best = s.best_streak || 0;
@@ -43,11 +43,11 @@ export default function StreakCard({ data }) {
 
   const next = MILESTONES.find((m) => m.n > streak) || null;
   const progress = next ? Math.min(streak / next.n, 1) : 1;
-  const flameSize = Math.min(34 + streak * 2.2, 72);
+  const flameSize = compact ? 26 : Math.min(34 + streak * 2.2, 72);
   const state = s.at_risk ? 'risk' : streak === 0 && s.dead ? 'dead' : streak === 0 ? 'cold' : 'on';
 
   return (
-    <div className={`streak-card streak-${state}`}>
+    <div className={`streak-card streak-${state}${compact ? ' streak-compact' : ''}`}>
       <div className="streak-main">
         <div className="streak-flame" style={{ fontSize: flameSize }}>
           {s.at_risk ? '⏳' : streak > 0 ? '🔥' : '📋'}

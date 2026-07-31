@@ -265,7 +265,7 @@ function QuestionnairePopup({ questionnaire, onClose }) {
   );
 }
 
-function QRDisplay({ data }) {
+function QRDisplay({ data, zoom }) {
   const qrValue = JSON.stringify({
     driverId: data.driverId,
     date: data.date,
@@ -297,13 +297,13 @@ function QRDisplay({ data }) {
         <p>{data.date}</p>
         <h2>{data.fullName}</h2>
       </div>
-      <div className="driver-qr-card">
+      <div className={`driver-qr-card${zoom ? ' zoom' : ''}`}>
         <div className="driver-qr-header">
           <span className="driver-date">رمز QR اليومي</span>
           <span className="driver-validity">ينتهي بعد: <strong className="countdown">{countdown}</strong></span>
         </div>
         <div className="driver-qr-code">
-          <QRCodeSVG value={qrValue} size={200} level="H" includeMargin />
+          <QRCodeSVG value={qrValue} size={zoom ? 260 : 200} level="H" includeMargin />
         </div>
         <button onClick={refreshPage} className="btn btn-sm btn-outline driver-refresh">تحديث</button>
       </div>
@@ -329,6 +329,7 @@ export default function DriverDashboard() {
   const [pendingQuestionnaires, setPendingQuestionnaires] = useState([]);
   const [currentQuestionnaire, setCurrentQuestionnaire] = useState(null);
   const [streakData, setStreakData] = useState(null);
+  const [scanMode, setScanMode] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -360,6 +361,13 @@ export default function DriverDashboard() {
   const loadStreak = () => {
     attendance.streak().then(setStreakData).catch(() => {});
   };
+
+  useEffect(() => {
+    const onScroll = () => setScanMode(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const safeRecords = Array.isArray(records) ? records : [];
   const todayRecord = safeRecords.find((r) => r.scan_date === qrData?.date);
@@ -464,8 +472,8 @@ export default function DriverDashboard() {
 
       {activeTab === 'qr' && (
         <>
-          {streakData && <StreakCard data={streakData} />}
-          {qrData && <QRDisplay data={qrData} />}
+          {streakData && <StreakCard data={streakData} compact={scanMode} />}
+          {qrData && <QRDisplay data={qrData} zoom={scanMode} />}
           {todayRecord ? (
             <div className="driver-today-banner success">
               <span>تم تسجيل حضورك اليوم</span>

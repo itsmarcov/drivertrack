@@ -2371,8 +2371,12 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   width: 100%;
   max-width: 300px;
   animation: nx-morph-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: max-width 0.35s ease, padding 0.35s ease;
   position: relative;
   isolation: isolate;
+}
+.driver-qr-card.zoom {
+  max-width: 390px;
 }
 .driver-qr-card::after {
   content: '';
@@ -2603,6 +2607,39 @@ h1, h2, h3, h4, h5, h6 { font-family: var(--nx-font-display); font-weight: 700; 
   text-align: center;
   animation: streak-bounce-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+
+/* Compact (scan mode) */
+.streak-card {
+  transition: padding 0.35s ease, max-height 0.35s ease;
+}
+.streak-msg,
+.streak-progress,
+.streak-milestones,
+.streak-footer,
+.streak-celebration,
+.streak-best {
+  max-height: 200px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease, border-width 0.3s ease;
+}
+.streak-card.streak-compact { padding: 0.6rem 0.9rem; }
+.streak-card.streak-compact .streak-main { margin-bottom: 0; }
+.streak-card.streak-compact .streak-msg,
+.streak-card.streak-compact .streak-progress,
+.streak-card.streak-compact .streak-milestones,
+.streak-card.streak-compact .streak-footer,
+.streak-card.streak-compact .streak-celebration,
+.streak-card.streak-compact .streak-best {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+}
+.streak-card.streak-compact .streak-count { font-size: 1.5rem; }
+.streak-card.streak-compact .streak-label { font-size: 0.65rem; }
+.streak-card.streak-compact::before { animation-play-state: paused; }
 @keyframes streak-glow {
   0%, 100% { transform: scale(1); opacity: 0.7; }
   50% { transform: scale(1.25); opacity: 1; }
