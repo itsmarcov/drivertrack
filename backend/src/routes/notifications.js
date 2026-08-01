@@ -9,7 +9,7 @@ router.get('/', authenticate, authorize('admin', 'ops', 'super_admin'), async (r
   const stationFilter = isOps ? 'AND u.station_id = $1' : '';
   const stationParam = isOps ? [req.user.station_id] : [];
 
-  const [late, justifications, registrations, absenceRequests] = await Promise.all([
+  const [late, justifications, registrations, absenceRequests, reports, warningSignatures, questionnaireResponses] = await Promise.all([
     queryAll(`
       SELECT a.id, a.driver_id, a.scan_time, a.created_at, a.late_reason,
              u.full_name AS driver_name, u.phone, u.vehicle_type, u.license_plate,
@@ -45,6 +45,35 @@ router.get('/', authenticate, authorize('admin', 'ops', 'super_admin'), async (r
       ${stationFilter.replace('u.station_id', 'u.station_id')}
       ORDER BY ar.created_at DESC
     `, stationParam),
+    queryAll(`
+      SELECT dr.id, dr.driver_id, dr.report_type, dr.category, dr.message, dr.created_at,
+             u.full_name AS driver_name, u.vehicle_type, u.license_plate
+      FROM driver_reports dr
+      JOIN users u ON u.id = dr.driver_id
+      WHERE dr.status = 'pending'
+      ${stationFilter}
+      ORDER BY dr.created_at DESC
+    `, isOps ? [req.user.station_id] : []),
+    queryAll(`
+      SELECT w.id, w.driver_id, w.title, w.signed_at,
+             u.full_name AS driver_name
+      FROM warnings w
+      JOIN users u ON u.id = w.driver_id
+      WHERE w.status = 'signed' AND w.signed_at >= NOW() - INTERVAL '7 days'
+      ${stationFilter}
+      ORDER BY w.signed_at DESC
+    `, isOps ? [req.user.station_id] : []),
+    queryAll(`
+      SELECT qr.id, qr.questionnaire_id, qr.driver_id, qr.submitted_at,
+             q.title AS questionnaire_title,
+             u.full_name AS driver_name
+      FROM questionnaire_responses qr
+      JOIN questionnaires q ON q.id = qr.questionnaire_id
+      JOIN users u ON u.id = qr.driver_id
+      WHERE qr.submitted_at >= NOW() - INTERVAL '7 days'
+      ${stationFilter}
+      ORDER BY qr.submitted_at DESC
+    `, isOps ? [req.user.station_id] : []),
   ]);
 
   res.json({
@@ -52,11 +81,17 @@ router.get('/', authenticate, authorize('admin', 'ops', 'super_admin'), async (r
     justifications,
     registrations,
     absence_requests: absenceRequests,
+    reports,
+    warning_signatures: warningSignatures,
+    questionnaire_responses: questionnaireResponses,
     totals: {
       late: late.length,
       justifications: justifications.length,
       registrations: registrations.length,
       absence_requests: absenceRequests.length,
+      reports: reports.length,
+      warning_signatures: warningSignatures.length,
+      questionnaire_responses: questionnaireResponses.length,
     },
   });
 });
