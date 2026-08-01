@@ -393,28 +393,37 @@ router.get('/export', authenticate, authorize('admin', 'ops'), async (req, res) 
 
 router.get('/my/streak', authenticate, authorize('driver'), async (req, res) => {
   const rows = await queryAll(
-    `SELECT DISTINCT scan_date FROM attendance WHERE driver_id = $1 ORDER BY scan_date DESC`,
+    `SELECT DISTINCT scan_date FROM attendance WHERE driver_id = $1 AND is_late = 0 ORDER BY scan_date DESC`,
     [req.user.id]
   );
   const dates = rows.map((r) => r.scan_date);
 
   const toDayNum = (d) => Math.floor(Date.parse(`${d}T00:00:00Z`) / 86400000);
   const numToDateStr = (n) => new Date(n * 86400000).toISOString().slice(0, 10);
+  const isFriday = (n) => new Date(n * 86400000).getUTCDay() === 5;
+  const prevWorkDay = (n) => (isFriday(n - 1) ? n - 2 : n - 1);
+  const nextWorkDay = (n) => (isFriday(n + 1) ? n + 2 : n + 1);
 
   const now = new Date();
   const todayStr = now.getFullYear() + '-' +
     String(now.getMonth() + 1).padStart(2, '0') + '-' +
     String(now.getDate()).padStart(2, '0');
   const todayN = toDayNum(todayStr);
+  const offToday = isFriday(todayN);
 
   const set = new Set(dates.map(toDayNum));
-  const hasToday = set.has(todayN);
-  const hasYesterday = set.has(todayN - 1);
+  const todayEligible = !offToday && set.has(todayN);
+  const prevWork = prevWorkDay(todayN);
+  const prevWorkEligible = set.has(prevWork);
+
+  let anchor = null;
+  if (todayEligible) anchor = todayN;
+  else if (prevWorkEligible) anchor = prevWork;
 
   let streak = 0;
-  if (hasToday || hasYesterday) {
-    let start = hasToday ? todayN : todayN - 1;
-    while (set.has(start)) { streak++; start--; }
+  if (anchor !== null) {
+    let cursor = anchor;
+    while (set.has(cursor)) { streak++; cursor = prevWorkDay(cursor); }
   }
 
   let best = 0;
@@ -422,15 +431,15 @@ router.get('/my/streak', authenticate, authorize('driver'), async (req, res) => 
   let prev = null;
   const sortedAsc = [...set].sort((a, b) => a - b);
   for (const n of sortedAsc) {
-    run = prev !== null && n - prev === 1 ? run + 1 : 1;
+    run = prev !== null && n === nextWorkDay(prev) ? run + 1 : 1;
     if (run > best) best = run;
     prev = n;
   }
 
   const streakDates = [];
-  if (hasToday || hasYesterday) {
-    let cursor = hasToday ? todayN : todayN - 1;
-    while (set.has(cursor)) { streakDates.unshift(numToDateStr(cursor)); cursor--; }
+  if (anchor !== null) {
+    let cursor = anchor;
+    while (set.has(cursor)) { streakDates.unshift(numToDateStr(cursor)); cursor = prevWorkDay(cursor); }
   }
 
   const monthPrefix = todayStr.slice(0, 7);
@@ -442,9 +451,10 @@ router.get('/my/streak', authenticate, authorize('driver'), async (req, res) => 
     streak,
     best_streak: best,
     total_days: dates.length,
-    today_scanned: hasToday,
-    at_risk: !hasToday && hasYesterday,
-    dead: !hasToday && !hasYesterday && dates.length > 0,
+    today_scanned: todayEligible,
+    off_today: offToday,
+    at_risk: !todayEligible && prevWorkEligible && !offToday,
+    dead: !todayEligible && !prevWorkEligible && dates.length > 0,
     last_scan_date: lastScan,
     days_since_last: lastScan ? todayN - toDayNum(lastScan) : null,
     streak_dates: streakDates,

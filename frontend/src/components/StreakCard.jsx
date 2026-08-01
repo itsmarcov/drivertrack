@@ -90,7 +90,7 @@ export default function StreakCard({ data, compact }) {
 
       <div className="streak-footer">
         <span>حضور هذا الشهر: {s.month_days || 0} / {s.month_total || 30} يوم</span>
-        {s.today_scanned ? <span className="streak-today">اليوم ✔</span> : <span className="streak-today no">اليوم ما زال ✘</span>}
+        {s.off_today ? <span className="streak-today">اليوم عطلة</span> : s.today_scanned ? <span className="streak-today">اليوم ✔</span> : <span className="streak-today no">اليوم ما زال ✘</span>}
       </div>
 
       {celebrated && (
