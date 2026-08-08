@@ -253,6 +253,7 @@ export const warnings = {
   sign: (id, signature_data) => request(`/warnings/${id}/sign`, { method: 'PATCH', body: JSON.stringify({ signature_data }) }),
   archive: (id) => request(`/warnings/${id}/archive`, { method: 'PATCH' }),
   restore: (id) => request(`/warnings/${id}/restore`, { method: 'PATCH' }),
+  remove: (id) => request(`/warnings/${id}`, { method: 'DELETE' }),
   downloadPdf: async (id) => {
     const res = await fetch(`/api/warnings/${id}/pdf`, { credentials: 'same-origin' });
     if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || 'Failed to generate PDF'); }

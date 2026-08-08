@@ -101,6 +101,13 @@ router.patch('/:id/restore', authenticate, authorize('admin', 'super_admin'), as
   res.json({ success: true });
 });
 
+router.delete('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  const warning = await queryOne('SELECT * FROM warnings WHERE id = $1', [parseInt(req.params.id)]);
+  if (!warning) return res.status(404).json({ error: 'Warning not found' });
+  await run('DELETE FROM warnings WHERE id = $1', [warning.id]);
+  res.json({ success: true });
+});
+
 router.get('/:id/pdf', authenticate, async (req, res) => {
   try {
     const warning = await queryOne(

@@ -17,6 +17,8 @@ export default function WarningsManagement() {
   const [bulkMode, setBulkMode] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(null);
   const [pdfError, setPdfError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     const params = {};
@@ -72,6 +74,14 @@ export default function WarningsManagement() {
   const handleArchive = async (id) => { try { await warnings.archive(id); load(); } catch (e) { console.error('archive', e); } };
   const handleRestore = async (id) => { try { await warnings.restore(id); load(); } catch (e) { console.error('restore', e); } };
 
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try { await warnings.remove(confirmDelete.id); load(); } catch (e) { console.error('delete', e); }
+    setDeleting(false);
+    setConfirmDelete(null);
+  };
+
   const handlePdf = async (id) => {
     setPdfLoading(id);
     setPdfError('');
@@ -91,12 +101,12 @@ export default function WarningsManagement() {
 
   const statusBadge = (s) => {
     const m = {
-      pending: { label: 'بانتظار التوقيع', cls: 'badge-warning' },
-      signed: { label: 'موقع', cls: 'badge-success' },
-      archived: { label: 'مؤرشف', cls: 'badge' },
+      pending: { label: 'بانتظار التوقيع', cls: 'badge-warning', icon: '🕓' },
+      signed: { label: 'موقع', cls: 'badge-success', icon: '✍️' },
+      archived: { label: 'مؤرشف', cls: 'badge', icon: '📁' },
     };
-    const x = m[s] || { label: s, cls: 'badge' };
-    return <span className={`badge ${x.cls}`}>{x.label}</span>;
+    const x = m[s] || { label: s, cls: 'badge', icon: '•' };
+    return <span className={`badge ${x.cls} w-status-badge`}><span className="w-status-badge-icon">{x.icon}</span>{x.label}</span>;
   };
 
   return (
@@ -106,10 +116,10 @@ export default function WarningsManagement() {
           <h2>الإنذارات</h2>
           {stats && (
             <div className="w-stats-bar">
-              <span>المجموع: <strong>{stats.total}</strong></span>
-              <span className="w-stat-pending">بانتظار التوقيع: <strong>{stats.pending}</strong></span>
-              <span className="w-stat-signed">موقع: <strong>{stats.signed}</strong></span>
-              <span className="w-stat-archived">مؤرشف: <strong>{stats.archived}</strong></span>
+              <span className="w-stat-chip w-stat-total">المجموع: <strong>{stats.total}</strong></span>
+              <span className="w-stat-chip w-stat-pending">بانتظار التوقيع: <strong>{stats.pending}</strong></span>
+              <span className="w-stat-chip w-stat-signed">موقع: <strong>{stats.signed}</strong></span>
+              <span className="w-stat-chip w-stat-archived">مؤرشف: <strong>{stats.archived}</strong></span>
             </div>
           )}
         </div>
@@ -204,37 +214,58 @@ export default function WarningsManagement() {
           </div>
         ) : (
           list.map((w) => (
-            <div key={w.id} className="w-card">
+            <div key={w.id} className={`w-card w-card-${w.status}`}>
               <div className="w-card-top">
                 <div className="w-card-title-row">
-                  <strong className="w-card-title">{w.title}</strong>
+                  <span className="w-card-icon">⚠️</span>
+                  <div className="w-card-title-col">
+                    <strong className="w-card-title">{w.title}</strong>
+                    <span className="w-card-subtitle">{new Date(w.created_at).toLocaleString('fr-DZ')}</span>
+                  </div>
                   {statusBadge(w.status)}
                 </div>
                 <div className="w-card-actions">
                   <button className="btn btn-sm btn-outline" onClick={() => handlePdf(w.id)} disabled={pdfLoading === w.id} title="تحميل PDF">
                     {pdfLoading === w.id ? '...' : 'PDF'}
                   </button>
-                  {w.status === 'pending' && (
-                    <button className="btn btn-sm btn-outline" onClick={() => handleArchive(w.id)}>أرشفة</button>
+                  {(w.status === 'pending' || w.status === 'signed') && (
+                    <button className="btn btn-sm btn-outline" onClick={() => handleArchive(w.id)} title="أرشفة الإنذار">أرشفة</button>
                   )}
                   {w.status === 'archived' && (
-                    <button className="btn btn-sm btn-outline" onClick={() => handleRestore(w.id)}>استرجاع</button>
+                    <button className="btn btn-sm btn-outline" onClick={() => handleRestore(w.id)} title="استرجاع الإنذار">استرجاع</button>
                   )}
+                  <button className="btn btn-sm btn-danger" onClick={() => setConfirmDelete(w)} title="حذف نهائي">حذف</button>
                 </div>
               </div>
               <div className="w-card-content">{w.content}</div>
               <div className="w-card-meta">
-                <span>السائق: <strong>{w.driver_name}</strong></span>
-                {w.phone && <span>{w.phone}</span>}
+                <span className="w-card-meta-driver"><strong>{w.driver_name}</strong></span>
+                {w.phone && <span>📞 {w.phone}</span>}
+                {w.license_plate && <span>🚗 {w.license_plate}</span>}
                 {w.station_name && <span className="w-station-badge">{w.station_name}</span>}
                 {w.admin_name && <span>من: {w.admin_name}</span>}
                 {w.signed_at && <span>وقع في: {new Date(w.signed_at).toLocaleString('fr-DZ')}</span>}
-                <span className="w-card-date">{new Date(w.created_at).toLocaleString('fr-DZ')}</span>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="modal w-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="w-confirm-icon">🗑️</div>
+            <h3>حذف الإنذار</h3>
+            <p>هل أنت متأكد من حذف الإنذار <strong>{confirmDelete.title}</strong> نهائياً؟ لا يمكن التراجع عن هذه العملية.</p>
+            <div className="w-confirm-actions">
+              <button className="btn btn-outline" onClick={() => setConfirmDelete(null)}>إلغاء</button>
+              <button className="btn btn-danger" onClick={handleDelete} disabled={deleting}>
+                {deleting ? 'جاري الحذف...' : 'حذف نهائي'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
