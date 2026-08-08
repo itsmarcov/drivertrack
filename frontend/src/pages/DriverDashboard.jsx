@@ -96,7 +96,7 @@ function SignaturePad({ onConfirm, onCancel }) {
   );
 }
 
-function DriverWarningsTab() {
+function DriverWarningsTab({ onSigned }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [signingId, setSigningId] = useState(null);
@@ -112,7 +112,7 @@ function DriverWarningsTab() {
     if (!showSigPad) return;
     setSigningId(showSigPad.id);
     setShowSigPad(null);
-    try { await warnings.sign(showSigPad.id, sigData); load(); } catch {}
+    try { await warnings.sign(showSigPad.id, sigData); load(); onSigned && onSigned(); } catch {}
     setSigningId(null);
   };
 
@@ -330,6 +330,14 @@ export default function DriverDashboard() {
   const [currentQuestionnaire, setCurrentQuestionnaire] = useState(null);
   const [streakData, setStreakData] = useState(null);
   const [scanMode, setScanMode] = useState(false);
+  const [pendingWarnings, setPendingWarnings] = useState(0);
+
+  const loadPendingWarnings = async () => {
+    try {
+      const list = await warnings.list();
+      setPendingWarnings(list.filter((w) => w.status === 'pending').length);
+    } catch {}
+  };
 
   const handleLogout = () => {
     logout();
@@ -356,6 +364,7 @@ export default function DriverDashboard() {
       setHasAddress(!!filled);
     }).catch(() => {});
     loadStreak();
+    loadPendingWarnings();
   }, []);
 
   const loadStreak = () => {
@@ -368,6 +377,10 @@ export default function DriverDashboard() {
     onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'warnings') loadPendingWarnings();
+  }, [activeTab]);
 
   const safeRecords = Array.isArray(records) ? records : [];
   const todayRecord = safeRecords.find((r) => r.scan_date === qrData?.date);
@@ -458,6 +471,17 @@ export default function DriverDashboard() {
 
       {error && <div className="alert alert-error driver-alert">{error}</div>}
 
+      {pendingWarnings > 0 && (
+        <div className="driver-warning-banner" onClick={() => setActiveTab('warnings')}>
+          <span className="driver-warning-banner-icon">⚠️</span>
+          <div>
+            <strong>{pendingWarnings} {pendingWarnings === 1 ? 'إنذار بانتظار التوقيع' : 'إنذارات بانتظار التوقيع'}</strong>
+            <small>اضغط لعرض وتوقيع الإنذار</small>
+          </div>
+          <span className="driver-warning-banner-arrow">‹</span>
+        </div>
+      )}
+
       <div className="driver-tabs-scroll">
         <div className="driver-tabs">
           <button className={`driver-tab ${activeTab === 'qr' ? 'active' : ''}`} onClick={() => setActiveTab('qr')}>رمز QR</button>
@@ -466,7 +490,10 @@ export default function DriverDashboard() {
           <button className={`driver-tab ${activeTab === 'justifications' ? 'active' : ''}`} onClick={() => setActiveTab('justifications')}>المبررات</button>
           <button className={`driver-tab ${activeTab === 'absence-requests' ? 'active' : ''}`} onClick={() => setActiveTab('absence-requests')}>الغيابات المسبقة</button>
           <button className={`driver-tab ${activeTab === 'address' ? 'active' : ''}`} onClick={() => setActiveTab('address')}>عنوان السكن</button>
-          <button className={`driver-tab ${activeTab === 'warnings' ? 'active' : ''}`} onClick={() => setActiveTab('warnings')}>الإنذارات</button>
+          <button className={`driver-tab ${activeTab === 'warnings' ? 'active' : ''}`} onClick={() => setActiveTab('warnings')}>
+            الإنذارات
+            {pendingWarnings > 0 && <span className="driver-tab-badge">{pendingWarnings}</span>}
+          </button>
         </div>
       </div>
 
@@ -523,7 +550,7 @@ export default function DriverDashboard() {
           <AddressForm driverId={user.id} />
         </div>
       )}
-      {activeTab === 'warnings' && <DriverWarningsTab />}
+      {activeTab === 'warnings' && <DriverWarningsTab onSigned={loadPendingWarnings} />}
 
       <button className="rp-fab" onClick={() => setShowReports(true)} title="تبليغ">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
